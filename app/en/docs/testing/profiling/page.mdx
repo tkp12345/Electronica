@@ -39,6 +39,14 @@ node --prof-process isolate-*.log > prof.txt
 
 DevTools _Memory_ → Heap Snapshot. Follow the _Retainers_ tree to find objects that are still referenced when they shouldn't be.
 
+## In plain words
+
+Saying "the app is slow" without profiling is like walking into a doctor's office and only saying "I'm sick." The moment you _guess_ without measuring, you'll almost always fix the wrong thing. A profiler is the stethoscope and the X-ray combined — it tells you _where_ the problem really lives, in numbers.
+
+For the Renderer, the DevTools _Performance_ tab is enough by itself. Hit the red ⬤ Record button, run the scenario, stop. You'll get a mountain of bars — and one _wide yellow or orange bar_ usually accounts for 70–90% of the perceived slowness. Don't chase a hundred small bars; chase the one fat one.
+
+When Main itself is the problem, launch with `electron --prof` to enable _Node's V8 profiler_, then process the resulting `isolate-*.log` with `node --prof-process` for a per-function time breakdown. For memory leaks, two _Heap Snapshots_ taken minutes apart and a walk through the _Retainers_ tree of the growing objects almost always reveals the culprit.
+
 <Cards>
   <Cards.Card title="Best practices: performance" href="/en/docs/best-practices/performance" arrow />
 </Cards>

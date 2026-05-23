@@ -48,6 +48,14 @@ A patch is a _temporary band-aid_. The moment upstream ships a fix, peel the ban
 
 Active patches live under `patches/` in the `electron/electron` repo. See CONTRIBUTING.md for the PR process.
 
+## In plain words
+
+A _band-aid_ on a scraped knee isn't a cure — it just stops the bleeding _right now_. Same idea here: a third-party library has a bug, the official fix isn't out yet, and you need _your_ app to work today. So you edit the library's file directly in `node_modules` and tell `patch-package` to remember the change. The tool then _applies the patch automatically_ every time anyone runs `npm install`.
+
+The flow is simple. Edit the file inside `node_modules/some-lib`, then `npx patch-package some-lib`. A `.patch` file lands in `patches/` containing only your diff. Commit that file, add `patch-package` to your `postinstall` hook, and from then on every machine that runs `npm install` ends up with the same fix baked in.
+
+_Don't let band-aids stay on forever._ The moment upstream ships the real fix, peel the patch off and upgrade. Stale patches stop applying cleanly as the library evolves, and a year later you can't even _remove_ them. Patches are temporary by design — open a PR upstream at the same time you create the patch, so the upstream fix and your own cleanup happen together.
+
 <Cards>
   <Cards.Card title="Versioning" href="/en/docs/references/versioning" arrow />
   <Cards.Card title="Breaking changes" href="/en/docs/references/breaking-changes" arrow />

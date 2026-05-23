@@ -48,6 +48,14 @@ if (process.env.NODE_ENV === 'production') {
 }
 ```
 
+## In plain words
+
+The Chrome DevTools you pop with F12 work the same way inside your Electron app — the Renderer literally _is_ Chromium. Five tabs cover most of your day. **Elements** for the DOM, **Console** for logs and expressions, **Network** for traffic, **Performance** for slow stretches, **Memory** for leaks.
+
+In development, opening DevTools _automatically_ saves a lot of clicks. `win.webContents.openDevTools({ mode: 'detach' })` pops it as a separate window so it doesn't cover a small app window. Binding your own shortcut (e.g. F12) also makes the muscle memory faster.
+
+The non-negotiable rule is _block DevTools in production builds_. Letting users open DevTools inside a shipped app exposes your React tree, API calls, and env variables. Bad for security, weird for UX. A `NODE_ENV === 'production'` guard that _closes it the moment it opens_ takes care of it.
+
 <Cards>
   <Cards.Card title="Debugging" href="/en/docs/development/debugging" arrow />
 </Cards>

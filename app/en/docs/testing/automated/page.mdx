@@ -41,6 +41,14 @@ test('shows Hello World', async () => {
 - Cover **UI behaviour** with Playwright E2E.
 - **IPC handlers** are callable directly, so prefer fast unit tests there.
 
+## In plain words
+
+Automated tests are basically _a robot that taps your app the same way every time_. Every time you change a line of code, the robot replays _dozens of scenarios in seconds_ and tells you either "all good" or "this one broke." You don't have to click your way through 100 manual checks before each release, which means you can actually ship often.
+
+The de facto Electron tool here is **Playwright**. It ships a special `_electron` mode — `electron.launch({ args: ['.'] })` is enough to _boot your real app_ and start interacting with the first window. Selectors, traces, video recording — all in one box.
+
+The trick to keeping the suite healthy is _layering_. ① Pure functions in Main → fast unit tests (Jest/Vitest). ② IPC handlers can be invoked directly → also unit tests. ③ Reserve Playwright E2E for _real UI flows_ that genuinely need a browser. If you run everything through E2E, the suite gets so slow that nobody runs it.
+
 <Cards>
   <Cards.Card title="DevTools deeper" href="/en/docs/testing/devtools" arrow />
   <Cards.Card title="Headless CI" href="/en/docs/testing/headless" arrow />

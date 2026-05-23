@@ -48,6 +48,14 @@ npx patch-package some-lib
 
 `electron/electron` 저장소의 `patches/` 폴더가 모든 활성 패치를 담고 있어요. PR 가이드는 CONTRIBUTING.md 참고.
 
+## 쉽게 풀어 설명
+
+다친 무릎에 _반창고_ 를 붙이는 건 _영구 치료_ 가 아니라 _지금 당장 피가 안 흐르게_ 막는 임시 조치예요. 라이브러리에 버그가 있는데 _공식 수정이 아직_ 안 됐을 때, 우리는 그 라이브러리 파일을 _직접 수정해_ 우리 앱에서만 잠시 다르게 쓰게 만들어야 할 때가 있어요. `patch-package` 는 그 _반창고를 자동으로 붙였다 떼었다_ 해 주는 도구예요.
+
+사용법은 단순. _node_modules_ 안의 깨진 라이브러리 파일을 직접 수정하고, `npx patch-package some-lib` 한 번 돌리면 _수정 내역만 담긴 .patch 파일_ 이 `patches/` 폴더에 생겨요. 이걸 git 에 커밋해 두고 `postinstall` 훅에 `patch-package` 를 걸어두면, 다음에 누가 `npm install` 만 해도 같은 수정이 자동 적용돼요.
+
+반창고를 _묵히지 마세요_. 업스트림 라이브러리가 진짜로 수정되면 _즉시_ 패치를 떼어 내고 새 버전으로 올라가세요. 묵은 패치는 _라이브러리가 진화할수록 충돌_ 이 커져서, 1년 뒤엔 _패치 자체를 못 떼는_ 상황이 와요. 패치는 항상 임시. _공식 PR 을 같이 보내_ 둬서, 본가에서 고쳐지는 즉시 우리도 깔끔해지게 하는 게 정석입니다.
+
 <Cards>
   <Cards.Card title="Versioning" href="/ko/docs/references/versioning" arrow />
   <Cards.Card title="Breaking changes" href="/ko/docs/references/breaking-changes" arrow />

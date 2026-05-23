@@ -41,6 +41,14 @@ test('Hello World 가 보인다', async () => {
 - **UI 동작** 만 Playwright 로 E2E 검증
 - **IPC 핸들러** 는 직접 호출 가능하므로 단위 테스트로 빠르게
 
+## 쉽게 풀어 설명
+
+자동화 테스트는 _로봇이 우리 앱을 매번 같은 순서로 손가락으로 눌러 보는_ 일이에요. 우리가 코드를 한 줄 고칠 때마다, 로봇이 _수십 가지 시나리오를 1초 안에_ 다시 돌려 보고 "전부 평소처럼 동작합니다" 또는 "여기가 망가졌어요" 를 알려 줘요. 사람이 매번 100번씩 같은 클릭을 하지 않아도 되니, 자신 있게 자주 배포할 수 있어요.
+
+Electron 자동화의 표준은 **Playwright** 예요. 그 안에 `_electron` 이라는 _Electron 전용 모드_ 가 있어서, `electron.launch({ args: ['.'] })` 한 줄이면 _진짜 우리 앱을 띄워서_ 첫 창부터 자동으로 조작해 줘요. 셀렉터로 버튼 찾기, 트레이스 기록, 비디오 캡처까지 모두 한 도구 안에서.
+
+좋은 테스트 디자인은 _계층화_ 가 핵심이에요. ① Main 안의 _순수 함수_ 는 빠른 단위 테스트(Jest/Vitest) 로. ② IPC 핸들러는 직접 호출 가능하므로 단위 테스트로. ③ Playwright E2E 는 _진짜 UI 흐름_ 검증에만. 모든 걸 E2E 로만 돌리면 너무 느려서 결국 아무도 안 돌리게 돼요.
+
 <Cards>
   <Cards.Card title="DevTools 더 깊이" href="/ko/docs/testing/devtools" arrow />
   <Cards.Card title="헤드리스 CI" href="/ko/docs/testing/headless" arrow />

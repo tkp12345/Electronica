@@ -39,6 +39,14 @@ node --prof-process isolate-*.log > prof.txt
 
 DevTools _Memory_ → Heap Snapshot. _Retainers_ 트리를 따라가며 _참조가 풀리지 않은 객체_ 찾기.
 
+## 쉽게 풀어 설명
+
+"앱이 느려요" 라는 말은 _병원에 가서 "어디가 아파요" 라고만 말하는 것_ 과 같아요. 어디가 어떻게 느린지 _측정하지 않고 추측하는 순간_, 우리는 거의 항상 엉뚱한 곳을 고치게 돼요. 프로파일링은 청진기와 X-ray 같은 도구예요. 진짜 문제 부위를 _데이터로_ 가리켜 줘요.
+
+Renderer 쪽은 _DevTools 의 Performance 탭_ 한 곳이면 충분해요. 빨간 ⬤ Record 를 누르고 시나리오를 한 번 돌린 뒤 멈춰요. 그러면 _수많은 막대 그래프_ 가 나오는데, _가장 굵은 노란/주황 막대 하나_ 가 보통 전체 느림의 70~90% 를 차지해요. 작은 막대 100개 다 잡지 말고 _그 하나만_ 먼저 잡으세요.
+
+Main 프로세스가 느릴 땐 `electron --prof` 로 _Node 의 V8 프로파일러_ 를 켜고, 종료 후 생성되는 `isolate-*.log` 를 `node --prof-process` 로 해석하면 함수별 누적 시간이 텍스트로 나와요. 메모리 누수는 _Heap Snapshot_ 두 번 찍어 _Retainers_ 트리에서 _늘어난 객체의 참조 사슬_ 을 따라가면 거의 항상 원인이 보입니다.
+
 <Cards>
   <Cards.Card title="Best Practices: 성능" href="/ko/docs/best-practices/performance" arrow />
 </Cards>

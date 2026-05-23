@@ -43,6 +43,14 @@ console.warn('xxx is deprecated, use yyy')
 
 That's the announcement that the next major will remove it. Move now and you'll have nothing left to fix later.
 
+## In plain words
+
+A "breaking change" is exactly what it sounds like — code that worked before doesn't work after the upgrade. Imagine a ladder with one rung quietly missing; a major version often comes with a dozen such missing rungs. Electron kindly collects all of them into a single `BREAKING-CHANGES.md`. Migration is essentially walking that file as a checklist against your codebase.
+
+The shapes of breakage are predictable. ① An API removed entirely (the legacy `remote` module → `contextBridge`). ② A default flipped (`nodeIntegration` now false). ③ A function renamed. ④ A function that used to be synchronous now returns a Promise. Number 4 is the nastiest — there's no compile error, just a sudden runtime symptom like "console.log printed `[object Promise]` instead of the value."
+
+The safe migration pattern is short: branch off, run `npm i electron@latest`, and just _build_. Fix compile errors one by one. After automated tests pass, ship the new build to a beta channel of users first. During all of this, _never ignore the `console.warn` deprecation messages_ — those are the announcement that the next major will delete that API. Move now and you'll buy yourself a 30-minute migration next time around.
+
 <Cards>
   <Cards.Card title="Versioning" href="/en/docs/references/versioning" arrow />
 </Cards>

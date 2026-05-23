@@ -43,6 +43,14 @@ console.warn('xxx is deprecated, use yyy')
 
 다음 메이저에서 사라질 예고예요. 그 시점에 이미 옮겨 두면 나중에 한꺼번에 고생할 일이 없어요.
 
+## 쉽게 풀어 설명
+
+"breaking change" 는 _옛날에 잘 되던 코드가 새 버전에선 더 이상 안 되는 변화_ 예요. 사다리 두 칸 사이에 _발판 하나가 빠진 것_ 같다고 생각해 보세요. 메이저 버전이 바뀌면 그런 빠진 발판이 _십수 개_ 있을 수 있어요. Electron 은 그 목록을 친절하게 `BREAKING-CHANGES.md` 라는 한 파일에 정리해 둬요. 마이그레이션은 그 파일을 _체크리스트처럼_ 우리 코드와 대조하는 일이에요.
+
+자주 만나는 깨짐 유형은 패턴이 정해져 있어요. ① API 가 통째로 사라짐 (오래된 `remote` 모듈 → `contextBridge` 로 대체). ② 기본값이 뒤집힘 (`nodeIntegration` 기본 false). ③ 함수 이름이 바뀜. ④ 함수가 _동기 → Promise 반환_ 으로 변신. 특히 ④번이 골치 아파요. 컴파일 에러가 안 뜨고 _런타임에 갑자기_ "Promise 가 그대로 console.log 됐어요" 같은 증상이 나와요.
+
+마이그레이션의 _안전한 패턴_ 은 단순해요. 새 메이저용 별도 브랜치를 따고, `npm i electron@latest` 한 뒤 _빌드만_ 돌리세요. 컴파일 에러를 _한 개씩_ 잡고, 자동화 테스트가 통과하면 일부 사용자에게 베타로 먼저 배포. 그 사이에 `console.warn` 에 뜨는 _deprecation_ 메시지는 _절대 무시하지 마세요_. 그게 다음 메이저에서 사라질 예고예요. 미리 옮기면 _다음 마이그레이션이 30분에 끝나는_ 보너스가 따라옵니다.
+
 <Cards>
   <Cards.Card title="Versioning" href="/ko/docs/references/versioning" arrow />
 </Cards>

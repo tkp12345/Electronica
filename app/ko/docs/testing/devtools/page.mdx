@@ -48,6 +48,14 @@ if (process.env.NODE_ENV === 'production') {
 }
 ```
 
+## 쉽게 풀어 설명
+
+크롬 브라우저에서 F12 누르면 뜨는 _개발자 도구_, 그대로 우리 Electron 앱 안에서도 동작해요. Renderer 가 _크롬 그 자체_ 이기 때문이에요. 가장 자주 쓰는 다섯 탭이 정해져 있어요. **Elements** 로 화면 구조를 만지고, **Console** 로 로그·표현식, **Network** 로 통신 흐름, **Performance** 로 느린 구간 찾기, **Memory** 로 메모리 누수 추적.
+
+개발 단계에서는 _자동으로 DevTools 가 떠 있게_ 만들어 두면 편해요. `win.webContents.openDevTools({ mode: 'detach' })` 한 줄이면, _작은 앱 창을 가리지 않고_ 별도 창으로 띄워 줘요. F12 같은 단축키도 직접 매핑하면 손에 더 익어요.
+
+가장 중요한 건 _운영 빌드에서는 반드시 막기_. 사용자가 우리 앱 안에서 DevTools 를 열면, _내부 React 트리·API 호출·환경변수_ 가 다 보여요. 보안에도 좋지 않고 사용자 경험에도 어색해요. `NODE_ENV === 'production'` 가드로 _열리는 즉시 닫히게_ 막으세요.
+
 <Cards>
   <Cards.Card title="앱 디버깅" href="/ko/docs/development/debugging" arrow />
 </Cards>

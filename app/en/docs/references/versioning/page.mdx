@@ -40,6 +40,14 @@ Roughly the _current major plus the two previous_ (three lines in total) receive
 - Check for the latest stable every quarter.
 - Don't skip more than one major at a time — migration debt compounds.
 
+## In plain words
+
+A version like `29.2.0` isn't a random number — it's a _promise_. The first slot (major) means _big changes_. The middle slot (minor) means _safe new features_. The last slot (patch) means _bug fixes_. This is SemVer, and nearly every npm package follows it. Because of the rule, you can roughly predict "will my code still work after this bump?" just from the digits.
+
+Electron itself releases _a new major every eight weeks_. That's fast. Chasing every major isn't realistic, so security patches generally cover _the current major plus the previous two_ (three lines total). If your app sits more than three majors behind, freshly discovered vulnerabilities may never reach you — which is why a quarterly check-in is the safe cadence.
+
+The most common mistake is _jumping two or more majors at once_ (e.g. 27 → 30). All the breaking changes between accumulate into one big migration nightmare. Move _one major at a time_ — 27 → 28 → 29 → 30. Each hop tends to take a day or two; collapsing three hops can easily eat a whole week.
+
 <Cards>
   <Cards.Card title="Breaking changes" href="/en/docs/references/breaking-changes" arrow />
   <Cards.Card title="Patches" href="/en/docs/references/patches" arrow />

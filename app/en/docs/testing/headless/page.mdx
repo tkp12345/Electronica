@@ -40,6 +40,14 @@ Both come with displays out of the box — no extra setup. Heads up: no GPU acce
 
 Use Playwright's `--trace=on` to keep _video + HTML traces from the moment of failure_. That's half the debugging gone already.
 
+## In plain words
+
+A CI server is basically a tiny computer _with no monitor_. It accepts commands just like your laptop, but since it has no screen, "open a window" fails. Every Electron test starts by opening a window, which is why an unmodified test suite breaks the moment it touches CI.
+
+The solution on Linux runners is **Xvfb**, a _fake monitor_. It really does draw pixels — onto an invisible canvas nobody looks at. `xvfb-run --auto-servernum npm test` is the entire setup; from your test's point of view, a real monitor is there. macOS and Windows runners already provide a display, so no extra setup is needed — but heads up that _no GPU acceleration_ on these runners can make WebGL or canvas-heavy tests slower or render slightly differently.
+
+The single biggest CI productivity trick is Playwright's `--trace=on`. It auto-captures the _video, DOM snapshot, and network log from the exact moment of failure_. "Why does it only fail in CI?" becomes answerable without reproducing locally, and debugging time drops by half.
+
 <Cards>
   <Cards.Card title="Automated testing" href="/en/docs/testing/automated" arrow />
 </Cards>
