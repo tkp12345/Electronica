@@ -47,6 +47,14 @@ The actual chain is `renderer.js` → preload (`window.api`) → ipcRenderer →
 
 Each window is a fully independent process. If one window crashes, the others stay alive. The flip side: sharing state across windows must go through Main.
 
+## In plain words
+
+A Renderer is _just like a Chrome tab_, except the tab lives in your own little window without an address bar. The web page you'd normally write in any browser runs here, and almost every tool you know (`fetch`, `localStorage`, `Notification`, `addEventListener`) works exactly as you'd expect.
+
+What it _cannot_ do is touch the deeper parts of the computer — reading files, sending OS notifications, fiddling with network headers. Those powers belong to Main. The Renderer can only ask, through a small window called the preload. In code that looks like calling `window.api.save()`, but behind that single line is a five-step walkie-talkie chain (renderer → preload → ipcRenderer → ipcMain → main handler).
+
+One last point worth burning in: opening two `BrowserWindow`s spins up _two separate Chromium processes_. An infinite loop in one window will not freeze the other. The flipside is that the two windows share no variables — any shared state has to be coordinated through Main. The next pages, [Sandbox](/en/docs/processes/sandbox) and [Context Isolation](/en/docs/processes/context-isolation), explain _why_ this isolation is the default.
+
 <Cards>
   <Cards.Card title="Sandbox" href="/en/docs/processes/sandbox" arrow />
   <Cards.Card title="Context isolation" href="/en/docs/processes/context-isolation" arrow />

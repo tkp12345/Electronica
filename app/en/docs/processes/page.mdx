@@ -43,6 +43,14 @@ If your web page had every OS power, _one bad website could read every file you 
 └────────────────────────────────────────────────────────┘
 ```
 
+## In plain words
+
+Picture a school play. On stage you have _actors_; behind the scenes a _director_ runs lights, sound, and props. Drop either of them and the show falls apart. But the two roles are _completely different_: actors make everything the audience sees, while the director moves the bigger machinery from offstage. This page's Main and Renderer split the work the same way.
+
+**Main** is the director. It runs in Node.js and handles the _big decisions_ — how many windows to open, which menus to draw, where to save files. It never paints a pixel itself. **Renderer** is the cast. Each window runs its own independent Chromium and is what actually draws the pixels (HTML/CSS/JS). That's why one window can crash without the others noticing.
+
+The two sides talk only through **IPC** (inter-process communication), a kind of _walkie-talkie_. An actor on stage shouts "could I get the prop sword?" and the director hands it through from offstage. Mishandling the walkie-talkie is how security incidents happen, which is why the next pages — [Preload](/en/docs/tutorial/preload), [Sandbox](/en/docs/processes/sandbox), [Context Isolation](/en/docs/processes/context-isolation) — spell out the safe radio rules in detail.
+
 ## Go deeper
 
 <Cards>

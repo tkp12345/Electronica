@@ -49,6 +49,14 @@ Main 안에서 `document.getElementById(...)` 같은 걸 쓰면 곧장 에러예
 | `before-quit` | 종료 직전 — 저장 안 한 데이터 처리에 유용 |
 | `will-quit` | 종료 직전의 마지막 단계 — 단축키 해제 등 |
 
+## 쉽게 풀어 설명
+
+Main 프로세스는 우리 앱이 켜질 때 _가장 먼저_ 일어나서 _가장 늦게_ 잠드는, 단 하나뿐인 일꾼이에요. 비유하자면 학교 행사의 _진행자_ 같아요. 무대를 직접 만들지 않고, 마이크를 잡지도 않지만, 누가 언제 등장할지·조명은 언제 켤지·간식은 어디로 보낼지 모두 진행자가 결정해요.
+
+Main 의 정체는 _Node.js 프로그램_ 그 자체예요. 그래서 npm 에서 받은 어떤 패키지든 쓸 수 있고, 파일·네트워크·OS 깊은 기능에 자유롭게 접근해요. 대신 한 가지를 _못_ 합니다. 화면을 직접 그리지 못해요. `document.getElementById` 같은 걸 부르면 그대로 에러가 나요. 진행자가 무대 위로 뛰어 올라가 노래를 부르는 격이거든요.
+
+기억해야 할 이벤트는 네 가지예요. `ready`(준비 끝, 창 만들기 시작), `window-all-closed`(마지막 창 닫힘 → 보통 종료), `activate`(맥에서 dock 다시 누름), `before-quit`/`will-quit`(종료 직전 청소). 이 네 이벤트만 알면 앱의 _수명 주기_ 가 완전히 그려져요. 다음은 무대 위 배우, [Renderer 프로세스](/ko/docs/processes/renderer).
+
 <Cards>
   <Cards.Card title="Renderer 프로세스" href="/ko/docs/processes/renderer" arrow />
 </Cards>

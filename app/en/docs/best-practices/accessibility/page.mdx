@@ -49,6 +49,14 @@ Wrap async-status areas in `aria-live` so screen-reader users hear the change.
 - Menu `accelerator` values double as automatic shortcut documentation.
 - Expose font-zoom (`webContents.setZoomFactor()`) in your menu.
 
+## In plain words
+
+Accessibility isn't only "a feature for people with disabilities." It's also for the friend with a sore wrist who can't use a mouse today, the colleague who forgot their glasses, the version of you squinting at a phone screen on a bumpy train. Everyone, _sometimes_, uses a computer in a way they don't usually. Accessibility is what keeps the app from being frustrating in those moments.
+
+The mistake people make most often is _building buttons out of divs_. `<div onClick>` is clickable with the mouse, but to a keyboard user it's an _invisible button_. Tab won't reach it; screen readers won't announce it as a button. Using `<button>` instead solves all three problems at once. Same idea elsewhere: every form input needs a real label, color alone shouldn't carry meaning (red/green badges look identical to a colorblind user), contrast ratio 4.5:1 or higher.
+
+Desktop apps have a few extra obligations. The menu `accelerator` is, for a screen-reader user, _the fastest known path to a feature_ — it doubles as documentation. Exposing zoom (`webContents.setZoomFactor`) in the menu means a user with aging eyes _doesn't have to give up on your app_. Small touches like these compound into massive long-term retention wins.
+
 <Cards>
   <Cards.Card title="Development: Accessibility" href="/en/docs/development/accessibility" arrow />
 </Cards>

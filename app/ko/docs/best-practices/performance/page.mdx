@@ -51,6 +51,14 @@ ipcMain.handle('use-heavy', async () => {
 - 더 이상 안 쓰는 창은 `destroy()` 로 명확히 해제
 - 큰 이미지/비디오는 OS 캐시 활용 (CDN URL 대신 로컬 캐시 경로)
 
+## 쉽게 풀어 설명
+
+"Electron 앱은 무겁다" 는 평판은 어디서 나온 걸까요? 사실 _Chromium 런타임 자체_ 가 무거운 건 일부 맞아요 — 50~150MB 가 기본이에요. 하지만 사용자가 _체감하는 느림_ 의 대부분은 _우리가 만든 코드_ 에서 나옵니다. 시작할 때 npm 패키지 50개를 한꺼번에 require 하고, 거대한 번들 JS 를 통째로 로드하고, 마우스 이동마다 IPC 를 쏘면, 어떤 도구로 만든 앱이든 느려져요.
+
+가장 효과 큰 5가지 습관이 있어요. ① _필요한 시점에 import_ (`await import()` 로 지연 로딩), ② _Renderer 도 트리셰이킹·코드 스플릿_ 적용, ③ _불필요한 BrowserWindow 만들지 말기_ (창 하나가 Chromium 한 통째예요), ④ _프로덕션에서 DevTools 자동 차단_, ⑤ _IPC 폭주 막기_ (throttle/debounce 필수).
+
+가장 중요한 원칙은 _측정하지 말고 추측하지 마라_ 가 아니라 그 반대 — _측정 먼저, 추측 금지_. DevTools 의 Performance 탭으로 녹화한 뒤 _가장 굵은 빨간 막대_ 부터 잡으세요. 보통 그 막대 하나가 _전체 느림의 80%_ 를 차지해요. 작은 막대 100개보다 큰 막대 1개를 먼저 잡는 게 훨씬 효과적이에요.
+
 <Cards>
   <Cards.Card title="프로파일링 도구" href="/ko/docs/testing/profiling" arrow />
   <Cards.Card title="자동 업데이트" href="/ko/docs/distribution/auto-updates" arrow />

@@ -49,6 +49,14 @@ import { AccessibilityIllustration } from '../../../../components/illustrations'
 - 메뉴 항목의 `accelerator` 는 단축키 _문서화_ 의 효과도 있음
 - 글자 크기 조정: `webContents.setZoomFactor()` 를 메뉴에 노출
 
+## 쉽게 풀어 설명
+
+접근성은 _장애가 있는 사람들만을 위한_ 기능이 아니에요. 손목이 아파서 마우스를 못 쓰는 친구, 안경을 깜빡 놓고 와서 글자가 잘 안 보이는 동료, 갑자기 와이파이 끊겨서 작은 화면을 들여다보는 자기 자신 — 누구나 _어떤 상황에서_ 는 평소와 다른 방식으로 컴퓨터를 써요. 그 모든 순간에 _덜 답답하게_ 만들어 주는 게 접근성이에요.
+
+가장 자주 빠지는 실수는 _버튼을 div 로 만드는 것_ 이에요. `<div onClick>` 은 마우스로는 잘 눌리지만, 키보드 사용자에겐 _존재하지 않는 버튼_ 이에요. Tab 키로 도달할 수 없고, 스크린리더에도 "버튼" 으로 들리지 않아요. `<button>` 한 글자만 쓰면 이 세 가지가 한꺼번에 해결돼요. 비슷하게, 폼 입력엔 _반드시 label_, 색만으로 정보 전달 금지(빨강/초록 표시는 _색약_ 사용자에게 똑같이 보임), 대비비 4.5:1 이상.
+
+데스크톱 앱이라서 더 신경 써야 할 부분도 있어요. 메뉴의 단축키 `accelerator` 는 _시각 장애 사용자_ 에게 _이 기능에 도달하는 가장 빠른 경로_ 가 돼요. 그리고 글자 크기 조정 (`webContents.setZoomFactor`) 을 메뉴에 노출해 두면, 노안이 시작된 사용자도 우리 앱을 _포기하지 않아요_. 작은 배려가 사용자 평생 만족도에 큰 차이를 만들어요.
+
 <Cards>
   <Cards.Card title="Development: Accessibility" href="/ko/docs/development/accessibility" arrow />
 </Cards>

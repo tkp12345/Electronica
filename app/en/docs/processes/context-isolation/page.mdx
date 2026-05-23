@@ -56,6 +56,14 @@ contextBridge.exposeInMainWorld('ipc', {
 })
 ```
 
+## In plain words
+
+Imagine two roommates sharing a single room — same desk, same drawers, same sticky notes. If one of them leaves a password lying around, the other will see it sooner or later. **Context isolation** puts the two roommates in _separate rooms_ and only opens a _small service hatch_ in the wall between them. The web page's JavaScript and the preload's JavaScript can never share variables directly.
+
+Why be that strict? Web pages mix in code from outside — ads, tracking, third-party libraries. If even one of those could touch the preload's `ipcRenderer` object, every other safety measure collapses. With the wall in place, you can confidently push _only the approved functions_ through the hatch.
+
+Two rules cover correct usage. ① Don't expose raw objects like `ipcRenderer` or `fs` directly. ② Hand-pick the functions you actually need. Add an allow-list of IPC channel names and even a compromised page can't reach anything you didn't sign off on. The companion pages are [Sandbox](/en/docs/processes/sandbox) and the broader [Security best practices](/en/docs/best-practices/security).
+
 <Cards>
   <Cards.Card title="Security best practices" href="/en/docs/best-practices/security" arrow />
   <Cards.Card title="Sandbox" href="/en/docs/processes/sandbox" arrow />

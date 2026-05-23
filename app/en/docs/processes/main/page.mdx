@@ -49,6 +49,14 @@ Calling `document.getElementById(...)` from Main throws immediately. _The direct
 | `before-quit` | Just before quit — save pending data |
 | `will-quit` | Very last step — unregister shortcuts |
 
+## In plain words
+
+Main is the _single_ worker that wakes up first when the app launches and goes to sleep last. Picture the _stage manager_ at a school event. They don't build the stage or grab the microphone, but they decide when each act enters, when the lights come up, where the snacks go.
+
+Under the hood, Main _is_ a Node.js program. So it can use any npm package, read and write files freely, talk to the network, and reach deep OS features. The one thing it _cannot_ do is draw the screen. Calling `document.getElementById` from Main throws immediately — that would be the stage manager hopping on stage to sing.
+
+The four events worth memorizing: `ready` (you can start creating windows now), `window-all-closed` (last window gone — usually quit), `activate` (macOS Dock icon clicked again), and `before-quit` / `will-quit` (last chance to clean up). With those four you've got the entire app lifecycle. Next: the actors themselves — [Renderer process](/en/docs/processes/renderer).
+
 <Cards>
   <Cards.Card title="Renderer process" href="/en/docs/processes/renderer" arrow />
 </Cards>

@@ -56,6 +56,14 @@ contextBridge.exposeInMainWorld('ipc', {
 })
 ```
 
+## 쉽게 풀어 설명
+
+같은 방에 두 사람이 같이 산다고 생각해 보세요. 책상도 같이 쓰고, 서랍도 공유하고, 메모지도 섞여요. 한 사람이 비밀번호를 적은 종이를 깜빡 두면, 다른 사람이 그걸 우연히 보게 돼요. **컨텍스트 격리(Context Isolation)** 는 이 둘을 _아예 다른 방_ 에 넣고, 벽 사이에 _작은 배달구_ 만 두는 거예요. 페이지 쪽 자바스크립트와 preload 쪽 자바스크립트가 _같은 변수를 절대 공유하지 못해요_.
+
+왜 이렇게까지 막을까요? 페이지에는 외부에서 받아 온 코드가 섞일 수 있어요. 광고, 추적 스크립트, 라이브러리. 만약 그 중 하나가 _preload 의 ipcRenderer 객체에 손을 댈 수 있다면_, 우리가 막아 둔 안전 장치는 그 즉시 무너져요. 벽이 있어야 안심하고 _허가된 함수만_ 배달구로 내밀 수 있어요.
+
+올바른 사용법은 두 가지 규칙으로 요약돼요. ① _원본 객체(ipcRenderer, fs ...) 통째로 노출하지 말기_, ② _꼭 필요한 함수만 골라서 노출하기_. 채널 이름을 화이트리스트로 검사하는 패턴까지 더하면, 페이지가 해킹돼도 공격자가 _우리가 허락한 행동_ 외에는 아무것도 못 해요. 다음은 한 쌍으로 묶이는 [Sandbox](/ko/docs/processes/sandbox) 와 [보안 베스트 프랙티스](/ko/docs/best-practices/security) 페이지.
+
 <Cards>
   <Cards.Card title="Security Best Practices" href="/ko/docs/best-practices/security" arrow />
   <Cards.Card title="Sandbox" href="/ko/docs/processes/sandbox" arrow />

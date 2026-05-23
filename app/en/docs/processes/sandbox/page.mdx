@@ -43,6 +43,14 @@ new BrowserWindow({
 
 Outside of those, keep it on.
 
+## In plain words
+
+Picture a _sandbox pit_ at a playground. Inside the pit you can play however you like, but you can't reach the _flower beds, road, or sports field_ around it. Whatever happens in the sandbox, the damage stays in the sandbox. The Renderer's sandbox is the same idea — even if your page gets hacked, the OS has fenced it in so the damage stays inside that single window.
+
+Since Electron 20, the sandbox is _on by default_. You don't have to flip a switch; you just have to _not turn it off_. Old blog posts sometimes recommend disabling it "so the preload can use Node freely," but that advice is outdated — preload still has a separate, curated way to pull in the Node modules it needs while the sandbox stays on.
+
+There are very few legitimate reasons to disable it: a _fully trusted, fully local_ demo that never loads remote content, or a throwaway debug window. Outside of that, leave it on, and pair it with its sibling [Context Isolation](/en/docs/processes/context-isolation). Together those two options form the spine of Electron's security model.
+
 <Cards>
   <Cards.Card title="Context isolation" href="/en/docs/processes/context-isolation" arrow />
   <Cards.Card title="Security best practices" href="/en/docs/best-practices/security" arrow />

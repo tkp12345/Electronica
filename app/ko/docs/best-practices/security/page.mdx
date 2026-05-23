@@ -62,6 +62,14 @@ function safeOpen(url) {
 - `npm audit` 매주
 - 외부 콘텐츠 로딩 지점이 늘었는지 회고
 
+## 쉽게 풀어 설명
+
+웹사이트가 해킹돼도 우리 컴퓨터 파일에는 손을 못 대요. 브라우저가 _두꺼운 안전 유리_ 로 막아 주거든요. 그런데 Electron 앱은 _그 유리를 살짝 깨고_ 컴퓨터 안쪽 일부에 접근할 수 있게 해 주는 도구예요. 우리에게 더 많은 힘을 주는 대신, 그만큼 _책임_ 도 같이 따라옵니다.
+
+가장 자주 일어나는 사고 둘은 같은 뿌리예요. ① `nodeIntegration: true` 를 켜서 페이지가 직접 `fs.unlinkSync` 같은 위험 함수를 부를 수 있게 한 경우, ② `webSecurity: false` 로 같은 출처 정책을 꺼서 외부 사이트가 우리 앱처럼 행동할 수 있게 된 경우. 이 두 옵션은 어떤 글에서 본 적이 있어도 _절대 켜지 마세요_.
+
+CSP 라는 짧은 메모 한 줄(`<meta http-equiv="Content-Security-Policy" content="default-src 'self'">`) 만 추가해도 _외부 도메인의 스크립트_ 가 우리 페이지 안에서 도는 걸 막을 수 있어요. `shell.openExternal` 호출 전엔 항상 _주소가 우리가 허용한 도메인인지_ 확인하고요. 마지막으로 매주 `npm audit` 한 번씩 — 이 세 가지만 지켜도 Electron 보안 사고의 80% 가 차단돼요.
+
 <Cards>
   <Cards.Card title="Context Isolation 더 보기" href="/ko/docs/processes/context-isolation" arrow />
   <Cards.Card title="Sandbox" href="/ko/docs/processes/sandbox" arrow />

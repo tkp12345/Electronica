@@ -43,6 +43,14 @@ new BrowserWindow({
 
 그 외에는 켠 채로 두세요.
 
+## 쉽게 풀어 설명
+
+샌드박스(sandbox)는 어린이 놀이터의 _모래밭_ 을 떠올리면 돼요. 모래밭 안에서는 마음껏 놀 수 있지만, _밖의 화단·도로·운동장_ 에는 손이 안 닿아요. 만약 모래밭에서 갑자기 누가 이상한 행동을 해도, 피해가 모래밭 안에만 머물러요. Renderer 의 sandbox 도 똑같은 역할이에요. 우리 페이지가 해킹돼도 _그 창 하나 안에서만_ 사고가 나도록 OS 가 미리 울타리를 쳐 둡니다.
+
+Electron 20 버전부터 sandbox 는 _기본 ON_ 이에요. 굳이 안 켜도 알아서 켜져 있고, 우리는 그저 _끄지 말기_ 만 하면 돼요. 인터넷 옛 글을 보면 "preload 에서 Node API 를 더 자유롭게 쓰려고 sandbox 를 끄세요" 같은 말이 있는데, _이미 sandbox 가 켜진 상태에서도 preload 는 필요한 Node 모듈을 따로 쓸 수 있도록_ 설계되어 있어요. 그러니 끄지 말 것.
+
+진짜 끌 만한 경우는 거의 없어요. 외부에서 페이지를 절대 불러오지 않는 _완전 신뢰_ 데모, 또는 _임시 디버깅 창_ 정도. 그 외엔 켠 채로 두고, 같이 켜야 할 친구 [Context Isolation](/ko/docs/processes/context-isolation) 도 함께 알아 두세요. 두 옵션이 한 쌍으로 작동하면서 Electron 보안의 가장 큰 뼈대를 이뤄요.
+
 <Cards>
   <Cards.Card title="Context Isolation" href="/ko/docs/processes/context-isolation" arrow />
   <Cards.Card title="Security Best Practices" href="/ko/docs/best-practices/security" arrow />

@@ -63,6 +63,14 @@ window.addEventListener('online', flush)
 - Read-only flows: cache aggressively.
 - Read-write flows: design clear cache-busting keys driven by server responses.
 
+## In plain words
+
+When the Wi-Fi drops on a plane or while changing trains, you want the app to _still be useful_ for a while. That mindset is "offline first." Web sites have a free pass to show a spinning circle when offline, but desktop users assume their notes will keep opening, their drafts will keep saving, their cached views will keep loading.
+
+Four tools cover that expectation. ① Local storage (SQLite, IndexedDB, LevelDB) keeps a _readable copy_ on the user's disk. ② A work queue _lines up the things they did while offline_ and drains it when the network returns. ③ The `online`/`offline` events let the UI clearly say "you're offline now." ④ Exponential backoff means the app _slowly stretches the retry interval_ so a flaky network doesn't hammer your server.
+
+One gotcha: `navigator.onLine` really only checks _whether the Wi-Fi link is up_. The Wi-Fi can be on while your server is down. For anything important, send a small _ping_ to your own backend (`await fetch('/api/ping')`) and treat the response as the source of truth instead of trusting the OS signal alone.
+
 <Cards>
   <Cards.Card title="Online/offline events" href="/en/docs/development/online-offline" arrow />
 </Cards>

@@ -62,6 +62,14 @@ function safeOpen(url) {
 - `npm audit` weekly.
 - Re-review when you add a new entry point that loads remote content.
 
+## In plain words
+
+A regular website that gets hacked still can't touch your files — the browser holds up a _thick safety glass_ between the page and your machine. An Electron app intentionally _puts a small hole in that glass_ so it can reach into the deeper parts of the computer. That's the extra power; the price is the extra responsibility.
+
+The two most common real-world incidents come from the same root. ① Setting `nodeIntegration: true`, which lets the page itself call dangerous functions like `fs.unlinkSync`. ② Setting `webSecurity: false`, which disables the same-origin policy and lets foreign sites masquerade as your app. No matter what an old blog post tells you, _never enable either of those_.
+
+Adding a single short CSP meta tag (`<meta http-equiv="Content-Security-Policy" content="default-src 'self'">`) blocks _third-party scripts_ from running inside your page. Always validate the URL before calling `shell.openExternal`. And run `npm audit` once a week. Those three habits alone shut down about 80% of all real Electron security incidents.
+
 <Cards>
   <Cards.Card title="More on context isolation" href="/en/docs/processes/context-isolation" arrow />
   <Cards.Card title="Sandbox" href="/en/docs/processes/sandbox" arrow />

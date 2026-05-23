@@ -51,6 +51,14 @@ ipcMain.handle('use-heavy', async () => {
 - Call `.destroy()` on windows you'll never reuse.
 - Use OS-level caches for big images/video (local cache path beats live CDN URL).
 
+## In plain words
+
+Where does "Electron apps are heavy" come from? The Chromium runtime itself _is_ chunky — typically 50–150MB on disk. But most of the slowness users actually feel comes from _our own code_, not the engine. Require fifty npm packages at startup, ship one enormous bundle to the Renderer, fire IPC on every mouse move — any framework would crawl under that.
+
+Five habits do most of the work. ① _Import only when needed_ (`await import()` for lazy loading). ② _Tree-shake and code-split the Renderer too_. ③ _Don't spin up extra BrowserWindows for fun_ — each is a full Chromium instance. ④ _Block DevTools in production builds_. ⑤ _Tame IPC floods_ with throttle/debounce.
+
+The single most important rule is the inverse of "premature optimization is the root of all evil" — here it's _measure first, never guess_. Record a session in the DevTools Performance tab and start from the _fattest red bar_. Usually that one bar accounts for _80% of the perceived slowness_. Catching one big bar beats chasing a hundred small ones every time.
+
 <Cards>
   <Cards.Card title="Profiling tools" href="/en/docs/testing/profiling" arrow />
   <Cards.Card title="Auto-updates" href="/en/docs/distribution/auto-updates" arrow />
