@@ -1,0 +1,43 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { WindowsStoreIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<WindowsStoreIllustration />}
+  title="Microsoft Store distribution"
+  subtitle="Repackage as `.appx` / `.msix` and ship through the Windows Store."
+  badge="Distribution · Windows Store"
+/>
+
+## Direct vs Microsoft Store
+
+| Item | Direct (.exe) | Microsoft Store (.msix) |
+|---|---|---|
+| Install | Squirrel installer | Store or sideload |
+| Auto-update | `update-electron-app` | Store handles it |
+| Privileges | Plain Windows | UWP manifest |
+| Code signing | EV cert recommended | Microsoft signs |
+
+## Build a .msix
+
+```bash filename="terminal"
+npx electron-windows-store \
+  --input-directory ./out/My-App-win32-x64 \
+  --output-directory ./out/store \
+  --package-version 1.0.0.0 \
+  --package-name MyApp
+```
+
+<Callout type="info" emoji="🧒">
+The converter takes your existing .exe folder and rewraps it as the .msix the Store recognizes.
+</Callout>
+
+## Things to watch
+
+- **Win32 vs UWP** — some APIs must be declared in the UWP manifest.
+- **4-part version number** (e.g. `1.0.0.0`) — Store rule.
+- **App ID** — issued through Partner Center.
+
+<Cards>
+  <Cards.Card title="Auto-updates" href="/en/docs/distribution/auto-updates" arrow />
+</Cards>

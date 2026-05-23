@@ -1,0 +1,52 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { CodeSigningIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<CodeSigningIllustration />}
+  title="Code signing"
+  subtitle="The digital seal that lets the OS confirm who built the app — without it, you basically can't ship."
+  badge="Distribution · Code Signing"
+/>
+
+## Why it's required
+
+- **macOS**: an unsigned app trips Gatekeeper's _"damaged or untrusted"_ error.
+- **Windows**: SmartScreen flashes a red _"unrecognized app"_ warning.
+- **Auto-update**: a new version must carry the same signature to apply cleanly.
+
+<Callout type="info" emoji="🧒">
+A _tamper-evident seal_ that proves "this lunchbox came from our shop." No seal, no sale.
+</Callout>
+
+## macOS sign + notarize
+
+```js filename="forge.config.js"
+module.exports = {
+  packagerConfig: {
+    osxSign: { identity: 'Developer ID Application: Your Name (TEAMID)' },
+    osxNotarize: {
+      tool: 'notarytool',
+      appleId: process.env.APPLE_ID,
+      appleIdPassword: process.env.APPLE_PASSWORD,
+      teamId: process.env.APPLE_TEAM_ID,
+    },
+  },
+}
+```
+
+Notarization is _Apple's servers scanning the app and stamping it "safe"_. Signing alone is not enough on macOS Catalina+ — you need notarization too.
+
+## Windows signing
+
+Use an EV certificate (file or USB token) with `signtool` against your `.exe` and installer. Provide `certificateFile` to Forge's maker-squirrel options.
+
+## Keep it safe in CI
+
+- Store certificates in **secret env vars** (GitHub Secrets, 1Password Service Account, etc.).
+- Never log certificate paths or passwords during the build.
+- Put the expiry date on a calendar.
+
+<Cards>
+  <Cards.Card title="Auto-updates" href="/en/docs/distribution/auto-updates" arrow />
+</Cards>

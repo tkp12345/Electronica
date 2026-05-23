@@ -1,0 +1,41 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { MasIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<MasIllustration />}
+  title="Mac App Store 배포"
+  subtitle="자체 사이트가 아닌 App Store 를 거치는 배포 — 수익 모델·심사·제약을 정리."
+  badge="Distribution · MAS"
+/>
+
+## 자체 배포 vs MAS
+
+| 항목 | 자체 (Direct) | Mac App Store |
+|---|---|---|
+| 수익 분배 | 100% (Stripe 등은 따로) | 70~85% (Apple 수수료) |
+| 심사 | 없음 (서명·공증만) | Apple 심사 며칠 |
+| 권한 | 풍부 | 매우 제한적 (Sandbox 강제) |
+| 자동 업데이트 | 우리 자체 | App Store 가 처리 |
+
+<Callout type="info" emoji="🧒">
+"길거리 가게(직접)" vs "백화점 입점(App Store)". 백화점은 _안심도 ↑ 수수료도 ↑_, 권한 ↓.
+</Callout>
+
+## 빌드 차이
+
+```bash filename="terminal"
+electron-packager . --platform=mas --arch=universal
+```
+
+서명 단계에서 _Mac App Store_ 용 인증서를 사용해야 합니다 (`3rd Party Mac Developer Application`).
+
+## 자주 막히는 부분
+
+- **샌드박스 entitlements** — 파일/네트워크/카메라 등 _꼭 필요한 권한만_ 명시
+- **이름·아이콘·스크린샷** — App Store 심사 가이드 매우 엄격
+- **결제 SDK** — 인앱 결제는 StoreKit 로만 가능 (외부 결제 금지)
+
+<Cards>
+  <Cards.Card title="코드 서명" href="/ko/docs/distribution/code-signing" arrow />
+</Cards>

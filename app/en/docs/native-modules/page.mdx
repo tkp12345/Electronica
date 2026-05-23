@@ -1,0 +1,46 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { NativeModuleIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<NativeModuleIllustration />}
+  title="Native Node modules"
+  subtitle="Using npm packages that compile from C/C++ inside Electron."
+  badge="Native Modules"
+/>
+
+## When you reach for native
+
+- Fast crypto (`node-sodium`)
+- Local databases (`better-sqlite3`)
+- USB, serial, MIDI — anything hardware
+- Deep OS APIs
+
+These ship as _per-platform compiled binaries_, so plain `npm install` often isn't enough.
+
+<Callout type="info" emoji="🧒">
+"This isn't origami — it's _3D printing_." Each OS needs a binary cut from a different mold (header).
+</Callout>
+
+## Rebuild for Electron
+
+```bash filename="terminal"
+npm install --save better-sqlite3
+npx electron-rebuild
+```
+
+`electron-rebuild` _recompiles the npm-installed binary against the Node version embedded in Electron_.
+
+## Forge handles it for you
+
+If you're using Electron Forge, `npm run make` triggers a rebuild automatically. Less to think about.
+
+## Common errors
+
+- _NODE_MODULE_VERSION mismatch_ → run `electron-rebuild` once.
+- _Python not found_ → macOS/Linux: `xcode-select --install` or `apt install build-essential`.
+- _Visual Studio not found_ (Windows) → install the "Desktop development with C++" workload.
+
+<Cards>
+  <Cards.Card title="Packaging" href="/en/docs/tutorial/packaging" arrow />
+</Cards>

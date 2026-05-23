@@ -1,0 +1,41 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { MasIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<MasIllustration />}
+  title="Mac App Store distribution"
+  subtitle="Shipping through the store instead of your own site — money split, review, and constraints to know."
+  badge="Distribution · MAS"
+/>
+
+## Direct vs MAS
+
+| Item | Direct | Mac App Store |
+|---|---|---|
+| Revenue split | 100% (Stripe etc. separate) | 70–85% (Apple's cut) |
+| Review | None (just sign & notarize) | Apple review, several days |
+| Privileges | Wide | Strict (sandbox required) |
+| Auto-update | You build it | The store handles it |
+
+<Callout type="info" emoji="🧒">
+"Street shop (direct)" vs "department store booth (App Store)". The store gives you trust at the cost of a cut and tighter rules.
+</Callout>
+
+## Build differences
+
+```bash filename="terminal"
+electron-packager . --platform=mas --arch=universal
+```
+
+The signing step needs the _Mac App Store_ certificate (`3rd Party Mac Developer Application`).
+
+## Where teams trip
+
+- **Sandbox entitlements** — declare only the permissions you really need.
+- **Name, icon, screenshots** — App Store review is strict.
+- **Payments** — in-app purchases must go through StoreKit; external payments forbidden.
+
+<Cards>
+  <Cards.Card title="Code signing" href="/en/docs/distribution/code-signing" arrow />
+</Cards>

@@ -1,0 +1,52 @@
+import { Callout, Cards, Steps } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { PackagingIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<PackagingIllustration />}
+  title="Electron Forge 개요"
+  subtitle="개발·패키징·배포까지 한 도구로 묶어 주는 공식 풀스택 CLI."
+  badge="Distribution · Forge"
+/>
+
+## 한 줄 요약
+
+Electron + Webpack/Vite + maker(.dmg/.exe/.deb 만드는 도구) + publisher(GitHub/S3) 를 _하나의 명령어 체인_ 으로 묶어 둔 도구가 Forge 예요.
+
+| 단계 | 명령어 |
+|---|---|
+| 개발 모드 | `npm start` |
+| 패키지(아직 설치 파일 X) | `npm run package` |
+| 설치 파일 만들기 | `npm run make` |
+| 업로드까지 | `npm run publish` |
+
+## 새 프로젝트 시작
+
+```bash filename="terminal"
+npx create-electron-app@latest my-app --template=vite-typescript
+cd my-app
+npm start
+```
+
+<Callout type="info" emoji="🧒">
+`--template=` 한 줄이 _빈 종이 대신 격자 노트로 시작_ 하게 해 줍니다. Vite 의 빠른 HMR 까지 자동.
+</Callout>
+
+## 구성 파일
+
+```js filename="forge.config.js"
+module.exports = {
+  packagerConfig: { asar: true, icon: 'assets/icon' },
+  makers: [
+    { name: '@electron-forge/maker-squirrel' },   // Windows
+    { name: '@electron-forge/maker-zip',  platforms: ['darwin'] },
+    { name: '@electron-forge/maker-deb' },         // Debian/Ubuntu
+    { name: '@electron-forge/maker-rpm' },         // Fedora
+  ],
+}
+```
+
+<Cards>
+  <Cards.Card title="코드 서명" href="/ko/docs/distribution/code-signing" arrow />
+  <Cards.Card title="자동 업데이트" href="/ko/docs/distribution/auto-updates" arrow />
+</Cards>

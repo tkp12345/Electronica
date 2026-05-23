@@ -1,0 +1,53 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { AutoUpdateIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<AutoUpdateIllustration />}
+  title="Auto-updates"
+  subtitle="Quietly fetch a new version in the background and swap it in on the next restart."
+  badge="Distribution · Auto-updates"
+/>
+
+## The easy path
+
+```js filename="main.js"
+const { updateElectronApp } = require('update-electron-app')
+updateElectronApp({ repo: 'your-name/your-app' })
+```
+
+That one line covers _"on every launch, check GitHub Releases, download a newer version if any, swap it in on next restart."_
+
+<Callout type="info" emoji="🧒">
+The same way your browser quietly updates itself — the user never clicks a button.
+</Callout>
+
+## Under the hood
+
+1. The built-in **autoUpdater** sends the _current version_ to your update server and asks "got anything newer?"
+2. If yes, it downloads in the background.
+3. Once done, fires `update-downloaded`.
+4. The next quit/restart atomically swaps binaries.
+
+## Code signing is mandatory
+
+The new version must carry the _same signature_ as the running app, or the OS rejects the swap. Unsigned builds can't auto-update at all.
+
+## Roll your own server
+
+```js
+const { autoUpdater } = require('electron')
+
+autoUpdater.setFeedURL({
+  url: 'https://updates.example.com/win32/' + app.getVersion(),
+})
+
+autoUpdater.checkForUpdates()
+```
+
+Pick something like _Squirrel.Mac / Squirrel.Windows / Nuts / Hazel_, or roll your own.
+
+<Cards>
+  <Cards.Card title="Publishing tutorial" href="/en/docs/tutorial/publishing" arrow />
+  <Cards.Card title="Code signing" href="/en/docs/distribution/code-signing" arrow />
+</Cards>

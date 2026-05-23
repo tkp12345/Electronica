@@ -1,0 +1,52 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { CodeSigningIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<CodeSigningIllustration />}
+  title="코드 서명 (Code Signing)"
+  subtitle="'이 앱은 누가 만들었다' 를 OS 가 확인할 수 있게 하는 디지털 인감 — 미서명은 실질적으로 배포 불가."
+  badge="Distribution · Code Signing"
+/>
+
+## 왜 필요한가
+
+- **macOS**: 서명 안 되면 Gatekeeper 가 _"손상되었거나 신뢰할 수 없는 앱"_ 으로 막음
+- **Windows**: SmartScreen 이 _"인식되지 않은 앱"_ 빨간 경고 표시
+- **자동 업데이트**: 새 버전이 같은 서명을 갖고 있어야 적용됨
+
+<Callout type="info" emoji="🧒">
+"이 도시락은 우리 가게에서 만든 거예요" 를 _봉인 스티커_ 로 증명하는 거예요. 봉인 없는 도시락은 손님이 안 사 먹죠.
+</Callout>
+
+## macOS 서명 + 공증(notarization)
+
+```js filename="forge.config.js"
+module.exports = {
+  packagerConfig: {
+    osxSign: { identity: 'Developer ID Application: Your Name (TEAMID)' },
+    osxNotarize: {
+      tool: 'notarytool',
+      appleId: process.env.APPLE_ID,
+      appleIdPassword: process.env.APPLE_PASSWORD,
+      teamId: process.env.APPLE_TEAM_ID,
+    },
+  },
+}
+```
+
+공증(notarization)은 _애플 서버가 앱을 검사한 뒤 "안전함" 도장을 찍는_ 과정이에요. 서명만으론 부족, 공증까지 마쳐야 macOS Catalina+ 에서 경고 없이 열림.
+
+## Windows 서명
+
+EV 인증서(파일 또는 USB 토큰)로 `signtool` 을 통해 `.exe` 와 인스톨러에 서명. Forge 의 maker-squirrel 옵션에 `certificateFile` 지정.
+
+## CI 에서 안전하게
+
+- 인증서는 **비밀 환경변수**(GitHub Secrets, 1Password Service Account 등)
+- 빌드 로그에 인증서 경로/패스워드 노출 금지
+- 인증서 만료일을 캘린더에 등록
+
+<Cards>
+  <Cards.Card title="자동 업데이트" href="/ko/docs/distribution/auto-updates" arrow />
+</Cards>

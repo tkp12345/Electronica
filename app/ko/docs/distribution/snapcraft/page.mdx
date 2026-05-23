@@ -1,0 +1,50 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { SnapcraftIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<SnapcraftIllustration />}
+  title="Snapcraft (리눅스)"
+  subtitle="Ubuntu·여러 배포판에서 한 번에 설치·자동 업데이트되는 컨테이너형 패키지 포맷."
+  badge="Distribution · Snapcraft"
+/>
+
+## Snap 의 특징
+
+- **Universal Linux** — 배포판에 상관없이 같은 `.snap` 파일
+- **자동 업데이트** — Snap Store 가 백그라운드에서 알아서 갱신
+- **샌드박스(AppArmor 기반)** — 권한이 명시적
+- **Stable / Candidate / Beta / Edge** 4채널 관리
+
+## Forge maker
+
+```js filename="forge.config.js"
+{
+  name: '@electron-forge/maker-snap',
+  config: {
+    summary: 'My cool app',
+    description: 'Cooler than yours',
+  },
+}
+```
+
+<Callout type="info" emoji="🧒">
+".deb 은 _배포판 동네 가게_, .snap 은 _전국 체인_". 어디서나 같은 모양으로 동작하지만, 컨테이너라 약간 무거워요.
+</Callout>
+
+## 업로드
+
+```bash filename="terminal"
+snapcraft login
+snapcraft upload my-app_1.0.0_amd64.snap --release=stable
+```
+
+## 다른 옵션과 비교
+
+- `.deb` / `.rpm` — 가벼움, 배포판 특화
+- `.AppImage` — 설치 불필요, 단일 파일
+- **Snap** — 자동 업데이트가 큰 장점
+
+<Cards>
+  <Cards.Card title="자동 업데이트" href="/ko/docs/distribution/auto-updates" arrow />
+</Cards>

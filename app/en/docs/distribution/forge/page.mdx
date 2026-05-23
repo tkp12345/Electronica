@@ -1,0 +1,52 @@
+import { Callout, Cards, Steps } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { PackagingIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<PackagingIllustration />}
+  title="Electron Forge overview"
+  subtitle="The official full-stack CLI that bundles development, packaging, and publishing into a single tool."
+  badge="Distribution · Forge"
+/>
+
+## In one line
+
+Forge bundles Electron + Webpack/Vite + makers (.dmg/.exe/.deb installers) + publishers (GitHub/S3) into _one command chain_.
+
+| Stage | Command |
+|---|---|
+| Dev | `npm start` |
+| Package (no installer yet) | `npm run package` |
+| Build installers | `npm run make` |
+| Upload too | `npm run publish` |
+
+## Start a new project
+
+```bash filename="terminal"
+npx create-electron-app@latest my-app --template=vite-typescript
+cd my-app
+npm start
+```
+
+<Callout type="info" emoji="🧒">
+`--template=` swaps "blank paper" for "graph paper" — and you get Vite's fast HMR for free.
+</Callout>
+
+## Config file
+
+```js filename="forge.config.js"
+module.exports = {
+  packagerConfig: { asar: true, icon: 'assets/icon' },
+  makers: [
+    { name: '@electron-forge/maker-squirrel' },   // Windows
+    { name: '@electron-forge/maker-zip',  platforms: ['darwin'] },
+    { name: '@electron-forge/maker-deb' },         // Debian/Ubuntu
+    { name: '@electron-forge/maker-rpm' },         // Fedora
+  ],
+}
+```
+
+<Cards>
+  <Cards.Card title="Code signing" href="/en/docs/distribution/code-signing" arrow />
+  <Cards.Card title="Auto-updates" href="/en/docs/distribution/auto-updates" arrow />
+</Cards>

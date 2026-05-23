@@ -1,0 +1,53 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { AutoUpdateIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<AutoUpdateIllustration />}
+  title="자동 업데이트"
+  subtitle="사용자가 모르는 사이에 새 버전을 받아 두고, 재시작 한 번에 갈아 끼우는 패턴."
+  badge="Distribution · Auto-updates"
+/>
+
+## 가장 쉬운 방법
+
+```js filename="main.js"
+const { updateElectronApp } = require('update-electron-app')
+updateElectronApp({ repo: 'your-name/your-app' })
+```
+
+한 줄로 _"앱 켤 때마다 → GitHub Releases 확인 → 새 버전 있으면 다운로드 → 재시작 시 적용"_ 까지 끝납니다.
+
+<Callout type="info" emoji="🧒">
+"브라우저가 알아서 새 버전 받아 두고, 다음에 켤 때 갈아끼우는" 그 동작이에요. 사용자가 _버튼을 누르지 않아도_ 동작합니다.
+</Callout>
+
+## 내부 동작
+
+1. **autoUpdater** (Electron 내장) 가 _업데이트 서버_ 에 _현재 버전_ 보내고 새 버전 있는지 묻는다
+2. 새 버전이 있으면 백그라운드 다운로드
+3. 다운로드 끝나면 `update-downloaded` 이벤트
+4. 다음 종료/재시작 시 _원자적_ 으로 교체
+
+## 코드 서명 없으면 안 됨
+
+새 버전이 _같은 서명_ 을 갖고 있어야 OS 가 받아들여요. 미서명 빌드는 자동 업데이트 자체가 작동하지 않습니다.
+
+## 자체 서버를 쓰고 싶다면
+
+```js
+const { autoUpdater } = require('electron')
+
+autoUpdater.setFeedURL({
+  url: 'https://updates.example.com/win32/' + app.getVersion(),
+})
+
+autoUpdater.checkForUpdates()
+```
+
+서버는 _Squirrel.Mac / Squirrel.Windows / Nuts / Hazel_ 같은 오픈소스를 직접 운영하거나 자체 구현.
+
+<Cards>
+  <Cards.Card title="Publishing 튜토리얼" href="/ko/docs/tutorial/publishing" arrow />
+  <Cards.Card title="코드 서명" href="/ko/docs/distribution/code-signing" arrow />
+</Cards>

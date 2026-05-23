@@ -1,0 +1,43 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { WindowsStoreIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<WindowsStoreIllustration />}
+  title="Microsoft Store 배포"
+  subtitle=".appx / .msix 패키지로 변환해 Windows Store 를 통해 배포하기."
+  badge="Distribution · Windows Store"
+/>
+
+## 자체 vs Microsoft Store
+
+| 항목 | 자체 (.exe) | Microsoft Store (.msix) |
+|---|---|---|
+| 설치 | Squirrel 인스톨러 | Store 또는 사이드로딩 |
+| 자동 업데이트 | `update-electron-app` | Store 가 처리 |
+| 권한 | 윈도우 그대로 | UWP 매니페스트 기반 |
+| 코드 서명 | EV 권장 | Microsoft 가 서명 |
+
+## .msix 만들기
+
+```bash filename="terminal"
+npx electron-windows-store \
+  --input-directory ./out/My-App-win32-x64 \
+  --output-directory ./out/store \
+  --package-version 1.0.0.0 \
+  --package-name MyApp
+```
+
+<Callout type="info" emoji="🧒">
+변환은 _이미 만든 .exe 폴더_ 를 _Store 가 알아보는 .msix 박스_ 로 다시 포장하는 과정이에요.
+</Callout>
+
+## 주의할 점
+
+- **Win32 vs UWP 권한 차이** — 일부 API 는 UWP 매니페스트에 명시 필요
+- **버전 번호 4자리** (예: `1.0.0.0`) — Store 규칙
+- **앱 ID** — Partner Center 에서 발급받아야 함
+
+<Cards>
+  <Cards.Card title="자동 업데이트" href="/ko/docs/distribution/auto-updates" arrow />
+</Cards>

@@ -1,0 +1,50 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { SnapcraftIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<SnapcraftIllustration />}
+  title="Snapcraft (Linux)"
+  subtitle="A container-style package format with automatic updates across many Linux distros."
+  badge="Distribution · Snapcraft"
+/>
+
+## Snap traits
+
+- **Universal Linux** — same `.snap` regardless of distro.
+- **Auto-update** — the Snap Store keeps it fresh in the background.
+- **Sandbox** (AppArmor-based) — permissions are explicit.
+- Four release channels: **Stable / Candidate / Beta / Edge**.
+
+## Forge maker
+
+```js filename="forge.config.js"
+{
+  name: '@electron-forge/maker-snap',
+  config: {
+    summary: 'My cool app',
+    description: 'Cooler than yours',
+  },
+}
+```
+
+<Callout type="info" emoji="🧒">
+".deb is the _local distro shop_; .snap is the _nationwide chain_." Works the same everywhere but is heavier because it ships a container.
+</Callout>
+
+## Upload
+
+```bash filename="terminal"
+snapcraft login
+snapcraft upload my-app_1.0.0_amd64.snap --release=stable
+```
+
+## Compare with other options
+
+- `.deb` / `.rpm` — light, distro-native.
+- `.AppImage` — no install, single file.
+- **Snap** — biggest win is auto-update.
+
+<Cards>
+  <Cards.Card title="Auto-updates" href="/en/docs/distribution/auto-updates" arrow />
+</Cards>
