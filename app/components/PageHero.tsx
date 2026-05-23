@@ -42,7 +42,7 @@ export function PageHero({ illustration, title, subtitle, badge }: PageHeroProps
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: '#ef4444' /* 일러스트 currentColor 강조색 (빨강) */,
+          // 일러스트는 자체적으로 빨강 액센트를 그리고, 나머지는 currentColor(=본문 컬러)
         }}
       >
         {illustration}

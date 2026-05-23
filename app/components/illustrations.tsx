@@ -1,587 +1,472 @@
-// 각 학습 페이지의 상단 히어로에 들어가는 SVG 일러스트 모음.
-// - viewBox 200x160 로 통일 → PageHero 의 좌측 박스(폭 120~200px)에 안정적으로 맞음
-// - 모든 stroke 가 currentColor 이므로 PageHero 가 빨강 강조색을 주입
-// - fill 컬러도 currentColor 또는 투명/회색 톤만 사용 → 다크/라이트 모두 깔끔
+// 페이지 히어로용 일러스트 모음 — 본 사이트 오리지널 SVG.
+// 디자인 원칙(Apple 톤):
+//  - viewBox 240×160 — 가로형 hero 비율
+//  - 큰 기하학적 블록 + 넓은 여백
+//  - 본체는 currentColor 의 옅은 fill / 가는 stroke 로 모노톤
+//  - 액센트는 단 한 점만 빨강(#ef4444)
+//  - 텍스트 라벨 지양 (이미지로만 전달)
 import type { CSSProperties } from 'react'
 
-const wrap: CSSProperties = { width: '100%', height: 'auto' }
+const wrap: CSSProperties = { width: '100%', height: 'auto', display: 'block' }
+const ACCENT = '#ef4444'
 
-/** 1. Electron 소개 — 데스크톱 창 안에 웹+Node.js 결합 */
+// 공통 모노 톤 — currentColor 베이스
+const muted = { stroke: 'currentColor', strokeOpacity: 0.55 } as const
+const softFill = { fill: 'currentColor', fillOpacity: 0.08 } as const
+const mediumFill = { fill: 'currentColor', fillOpacity: 0.18 } as const
+
+/** 1. Introduction — 데스크톱 창 안에 콘텐츠 */
 export function IntroIllustration() {
   return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <rect x="20" y="22" width="160" height="116" rx="10" strokeWidth="3" />
-      <rect x="20" y="22" width="160" height="20" rx="10" fill="currentColor" fillOpacity="0.1" stroke="none" />
-      <circle cx="32" cy="32" r="3" fill="currentColor" stroke="none" />
-      <circle cx="44" cy="32" r="3" fill="currentColor" stroke="none" opacity="0.4" />
-      <circle cx="56" cy="32" r="3" fill="currentColor" stroke="none" opacity="0.4" />
-      <text x="60" y="78" fontSize="14" fontWeight="700" fill="currentColor" stroke="none">
-        HTML
-      </text>
-      <text x="60" y="100" fontSize="14" fontWeight="700" fill="currentColor" stroke="none" opacity="0.7">
-        CSS · JS
-      </text>
-      <text x="60" y="122" fontSize="14" fontWeight="700" fill="currentColor" stroke="none" opacity="0.5">
-        Node.js
-      </text>
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      {/* 윈도우 */}
+      <rect x="32" y="28" width="176" height="104" rx="14" {...muted} strokeWidth="2" {...softFill} />
+      {/* 타이틀 바 */}
+      <rect x="32" y="28" width="176" height="22" rx="14" {...mediumFill} stroke="none" />
+      {/* 신호등 (좌측 한 점만 빨강) */}
+      <circle cx="48" cy="39" r="3.5" fill={ACCENT} />
+      <circle cx="60" cy="39" r="3.5" {...softFill} stroke="none" />
+      <circle cx="72" cy="39" r="3.5" {...softFill} stroke="none" />
+      {/* 컨텐츠 라인 */}
+      <rect x="56" y="72" width="128" height="10" rx="3" {...mediumFill} stroke="none" />
+      <rect x="56" y="92" width="92" height="10" rx="3" {...softFill} stroke="none" />
+      <rect x="56" y="112" width="60" height="10" rx="3" {...softFill} stroke="none" />
     </svg>
   )
 }
 
-/** 2. Why Electron — 한 코드가 3개 OS로 */
+/** 2. Why Electron — 단일 코드 → 세 OS */
 export function WhyIllustration() {
   return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      {/* 중앙 코드 박스 */}
-      <rect x="78" y="20" width="44" height="34" rx="4" strokeWidth="2.5" />
-      <line x1="84" y1="30" x2="116" y2="30" strokeWidth="2" opacity="0.5" />
-      <line x1="84" y1="38" x2="110" y2="38" strokeWidth="2" opacity="0.5" />
-      <line x1="84" y1="46" x2="116" y2="46" strokeWidth="2" opacity="0.5" />
-      {/* 화살표 3갈래 */}
-      <line x1="100" y1="56" x2="40" y2="100" strokeWidth="2" />
-      <line x1="100" y1="56" x2="100" y2="100" strokeWidth="2" />
-      <line x1="100" y1="56" x2="160" y2="100" strokeWidth="2" />
-      {/* 3개 OS 박스 (macOS, Windows, Linux) */}
-      <rect x="14" y="100" width="52" height="40" rx="5" strokeWidth="2.5" />
-      <rect x="74" y="100" width="52" height="40" rx="5" strokeWidth="2.5" />
-      <rect x="134" y="100" width="52" height="40" rx="5" strokeWidth="2.5" />
-      <text x="40" y="125" fontSize="10" fontWeight="700" fill="currentColor" stroke="none" textAnchor="middle">
-        macOS
-      </text>
-      <text x="100" y="125" fontSize="10" fontWeight="700" fill="currentColor" stroke="none" textAnchor="middle">
-        Win
-      </text>
-      <text x="160" y="125" fontSize="10" fontWeight="700" fill="currentColor" stroke="none" textAnchor="middle">
-        Linux
-      </text>
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      {/* 위쪽 단일 박스 (코드) */}
+      <rect x="100" y="20" width="40" height="40" rx="10" {...muted} strokeWidth="2" {...mediumFill} />
+      <circle cx="120" cy="40" r="4" fill={ACCENT} />
+      {/* 분기선 */}
+      <path d="M120 60 V80 M120 80 H40 V100 M120 80 H120 V100 M120 80 H200 V100" {...muted} strokeWidth="1.5" />
+      {/* 세 OS 박스 */}
+      <rect x="20" y="100" width="40" height="40" rx="10" {...muted} strokeWidth="2" {...softFill} />
+      <rect x="100" y="100" width="40" height="40" rx="10" {...muted} strokeWidth="2" {...softFill} />
+      <rect x="180" y="100" width="40" height="40" rx="10" {...muted} strokeWidth="2" {...softFill} />
     </svg>
   )
 }
 
-/** 3. Process Model — Main ↔ Renderer */
+/** 3. Process model — 두 블록 사이 IPC */
 export function ProcessModelIllustration() {
   return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      {/* Main process */}
-      <rect x="14" y="50" width="70" height="60" rx="8" strokeWidth="2.5" />
-      <text x="49" y="80" fontSize="11" fontWeight="700" fill="currentColor" stroke="none" textAnchor="middle">
-        Main
-      </text>
-      <text x="49" y="96" fontSize="9" fill="currentColor" stroke="none" textAnchor="middle" opacity="0.7">
-        Node.js
-      </text>
-      {/* Renderer process */}
-      <rect x="116" y="50" width="70" height="60" rx="8" strokeWidth="2.5" />
-      <text x="151" y="80" fontSize="11" fontWeight="700" fill="currentColor" stroke="none" textAnchor="middle">
-        Renderer
-      </text>
-      <text x="151" y="96" fontSize="9" fill="currentColor" stroke="none" textAnchor="middle" opacity="0.7">
-        Chromium
-      </text>
-      {/* IPC arrows */}
-      <line x1="84" y1="72" x2="116" y2="72" strokeWidth="2" markerEnd="url(#arr-r)" />
-      <line x1="116" y1="92" x2="84" y2="92" strokeWidth="2" markerEnd="url(#arr-l)" />
-      <text x="100" y="68" fontSize="8" fill="currentColor" stroke="none" textAnchor="middle" opacity="0.6">
-        IPC
-      </text>
-      <defs>
-        <marker id="arr-r" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-          <path d="M0,0 L6,3 L0,6 z" fill="currentColor" />
-        </marker>
-        <marker id="arr-l" markerWidth="6" markerHeight="6" refX="1" refY="3" orient="auto">
-          <path d="M6,0 L0,3 L6,6 z" fill="currentColor" />
-        </marker>
-      </defs>
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <rect x="24" y="40" width="80" height="80" rx="14" {...muted} strokeWidth="2" {...softFill} />
+      <rect x="136" y="40" width="80" height="80" rx="14" {...muted} strokeWidth="2" {...softFill} />
+      {/* IPC 다리 (얇은 막대 두 개) */}
+      <rect x="104" y="74" width="32" height="4" rx="2" {...mediumFill} stroke="none" />
+      <rect x="104" y="86" width="32" height="4" rx="2" {...mediumFill} stroke="none" />
+      {/* 액센트 — 다리 위 작은 점 */}
+      <circle cx="120" cy="64" r="3.5" fill={ACCENT} />
     </svg>
   )
 }
 
-/** 4. Prerequisites — 체크리스트 */
+/** 4. Prerequisites — 체크리스트(rows) */
 export function PrerequisitesIllustration() {
   return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <rect x="36" y="20" width="128" height="120" rx="8" strokeWidth="2.5" />
-      {[40, 65, 90, 115].map((y, i) => (
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      {[40, 64, 88, 112].map((y, i) => (
         <g key={y}>
-          <rect x="52" y={y} width="14" height="14" rx="3" strokeWidth="2" />
-          <path d={`M55 ${y + 7} L60 ${y + 12} L66 ${y + 3}`} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-          <text x="76" y={y + 12} fontSize="11" fontWeight="600" fill="currentColor" stroke="none">
-            {['Node.js', 'npm', 'Terminal', 'Editor'][i]}
-          </text>
+          <rect x="36" y={y - 10} width="168" height="20" rx="10" {...muted} strokeWidth="1.6" {...softFill} />
+          <circle cx="52" cy={y} r="4.5" fill={i === 0 ? ACCENT : 'currentColor'} fillOpacity={i === 0 ? 1 : 0.4} />
+          <rect x="72" y={y - 4} width={[100, 80, 60, 90][i]} height="8" rx="3" {...mediumFill} stroke="none" />
         </g>
       ))}
     </svg>
   )
 }
 
-/** 5. First App — 'Hello World' 창 */
+/** 5. First app — Hello World 창 */
 export function FirstAppIllustration() {
   return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <rect x="22" y="28" width="156" height="104" rx="10" strokeWidth="3" />
-      <rect x="22" y="28" width="156" height="20" rx="10" fill="currentColor" fillOpacity="0.1" stroke="none" />
-      <circle cx="34" cy="38" r="3" fill="currentColor" stroke="none" />
-      <circle cx="46" cy="38" r="3" fill="currentColor" stroke="none" opacity="0.4" />
-      <circle cx="58" cy="38" r="3" fill="currentColor" stroke="none" opacity="0.4" />
-      <text x="100" y="92" fontSize="20" fontWeight="800" fill="currentColor" stroke="none" textAnchor="middle">
-        Hello
-      </text>
-      <text x="100" y="116" fontSize="18" fontWeight="800" fill="currentColor" stroke="none" textAnchor="middle" opacity="0.6">
-        World 👋
-      </text>
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <rect x="36" y="28" width="168" height="104" rx="14" {...muted} strokeWidth="2" {...softFill} />
+      <rect x="36" y="28" width="168" height="22" rx="14" {...mediumFill} stroke="none" />
+      <circle cx="52" cy="39" r="3.5" fill={ACCENT} />
+      <circle cx="64" cy="39" r="3.5" {...softFill} stroke="none" />
+      <circle cx="76" cy="39" r="3.5" {...softFill} stroke="none" />
+      {/* 큰 중앙 동그라미 — "안의 콘텐츠" 한 점 강조 */}
+      <circle cx="120" cy="92" r="22" {...mediumFill} stroke="none" />
+      <circle cx="120" cy="92" r="6" fill={ACCENT} opacity="0.0" />
+      <rect x="86" y="120" width="68" height="6" rx="3" {...softFill} stroke="none" />
     </svg>
   )
 }
 
-/** 6. Preload — 두 프로세스 사이의 다리 */
+/** 6. Preload — 두 절벽 사이의 다리 */
 export function PreloadIllustration() {
   return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      {/* 좌측 절벽: Renderer */}
-      <rect x="8" y="60" width="48" height="80" strokeWidth="2.5" />
-      <text x="32" y="100" fontSize="9" fontWeight="700" fill="currentColor" stroke="none" textAnchor="middle">
-        Renderer
-      </text>
-      {/* 우측 절벽: Main */}
-      <rect x="144" y="60" width="48" height="80" strokeWidth="2.5" />
-      <text x="168" y="100" fontSize="9" fontWeight="700" fill="currentColor" stroke="none" textAnchor="middle">
-        Main
-      </text>
-      {/* 다리(preload) */}
-      <line x1="56" y1="80" x2="144" y2="80" strokeWidth="3" />
-      <line x1="56" y1="92" x2="144" y2="92" strokeWidth="3" />
-      {/* 케이블/지지대 */}
-      <line x1="80" y1="80" x2="80" y2="40" strokeWidth="1.5" opacity="0.5" />
-      <line x1="120" y1="80" x2="120" y2="40" strokeWidth="1.5" opacity="0.5" />
-      <path d="M60 40 Q100 20 140 40" strokeWidth="2" opacity="0.6" />
-      <text x="100" y="116" fontSize="10" fontWeight="700" fill="currentColor" stroke="none" textAnchor="middle">
-        preload.js
-      </text>
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <rect x="14" y="50" width="72" height="80" rx="10" {...muted} strokeWidth="2" {...softFill} />
+      <rect x="154" y="50" width="72" height="80" rx="10" {...muted} strokeWidth="2" {...softFill} />
+      {/* 다리 본체 */}
+      <rect x="86" y="84" width="68" height="14" rx="7" {...mediumFill} stroke="none" />
+      {/* 액센트 — 다리 가운데 한 점 */}
+      <circle cx="120" cy="91" r="4.5" fill={ACCENT} />
     </svg>
   )
 }
 
-/** 7. Adding Features — 메뉴/단축키/대화상자 아이콘 모음 */
+/** 7. Features — 그리드 카드 6개 */
 export function FeaturesIllustration() {
   return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      {/* Menu */}
-      <rect x="20" y="30" width="50" height="40" rx="5" strokeWidth="2.5" />
-      <line x1="28" y1="42" x2="62" y2="42" strokeWidth="2" />
-      <line x1="28" y1="50" x2="58" y2="50" strokeWidth="2" />
-      <line x1="28" y1="58" x2="54" y2="58" strokeWidth="2" />
-      {/* Shortcut key */}
-      <rect x="80" y="30" width="40" height="40" rx="5" strokeWidth="2.5" />
-      <text x="100" y="56" fontSize="14" fontWeight="800" fill="currentColor" stroke="none" textAnchor="middle">
-        ⌘K
-      </text>
-      {/* Dialog */}
-      <rect x="130" y="30" width="50" height="40" rx="5" strokeWidth="2.5" />
-      <text x="155" y="55" fontSize="12" fontWeight="700" fill="currentColor" stroke="none" textAnchor="middle">
-        Open?
-      </text>
-      {/* Tray */}
-      <rect x="20" y="90" width="50" height="40" rx="5" strokeWidth="2.5" />
-      <circle cx="45" cy="110" r="9" strokeWidth="2" />
-      <text x="100" y="110" fontSize="11" fontWeight="700" fill="currentColor" stroke="none" textAnchor="middle">
-        + Notify
-      </text>
-      <rect x="130" y="90" width="50" height="40" rx="5" strokeWidth="2.5" />
-      <path d="M145 105 L155 115 L168 100" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      {[
+        [40, 28],
+        [104, 28],
+        [168, 28],
+        [40, 92],
+        [104, 92],
+        [168, 92],
+      ].map(([x, y], i) => (
+        <rect
+          key={`${x}-${y}`}
+          x={x}
+          y={y}
+          width="40"
+          height="40"
+          rx="8"
+          {...muted}
+          strokeWidth="1.6"
+          fill="currentColor"
+          fillOpacity={i === 0 ? 0 : 0.08}
+        />
+      ))}
+      {/* 첫 카드만 빨강으로 채움 */}
+      <rect x="40" y="28" width="40" height="40" rx="8" fill={ACCENT} />
     </svg>
   )
 }
 
-/** 8. Packaging — 코드를 박스로 포장 */
+/** 8. Packaging — 박스(아이소메트릭) */
 export function PackagingIllustration() {
   return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      {/* 박스 */}
-      <path d="M40 70 L100 40 L160 70 L160 130 L100 160 L40 130 Z" strokeWidth="2.5" />
-      <path d="M40 70 L100 100 L160 70" strokeWidth="2.5" />
-      <line x1="100" y1="100" x2="100" y2="160" strokeWidth="2.5" />
-      {/* 코드 라벨 */}
-      <rect x="70" y="20" width="60" height="22" rx="3" strokeWidth="2" />
-      <text x="100" y="35" fontSize="11" fontWeight="700" fill="currentColor" stroke="none" textAnchor="middle">
-        {'</>'}
-      </text>
-      <line x1="100" y1="42" x2="100" y2="58" strokeWidth="2" markerEnd="url(#pk-arr)" />
-      <defs>
-        <marker id="pk-arr" markerWidth="6" markerHeight="6" refX="3" refY="5" orient="auto">
-          <path d="M0,0 L6,0 L3,6 z" fill="currentColor" />
-        </marker>
-      </defs>
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <path d="M120 28 L196 64 V120 L120 156 L44 120 V64 Z" {...muted} strokeWidth="2" {...softFill} />
+      <path d="M44 64 L120 100 L196 64" {...muted} strokeWidth="2" />
+      <path d="M120 100 V156" {...muted} strokeWidth="2" />
+      {/* 액센트 라벨 — 빨강 띠 */}
+      <rect x="92" y="68" width="56" height="10" rx="3" fill={ACCENT} />
     </svg>
   )
 }
 
-/** 9. Publishing — 박스가 클라우드로 */
+/** 9. Publishing — 클라우드 + 위 화살표 */
 export function PublishingIllustration() {
   return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      {/* 클라우드 */}
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
       <path
-        d="M60 50 Q60 30 80 30 Q90 14 110 22 Q130 14 138 32 Q160 32 160 52 Q160 70 138 70 L78 70 Q60 70 60 50 Z"
-        strokeWidth="2.5"
+        d="M70 80 Q70 56 96 56 Q104 36 128 44 Q150 38 158 60 Q186 60 186 84 Q186 108 162 108 L92 108 Q70 108 70 80 Z"
+        {...muted}
+        strokeWidth="2"
+        {...softFill}
       />
-      {/* 박스 */}
-      <rect x="80" y="100" width="40" height="40" strokeWidth="2.5" />
-      <line x1="80" y1="115" x2="120" y2="115" strokeWidth="2" />
-      {/* 업로드 화살표 */}
-      <line x1="100" y1="100" x2="100" y2="80" strokeWidth="2.5" markerEnd="url(#pub-arr)" />
-      <defs>
-        <marker id="pub-arr" markerWidth="8" markerHeight="8" refX="4" refY="2" orient="auto">
-          <path d="M0,7 L4,0 L8,7 z" fill="currentColor" />
-        </marker>
-      </defs>
-      <text x="100" y="54" fontSize="9" fontWeight="700" fill="currentColor" stroke="none" textAnchor="middle">
-        v1.0.1
-      </text>
+      {/* 위로 가는 화살표 (강조) */}
+      <path d="M120 144 V108 M108 124 L120 108 L132 124" stroke={ACCENT} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
 
-/** 10. Security — 자물쇠 + 방패 */
+/** 10. Security — 방패 */
 export function SecurityIllustration() {
   return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      {/* 방패 */}
-      <path d="M100 20 L160 40 L160 90 Q160 130 100 145 Q40 130 40 90 L40 40 Z" strokeWidth="2.5" />
-      {/* 자물쇠 본체 */}
-      <rect x="78" y="78" width="44" height="36" rx="4" strokeWidth="2.5" />
-      {/* 자물쇠 고리 */}
-      <path d="M86 78 L86 66 Q86 52 100 52 Q114 52 114 66 L114 78" strokeWidth="2.5" />
-      {/* 자물쇠 키홀 */}
-      <circle cx="100" cy="94" r="4" fill="currentColor" stroke="none" />
-      <line x1="100" y1="94" x2="100" y2="104" strokeWidth="3" strokeLinecap="round" />
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <path
+        d="M120 20 L188 40 V92 Q188 128 120 144 Q52 128 52 92 V40 Z"
+        {...muted}
+        strokeWidth="2"
+        {...softFill}
+      />
+      {/* 가운데 액센트 점 */}
+      <circle cx="120" cy="80" r="10" fill={ACCENT} />
     </svg>
   )
 }
 
-/** 11. Main process — 톱니바퀴 + Node */
+/** 11. Main process — 큰 원 + 작은 위성 점들 */
 export function MainProcessIllustration() {
   return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <circle cx="100" cy="80" r="32" strokeWidth="2.5" />
-      <circle cx="100" cy="80" r="14" strokeWidth="2.5" />
-      {/* 8개의 톱니 */}
-      {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
-        <rect
-          key={deg}
-          x="96"
-          y="36"
-          width="8"
-          height="12"
-          fill="currentColor"
-          stroke="none"
-          transform={`rotate(${deg} 100 80)`}
-        />
-      ))}
-      <text x="100" y="84" fontSize="9" fontWeight="700" fill="currentColor" stroke="none" textAnchor="middle">
-        node
-      </text>
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <circle cx="120" cy="80" r="36" {...muted} strokeWidth="2" {...softFill} />
+      <circle cx="120" cy="80" r="14" {...mediumFill} stroke="none" />
+      {[0, 60, 120, 180, 240, 300].map((deg, i) => {
+        const rad = (deg * Math.PI) / 180
+        const cx = 120 + Math.cos(rad) * 56
+        const cy = 80 + Math.sin(rad) * 56
+        return <circle key={deg} cx={cx} cy={cy} r="5" fill={i === 0 ? ACCENT : 'currentColor'} fillOpacity={i === 0 ? 1 : 0.3} />
+      })}
     </svg>
   )
 }
 
-/** 12. Renderer process — 웹 콘텐츠 창 */
+/** 12. Renderer — 콘텐츠 가득한 창 */
 export function RendererProcessIllustration() {
   return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <rect x="22" y="28" width="156" height="104" rx="8" strokeWidth="2.5" />
-      <rect x="22" y="28" width="156" height="18" rx="8" fill="currentColor" fillOpacity="0.1" stroke="none" />
-      <rect x="40" y="60" width="120" height="10" rx="2" fill="currentColor" fillOpacity="0.25" stroke="none" />
-      <rect x="40" y="78" width="90" height="10" rx="2" fill="currentColor" fillOpacity="0.25" stroke="none" />
-      <rect x="40" y="96" width="60" height="10" rx="2" fill="currentColor" fillOpacity="0.25" stroke="none" />
-      <text x="100" y="124" fontSize="9" fill="currentColor" stroke="none" textAnchor="middle">
-        Chromium
-      </text>
-    </svg>
-  )
-}
-
-/** 13. Sandbox — 잠긴 창 */
-export function SandboxIllustration() {
-  return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <rect x="30" y="30" width="140" height="100" rx="10" strokeWidth="2.5" />
-      {/* 빗금 패턴 */}
-      <defs>
-        <pattern id="sb-stripes" patternUnits="userSpaceOnUse" width="10" height="10">
-          <line x1="0" y1="10" x2="10" y2="0" stroke="currentColor" strokeWidth="1.2" opacity="0.3" />
-        </pattern>
-      </defs>
-      <rect x="30" y="30" width="140" height="100" rx="10" fill="url(#sb-stripes)" stroke="none" />
-      {/* 자물쇠 */}
-      <rect x="86" y="78" width="28" height="22" rx="3" strokeWidth="2" />
-      <path d="M91 78 L91 70 Q91 62 100 62 Q109 62 109 70 L109 78" strokeWidth="2" />
-    </svg>
-  )
-}
-
-/** 14. Context isolation — 두 분리된 영역 */
-export function ContextIsolationIllustration() {
-  return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <rect x="14" y="40" width="80" height="80" rx="6" strokeWidth="2.5" />
-      <rect x="106" y="40" width="80" height="80" rx="6" strokeWidth="2.5" />
-      <text x="54" y="76" fontSize="11" fontWeight="700" fill="currentColor" stroke="none" textAnchor="middle">
-        web
-      </text>
-      <text x="54" y="94" fontSize="9" fill="currentColor" stroke="none" textAnchor="middle" opacity="0.6">
-        context
-      </text>
-      <text x="146" y="76" fontSize="11" fontWeight="700" fill="currentColor" stroke="none" textAnchor="middle">
-        preload
-      </text>
-      <text x="146" y="94" fontSize="9" fill="currentColor" stroke="none" textAnchor="middle" opacity="0.6">
-        context
-      </text>
-      {/* 벽 */}
-      <line x1="100" y1="30" x2="100" y2="130" strokeWidth="3" strokeDasharray="4 3" />
-    </svg>
-  )
-}
-
-/** 15. Performance — 속도계 */
-export function PerformanceIllustration() {
-  return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      {/* 호 (게이지) */}
-      <path d="M40 120 A60 60 0 0 1 160 120" strokeWidth="3" />
-      {/* 눈금 */}
-      {[-60, -30, 0, 30, 60].map((deg) => {
-        const rad = (deg * Math.PI) / 180
-        const x1 = 100 + Math.cos(rad - Math.PI / 2) * 56
-        const y1 = 120 + Math.sin(rad - Math.PI / 2) * 56
-        const x2 = 100 + Math.cos(rad - Math.PI / 2) * 64
-        const y2 = 120 + Math.sin(rad - Math.PI / 2) * 64
-        return <line key={deg} x1={x1} y1={y1} x2={x2} y2={y2} strokeWidth="2" />
-      })}
-      {/* 바늘 */}
-      <line x1="100" y1="120" x2="138" y2="78" strokeWidth="3" strokeLinecap="round" />
-      <circle cx="100" cy="120" r="5" fill="currentColor" stroke="none" />
-    </svg>
-  )
-}
-
-/** 16. Offline — 클라우드 + 사선 */
-export function OfflineIllustration() {
-  return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <path
-        d="M60 90 Q60 70 80 70 Q90 54 110 62 Q130 54 138 72 Q160 72 160 92 Q160 110 138 110 L78 110 Q60 110 60 90 Z"
-        strokeWidth="2.5"
-      />
-      <line x1="40" y1="40" x2="180" y2="140" strokeWidth="4" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-/** 17. Accessibility — 사람 + 키보드 */
-export function AccessibilityIllustration() {
-  return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <circle cx="100" cy="50" r="14" strokeWidth="2.5" />
-      <line x1="100" y1="64" x2="100" y2="108" strokeWidth="2.5" />
-      <line x1="76" y1="80" x2="124" y2="80" strokeWidth="2.5" />
-      <line x1="100" y1="108" x2="84" y2="138" strokeWidth="2.5" />
-      <line x1="100" y1="108" x2="116" y2="138" strokeWidth="2.5" />
-      <circle cx="100" cy="50" r="20" strokeWidth="1.5" strokeDasharray="3 3" opacity="0.5" />
-    </svg>
-  )
-}
-
-/** 18. Examples — 시험관 */
-export function ExamplesIllustration() {
-  return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <rect x="70" y="20" width="20" height="100" rx="2" strokeWidth="2.5" />
-      <rect x="70" y="80" width="20" height="40" fill="currentColor" fillOpacity="0.25" stroke="none" />
-      <rect x="100" y="40" width="20" height="80" rx="2" strokeWidth="2.5" />
-      <rect x="100" y="90" width="20" height="30" fill="currentColor" fillOpacity="0.25" stroke="none" />
-      <rect x="130" y="60" width="20" height="60" rx="2" strokeWidth="2.5" />
-      <rect x="130" y="100" width="20" height="20" fill="currentColor" fillOpacity="0.25" stroke="none" />
-      <ellipse cx="80" cy="20" rx="10" ry="3" strokeWidth="2" />
-      <ellipse cx="110" cy="40" rx="10" ry="3" strokeWidth="2" />
-      <ellipse cx="140" cy="60" rx="10" ry="3" strokeWidth="2" />
-    </svg>
-  )
-}
-
-/** 19. Debugging — 돋보기 + 벌레 */
-export function DebuggingIllustration() {
-  return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <circle cx="80" cy="80" r="36" strokeWidth="3" />
-      <line x1="106" y1="106" x2="146" y2="146" strokeWidth="5" strokeLinecap="round" />
-      {/* 벌레 */}
-      <ellipse cx="80" cy="80" rx="14" ry="10" strokeWidth="2" />
-      <line x1="80" y1="70" x2="80" y2="90" strokeWidth="1.5" />
-      <line x1="66" y1="76" x2="60" y2="72" strokeWidth="1.5" />
-      <line x1="66" y1="84" x2="60" y2="88" strokeWidth="1.5" />
-      <line x1="94" y1="76" x2="100" y2="72" strokeWidth="1.5" />
-      <line x1="94" y1="84" x2="100" y2="88" strokeWidth="1.5" />
-    </svg>
-  )
-}
-
-/** 20. Boilerplate — 청사진 격자 */
-export function BoilerplateIllustration() {
-  return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <rect x="30" y="20" width="140" height="120" rx="6" strokeWidth="2.5" />
-      {[40, 60, 80, 100, 120].map((y) => (
-        <line key={y} x1="30" y1={y} x2="170" y2={y} strokeWidth="1" opacity="0.3" />
-      ))}
-      {[50, 70, 90, 110, 130, 150].map((x) => (
-        <line key={x} x1={x} y1="20" x2={x} y2="140" strokeWidth="1" opacity="0.3" />
-      ))}
-      <rect x="50" y="40" width="40" height="40" fill="currentColor" fillOpacity="0.18" stroke="none" />
-      <rect x="110" y="80" width="40" height="40" fill="currentColor" fillOpacity="0.18" stroke="none" />
-    </svg>
-  )
-}
-
-/** 21. DevTools extension — 퍼즐 조각 */
-export function ExtensionIllustration() {
-  return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <path
-        d="M50 50 H92 V40 Q92 28 104 28 Q116 28 116 40 V50 H150 V92 H140 Q128 92 128 104 Q128 116 140 116 H150 V150 H50 Z"
-        strokeWidth="2.5"
-      />
-    </svg>
-  )
-}
-
-/** 22. Drag & drop — 파일 + 화살표 */
-export function DragDropIllustration() {
-  return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <path d="M70 30 L110 30 L130 50 L130 130 L70 130 Z" strokeWidth="2.5" />
-      <path d="M110 30 L110 50 L130 50" strokeWidth="2.5" />
-      <line x1="80" y1="68" x2="120" y2="68" strokeWidth="2" opacity="0.4" />
-      <line x1="80" y1="82" x2="120" y2="82" strokeWidth="2" opacity="0.4" />
-      <line x1="80" y1="96" x2="105" y2="96" strokeWidth="2" opacity="0.4" />
-      {/* 손가락 화살표 */}
-      <path d="M140 80 L170 110 M170 110 L170 96 M170 110 L156 110" strokeWidth="2.5" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-/** 23. Notification — 종 */
-export function NotificationIllustration() {
-  return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <path d="M70 110 Q70 60 100 50 Q130 60 130 110 Z" strokeWidth="2.5" />
-      <line x1="60" y1="110" x2="140" y2="110" strokeWidth="2.5" />
-      <circle cx="100" cy="124" r="6" strokeWidth="2.5" />
-      <circle cx="135" cy="48" r="8" fill="currentColor" stroke="none" />
-      <text x="135" y="52" fontSize="10" fontWeight="800" fill="white" stroke="none" textAnchor="middle">
-        1
-      </text>
-    </svg>
-  )
-}
-
-/** 24. Online/Offline — 신호 막대 */
-export function SignalIllustration() {
-  return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      {[
-        { x: 50, h: 20 },
-        { x: 80, h: 40 },
-        { x: 110, h: 60 },
-        { x: 140, h: 80 },
-      ].map(({ x, h }) => (
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <rect x="36" y="28" width="168" height="104" rx="14" {...muted} strokeWidth="2" {...softFill} />
+      <rect x="36" y="28" width="168" height="22" rx="14" {...mediumFill} stroke="none" />
+      <circle cx="52" cy="39" r="3.5" fill={ACCENT} />
+      {/* 글자 줄 6개 */}
+      {[62, 76, 90, 104, 118].map((y, i) => (
         <rect
-          key={x}
-          x={x}
-          y={130 - h}
-          width="20"
-          height={h}
+          key={y}
+          x="56"
+          y={y}
+          width={140 - i * 12}
+          height="6"
           rx="3"
-          fill="currentColor"
-          fillOpacity="0.25"
-          stroke="currentColor"
-          strokeWidth="2"
+          {...softFill}
+          stroke="none"
         />
       ))}
     </svg>
   )
 }
 
-/** 25. REPL — 터미널 프롬프트 */
+/** 13. Sandbox — 안에 자물쇠 있는 박스 */
+export function SandboxIllustration() {
+  return (
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <rect x="50" y="28" width="140" height="104" rx="14" {...muted} strokeWidth="2" {...softFill} />
+      {/* 자물쇠 본체 */}
+      <rect x="100" y="74" width="40" height="32" rx="6" {...muted} strokeWidth="2" {...mediumFill} />
+      <path d="M108 74 V64 Q108 52 120 52 Q132 52 132 64 V74" {...muted} strokeWidth="2" />
+      {/* 자물쇠 키홀 — 빨강 액센트 */}
+      <circle cx="120" cy="88" r="4" fill={ACCENT} />
+    </svg>
+  )
+}
+
+/** 14. Context isolation — 두 영역 사이 점선 벽 */
+export function ContextIsolationIllustration() {
+  return (
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <rect x="20" y="36" width="86" height="88" rx="14" {...muted} strokeWidth="2" {...softFill} />
+      <rect x="134" y="36" width="86" height="88" rx="14" {...muted} strokeWidth="2" {...softFill} />
+      {/* 점선 벽 */}
+      <line x1="120" y1="28" x2="120" y2="132" stroke="currentColor" strokeOpacity="0.5" strokeWidth="2" strokeDasharray="3 5" />
+      {/* 작은 통로(붉은 점) */}
+      <circle cx="120" cy="80" r="5" fill={ACCENT} />
+    </svg>
+  )
+}
+
+/** 15. Performance — 게이지 호 */
+export function PerformanceIllustration() {
+  return (
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <path d="M48 124 A72 72 0 0 1 192 124" {...muted} strokeWidth="6" strokeLinecap="round" />
+      <path d="M48 124 A72 72 0 0 1 150 60" stroke={ACCENT} strokeWidth="6" strokeLinecap="round" fill="none" />
+      <circle cx="120" cy="124" r="6" fill={ACCENT} />
+    </svg>
+  )
+}
+
+/** 16. Offline — 사선으로 그어진 클라우드 */
+export function OfflineIllustration() {
+  return (
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <path
+        d="M70 80 Q70 56 96 56 Q104 36 128 44 Q150 38 158 60 Q186 60 186 84 Q186 108 162 108 L92 108 Q70 108 70 80 Z"
+        {...muted}
+        strokeWidth="2"
+        {...softFill}
+      />
+      <line x1="50" y1="40" x2="200" y2="130" stroke={ACCENT} strokeWidth="4" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+/** 17. Accessibility — 동심원 */
+export function AccessibilityIllustration() {
+  return (
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <circle cx="120" cy="80" r="56" {...muted} strokeWidth="1.6" strokeDasharray="3 5" />
+      <circle cx="120" cy="80" r="36" {...muted} strokeWidth="2" {...softFill} />
+      <circle cx="120" cy="80" r="14" fill={ACCENT} />
+    </svg>
+  )
+}
+
+/** 18. Examples — 카드 스택 */
+export function ExamplesIllustration() {
+  return (
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <rect x="56" y="40" width="120" height="78" rx="12" {...muted} strokeWidth="2" {...softFill} transform="rotate(-6 120 80)" />
+      <rect x="56" y="40" width="120" height="78" rx="12" {...muted} strokeWidth="2" {...mediumFill} transform="rotate(2 120 80)" />
+      <rect x="56" y="40" width="120" height="78" rx="12" fill={ACCENT} />
+      <rect x="72" y="64" width="60" height="6" rx="3" fill="white" fillOpacity="0.7" />
+      <rect x="72" y="80" width="80" height="6" rx="3" fill="white" fillOpacity="0.5" />
+    </svg>
+  )
+}
+
+/** 19. Debugging — 돋보기 */
+export function DebuggingIllustration() {
+  return (
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <circle cx="100" cy="74" r="40" {...muted} strokeWidth="3" {...softFill} />
+      <line x1="130" y1="104" x2="180" y2="140" stroke="currentColor" strokeOpacity="0.7" strokeWidth="6" strokeLinecap="round" />
+      <circle cx="100" cy="74" r="6" fill={ACCENT} />
+    </svg>
+  )
+}
+
+/** 20. Boilerplates — 청사진 격자 */
+export function BoilerplateIllustration() {
+  return (
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <rect x="36" y="28" width="168" height="104" rx="10" {...muted} strokeWidth="2" {...softFill} />
+      {[52, 76, 100].map((y) => (
+        <line key={`h${y}`} x1="36" y1={y} x2="204" y2={y} stroke="currentColor" strokeOpacity="0.18" strokeWidth="1" />
+      ))}
+      {[80, 120, 160].map((x) => (
+        <line key={`v${x}`} x1={x} y1="28" x2={x} y2="132" stroke="currentColor" strokeOpacity="0.18" strokeWidth="1" />
+      ))}
+      <rect x="80" y="52" width="40" height="24" rx="4" fill={ACCENT} />
+    </svg>
+  )
+}
+
+/** 21. DevTools extension — 퍼즐 한 조각 */
+export function ExtensionIllustration() {
+  return (
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <path
+        d="M70 50 H106 V40 Q106 28 120 28 Q134 28 134 40 V50 H170 V92 H160 Q146 92 146 106 Q146 120 160 120 H170 V132 H70 Z"
+        {...muted}
+        strokeWidth="2"
+        {...softFill}
+      />
+      <circle cx="170" cy="106" r="6" fill={ACCENT} />
+    </svg>
+  )
+}
+
+/** 22. Drag & drop — 카드 + 화살표 */
+export function DragDropIllustration() {
+  return (
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <rect x="40" y="36" width="80" height="88" rx="10" {...muted} strokeWidth="2" {...softFill} />
+      <rect x="56" y="60" width="48" height="6" rx="3" {...mediumFill} stroke="none" />
+      <rect x="56" y="76" width="40" height="6" rx="3" {...softFill} stroke="none" />
+      {/* 화살표 — 빨강 액센트 */}
+      <path d="M128 80 H188 M170 60 L188 80 L170 100" stroke={ACCENT} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </svg>
+  )
+}
+
+/** 23. Notification — 둥근 알림 카드 */
+export function NotificationIllustration() {
+  return (
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <rect x="48" y="44" width="144" height="72" rx="14" {...muted} strokeWidth="2" {...softFill} />
+      <circle cx="76" cy="80" r="14" {...mediumFill} stroke="none" />
+      <rect x="100" y="68" width="76" height="8" rx="3" {...mediumFill} stroke="none" />
+      <rect x="100" y="84" width="56" height="6" rx="3" {...softFill} stroke="none" />
+      {/* 상단 우측 빨강 닷지 */}
+      <circle cx="184" cy="48" r="7" fill={ACCENT} />
+    </svg>
+  )
+}
+
+/** 24. Online/Offline signal — 4 단계 막대 */
+export function SignalIllustration() {
+  return (
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      {[
+        { x: 60, h: 28 },
+        { x: 100, h: 56 },
+        { x: 140, h: 84 },
+        { x: 180, h: 112 },
+      ].map(({ x, h }, i) => (
+        <rect
+          key={x}
+          x={x - 12}
+          y={132 - h}
+          width="24"
+          height={h}
+          rx="6"
+          {...(i === 3
+            ? { fill: ACCENT }
+            : { fill: 'currentColor', fillOpacity: 0.15 + i * 0.07 })}
+          stroke="none"
+        />
+      ))}
+    </svg>
+  )
+}
+
+/** 25. REPL — 터미널 라인들 */
 export function ReplIllustration() {
   return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <rect x="22" y="28" width="156" height="104" rx="8" strokeWidth="2.5" />
-      <rect x="22" y="28" width="156" height="18" rx="8" fill="currentColor" fillOpacity="0.12" stroke="none" />
-      <text x="34" y="74" fontSize="14" fontWeight="800" fill="currentColor" stroke="none">
-        {'>'}
-      </text>
-      <rect x="54" y="64" width="80" height="12" fill="currentColor" fillOpacity="0.25" stroke="none" />
-      <text x="34" y="98" fontSize="14" fontWeight="800" fill="currentColor" stroke="none">
-        {'>'}
-      </text>
-      <rect x="54" y="88" width="60" height="12" fill="currentColor" fillOpacity="0.18" stroke="none" />
-      <text x="34" y="122" fontSize="14" fontWeight="800" fill="currentColor" stroke="none">
-        {'>'}
-      </text>
-      <rect x="54" y="112" width="14" height="12" fill="currentColor" stroke="none" />
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <rect x="36" y="28" width="168" height="104" rx="12" {...muted} strokeWidth="2" {...softFill} />
+      <rect x="36" y="28" width="168" height="20" rx="12" {...mediumFill} stroke="none" />
+      <circle cx="52" cy="38" r="3.5" fill={ACCENT} />
+      {/* 프롬프트 마크 + 라인 */}
+      {[64, 88, 112].map((y, i) => (
+        <g key={y}>
+          <rect x="52" y={y - 6} width="8" height="12" rx="2" fill={i === 2 ? ACCENT : 'currentColor'} fillOpacity={i === 2 ? 1 : 0.4} />
+          <rect x="68" y={y - 4} width={[100, 80, 40][i]} height="8" rx="3" {...softFill} stroke="none" />
+        </g>
+      ))}
     </svg>
   )
 }
 
-/** 26. Native modules — 칩(IC) */
+/** 26. Native module — 칩 */
 export function NativeModuleIllustration() {
   return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <rect x="60" y="40" width="80" height="80" rx="4" strokeWidth="2.5" />
-      <rect x="78" y="58" width="44" height="44" strokeWidth="2" opacity="0.5" />
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <rect x="76" y="36" width="88" height="88" rx="8" {...muted} strokeWidth="2" {...softFill} />
+      <rect x="92" y="52" width="56" height="56" rx="6" {...mediumFill} stroke="none" />
       {/* 핀들 */}
-      {[50, 70, 90, 110].map((y) => (
-        <line key={`l${y}`} x1="60" y1={y} x2="44" y2={y} strokeWidth="2.5" />
+      {[52, 70, 88, 106].map((y) => (
+        <rect key={`l${y}`} x="56" y={y - 3} width="20" height="6" rx="2" {...softFill} stroke="none" />
       ))}
-      {[50, 70, 90, 110].map((y) => (
-        <line key={`r${y}`} x1="140" y1={y} x2="156" y2={y} strokeWidth="2.5" />
+      {[52, 70, 88, 106].map((y) => (
+        <rect key={`r${y}`} x="164" y={y - 3} width="20" height="6" rx="2" {...softFill} stroke="none" />
       ))}
-      {[80, 100, 120].map((x) => (
-        <line key={`t${x}`} x1={x} y1="40" x2={x} y2="26" strokeWidth="2.5" />
+      {[88, 106, 124].map((x) => (
+        <rect key={`t${x}`} x={x - 3} y="20" width="6" height="16" rx="2" {...softFill} stroke="none" />
       ))}
-      {[80, 100, 120].map((x) => (
-        <line key={`b${x}`} x1={x} y1="120" x2={x} y2="134" strokeWidth="2.5" />
+      {[88, 106, 124].map((x) => (
+        <rect key={`b${x}`} x={x - 3} y="124" width="6" height="16" rx="2" {...softFill} stroke="none" />
       ))}
-      <text x="100" y="86" fontSize="11" fontWeight="800" fill="currentColor" stroke="none" textAnchor="middle">
-        C++
-      </text>
+      {/* 액센트 칩 중심 */}
+      <circle cx="120" cy="80" r="6" fill={ACCENT} />
     </svg>
   )
 }
 
-/** 27. Code signing — 인증서 + 체크 */
+/** 27. Code signing — 인증서 + 봉인 */
 export function CodeSigningIllustration() {
   return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <rect x="36" y="26" width="128" height="100" rx="6" strokeWidth="2.5" />
-      <line x1="50" y1="50" x2="120" y2="50" strokeWidth="2" opacity="0.4" />
-      <line x1="50" y1="66" x2="110" y2="66" strokeWidth="2" opacity="0.4" />
-      <line x1="50" y1="82" x2="100" y2="82" strokeWidth="2" opacity="0.4" />
-      <circle cx="148" cy="130" r="20" strokeWidth="2.5" />
-      <path d="M138 130 L146 138 L160 122" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <rect x="46" y="28" width="124" height="104" rx="10" {...muted} strokeWidth="2" {...softFill} />
+      <rect x="62" y="48" width="76" height="8" rx="3" {...mediumFill} stroke="none" />
+      <rect x="62" y="64" width="64" height="6" rx="3" {...softFill} stroke="none" />
+      <rect x="62" y="78" width="56" height="6" rx="3" {...softFill} stroke="none" />
+      {/* 봉인 — 빨강 원형 */}
+      <circle cx="186" cy="120" r="22" fill={ACCENT} />
+      <path d="M176 120 L184 128 L196 114" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
     </svg>
   )
 }
 
-/** 28. Mac App Store — A 박스 */
+/** 28. Mac App Store — 큰 둥근 사각 */
 export function MasIllustration() {
   return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <rect x="50" y="30" width="100" height="100" rx="20" strokeWidth="2.5" />
-      <text x="100" y="100" fontSize="56" fontWeight="800" fill="currentColor" stroke="none" textAnchor="middle">
-        A
-      </text>
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <rect x="76" y="28" width="88" height="104" rx="22" {...muted} strokeWidth="2" {...mediumFill} />
+      <circle cx="120" cy="80" r="22" fill={ACCENT} />
     </svg>
   )
 }
@@ -589,15 +474,12 @@ export function MasIllustration() {
 /** 29. Snapcraft — 라벨 박스 */
 export function SnapcraftIllustration() {
   return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <rect x="34" y="50" width="132" height="80" rx="6" strokeWidth="2.5" />
-      <rect x="50" y="34" width="100" height="22" rx="4" fill="currentColor" stroke="none" />
-      <text x="100" y="50" fontSize="12" fontWeight="800" fill="white" stroke="none" textAnchor="middle">
-        snap
-      </text>
-      <line x1="50" y1="78" x2="150" y2="78" strokeWidth="2" opacity="0.4" />
-      <line x1="50" y1="94" x2="130" y2="94" strokeWidth="2" opacity="0.4" />
-      <line x1="50" y1="110" x2="140" y2="110" strokeWidth="2" opacity="0.4" />
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <rect x="44" y="46" width="152" height="86" rx="10" {...muted} strokeWidth="2" {...softFill} />
+      <rect x="64" y="30" width="112" height="22" rx="6" fill={ACCENT} />
+      <rect x="64" y="76" width="112" height="8" rx="3" {...mediumFill} stroke="none" />
+      <rect x="64" y="92" width="92" height="6" rx="3" {...softFill} stroke="none" />
+      <rect x="64" y="106" width="100" height="6" rx="3" {...softFill} stroke="none" />
     </svg>
   )
 }
@@ -605,24 +487,26 @@ export function SnapcraftIllustration() {
 /** 30. Windows Store — 4 타일 */
 export function WindowsStoreIllustration() {
   return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <rect x="56" y="36" width="38" height="38" fill="currentColor" stroke="none" />
-      <rect x="106" y="36" width="38" height="38" fill="currentColor" stroke="none" opacity="0.6" />
-      <rect x="56" y="86" width="38" height="38" fill="currentColor" stroke="none" opacity="0.6" />
-      <rect x="106" y="86" width="38" height="38" fill="currentColor" stroke="none" opacity="0.3" />
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <rect x="72" y="32" width="42" height="42" {...mediumFill} stroke="none" />
+      <rect x="126" y="32" width="42" height="42" fill="currentColor" fillOpacity="0.28" stroke="none" />
+      <rect x="72" y="86" width="42" height="42" fill="currentColor" fillOpacity="0.28" stroke="none" />
+      <rect x="126" y="86" width="42" height="42" fill={ACCENT} />
     </svg>
   )
 }
 
-/** 31. Auto update — 회전 화살표 + 버전 */
+/** 31. Auto-update — 회전 화살표 */
 export function AutoUpdateIllustration() {
   return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <path d="M100 40 A40 40 0 1 1 60 80" strokeWidth="3" />
-      <path d="M100 40 L86 28 M100 40 L86 52" strokeWidth="3" strokeLinecap="round" />
-      <text x="100" y="110" fontSize="14" fontWeight="800" fill="currentColor" stroke="none" textAnchor="middle">
-        v1 → v2
-      </text>
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <path
+        d="M120 36 A44 44 0 1 1 76 80"
+        {...muted}
+        strokeWidth="6"
+        strokeLinecap="round"
+      />
+      <path d="M120 22 L120 50 L96 36 Z" fill={ACCENT} />
     </svg>
   )
 }
@@ -630,114 +514,102 @@ export function AutoUpdateIllustration() {
 /** 32. DevTools — 렌치 */
 export function DevToolsIllustration() {
   return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
       <path
-        d="M64 60 A18 18 0 1 0 90 86 L132 128 L150 110 L108 68 A18 18 0 0 0 76 50 L88 62 L78 72 L66 60 Z"
-        strokeWidth="2.5"
-        fill="currentColor"
-        fillOpacity="0.12"
+        d="M88 60 A20 20 0 1 0 116 88 L162 134 L182 114 L136 68 A20 20 0 0 0 100 50 L112 62 L100 74 L88 60 Z"
+        {...muted}
+        strokeWidth="2"
+        {...softFill}
       />
+      <circle cx="172" cy="124" r="5" fill={ACCENT} />
     </svg>
   )
 }
 
-/** 33. Profiling — 라인차트 */
+/** 33. Profiling — 라인 차트 */
 export function ProfilingIllustration() {
   return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <line x1="30" y1="130" x2="170" y2="130" strokeWidth="2" />
-      <line x1="30" y1="130" x2="30" y2="30" strokeWidth="2" />
-      <path d="M30 110 L60 90 L80 100 L110 60 L140 70 L170 40" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      {[60, 80, 110, 140, 170].map((x, i) => (
-        <circle key={x} cx={x} cy={[90, 100, 60, 70, 40][i]} r="4" fill="currentColor" stroke="none" />
-      ))}
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <line x1="36" y1="128" x2="204" y2="128" {...muted} strokeWidth="1.6" />
+      <line x1="36" y1="128" x2="36" y2="36" {...muted} strokeWidth="1.6" />
+      <path d="M36 110 L72 92 L104 100 L136 64 L168 76 L204 44"
+        stroke={ACCENT} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <circle cx="136" cy="64" r="5" fill={ACCENT} />
     </svg>
   )
 }
 
-/** 34. Headless CI — 모니터 없는 서버 */
+/** 34. Headless CI — 모니터 없는 서버 랙 */
 export function HeadlessIllustration() {
   return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <rect x="50" y="40" width="100" height="20" rx="3" strokeWidth="2" />
-      <rect x="50" y="66" width="100" height="20" rx="3" strokeWidth="2" />
-      <rect x="50" y="92" width="100" height="20" rx="3" strokeWidth="2" />
-      <circle cx="62" cy="50" r="3" fill="currentColor" stroke="none" />
-      <circle cx="62" cy="76" r="3" fill="currentColor" stroke="none" />
-      <circle cx="62" cy="102" r="3" fill="currentColor" stroke="none" />
-      <line x1="78" y1="50" x2="136" y2="50" strokeWidth="2" opacity="0.5" />
-      <line x1="78" y1="76" x2="136" y2="76" strokeWidth="2" opacity="0.5" />
-      <line x1="78" y1="102" x2="136" y2="102" strokeWidth="2" opacity="0.5" />
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      {[40, 72, 104].map((y, i) => (
+        <g key={y}>
+          <rect x="48" y={y} width="144" height="22" rx="5" {...muted} strokeWidth="1.6" {...softFill} />
+          <circle cx="62" cy={y + 11} r="3.5" fill={i === 0 ? ACCENT : 'currentColor'} fillOpacity={i === 0 ? 1 : 0.4} />
+          <rect x="76" y={y + 7} width="100" height="8" rx="3" {...mediumFill} stroke="none" />
+        </g>
+      ))}
     </svg>
   )
 }
 
-/** 35. Glossary — 책 */
+/** 35. Glossary — 펼친 책 */
 export function GlossaryIllustration() {
   return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <path d="M40 40 L100 50 L160 40 L160 130 L100 140 L40 130 Z" strokeWidth="2.5" />
-      <line x1="100" y1="50" x2="100" y2="140" strokeWidth="2.5" />
-      <line x1="56" y1="64" x2="92" y2="69" strokeWidth="1.5" opacity="0.5" />
-      <line x1="56" y1="78" x2="92" y2="82" strokeWidth="1.5" opacity="0.5" />
-      <line x1="56" y1="92" x2="92" y2="96" strokeWidth="1.5" opacity="0.5" />
-      <line x1="108" y1="69" x2="144" y2="64" strokeWidth="1.5" opacity="0.5" />
-      <line x1="108" y1="82" x2="144" y2="78" strokeWidth="1.5" opacity="0.5" />
-      <line x1="108" y1="96" x2="144" y2="92" strokeWidth="1.5" opacity="0.5" />
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <path d="M40 44 L120 56 L200 44 V128 L120 140 L40 128 Z" {...muted} strokeWidth="2" {...softFill} />
+      <line x1="120" y1="56" x2="120" y2="140" {...muted} strokeWidth="2" />
+      {[70, 84, 98].map((y) => (
+        <line key={`l${y}`} x1="56" y1={y} x2="106" y2={y + 1} stroke="currentColor" strokeOpacity="0.3" strokeWidth="1.4" />
+      ))}
+      {[70, 84, 98].map((y) => (
+        <line key={`r${y}`} x1="134" y1={y + 1} x2="184" y2={y} stroke="currentColor" strokeOpacity="0.3" strokeWidth="1.4" />
+      ))}
+      {/* 책갈피 */}
+      <rect x="148" y="40" width="8" height="40" fill={ACCENT} />
     </svg>
   )
 }
 
-/** 36. Versioning — 세 개의 숫자 마디 */
+/** 36. Versioning — 3개 점 */
 export function VersioningIllustration() {
   return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <text x="100" y="100" fontSize="42" fontWeight="800" fill="currentColor" stroke="none" textAnchor="middle">
-        29.2.0
-      </text>
-      <text x="46" y="124" fontSize="9" fontWeight="700" fill="currentColor" stroke="none" textAnchor="middle" opacity="0.7">
-        major
-      </text>
-      <text x="100" y="124" fontSize="9" fontWeight="700" fill="currentColor" stroke="none" textAnchor="middle" opacity="0.7">
-        minor
-      </text>
-      <text x="148" y="124" fontSize="9" fontWeight="700" fill="currentColor" stroke="none" textAnchor="middle" opacity="0.7">
-        patch
-      </text>
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <circle cx="68" cy="80" r="20" {...mediumFill} stroke="none" />
+      <circle cx="120" cy="80" r="20" {...mediumFill} stroke="none" />
+      <circle cx="172" cy="80" r="20" fill={ACCENT} />
+      <line x1="36" y1="80" x2="204" y2="80" stroke="currentColor" strokeOpacity="0.2" strokeWidth="2" />
     </svg>
   )
 }
 
-/** 37. Breaking changes — 끊긴 사슬 */
+/** 37. Breaking changes — 끊긴 막대 */
 export function BreakingChangesIllustration() {
   return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <ellipse cx="62" cy="80" rx="22" ry="14" strokeWidth="3" />
-      <ellipse cx="138" cy="80" rx="22" ry="14" strokeWidth="3" />
-      <line x1="84" y1="58" x2="116" y2="102" strokeWidth="3" strokeLinecap="round" />
-      <line x1="100" y1="68" x2="92" y2="78" strokeWidth="2" />
-      <line x1="100" y1="82" x2="108" y2="92" strokeWidth="2" />
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <rect x="32" y="68" width="80" height="24" rx="12" {...muted} strokeWidth="2" {...mediumFill} />
+      <rect x="128" y="68" width="80" height="24" rx="12" {...muted} strokeWidth="2" {...mediumFill} />
+      <path d="M112 56 L128 104" stroke={ACCENT} strokeWidth="4" strokeLinecap="round" />
     </svg>
   )
 }
 
-/** 38. Patches — 반창고 */
+/** 38. Patches — 둥근 반창고 */
 export function PatchesIllustration() {
   return (
-    <svg viewBox="0 0 200 160" style={wrap} fill="none" stroke="currentColor">
-      <rect
-        x="50"
-        y="64"
-        width="100"
-        height="32"
-        rx="16"
-        strokeWidth="2.5"
-        transform="rotate(-20 100 80)"
-      />
-      <line x1="80" y1="80" x2="120" y2="80" strokeWidth="2" opacity="0.4" transform="rotate(-20 100 80)" />
-      {[78, 88, 98, 108, 118].map((x) => (
-        <circle key={x} cx={x} cy="80" r="1.6" fill="currentColor" stroke="none" transform="rotate(-20 100 80)" />
-      ))}
+    <svg viewBox="0 0 240 160" style={wrap} fill="none">
+      <g transform="rotate(-22 120 80)">
+        <rect x="50" y="62" width="140" height="36" rx="18" {...muted} strokeWidth="2" {...softFill} />
+        <rect x="106" y="62" width="28" height="36" {...mediumFill} stroke="none" />
+        {[76, 90, 104, 118, 132, 146, 160].map((x) => (
+          <circle key={`a-${x}`} cx={x} cy="71" r="2" {...mediumFill} stroke="none" />
+        ))}
+        {[76, 90, 104, 118, 132, 146, 160].map((x) => (
+          <circle key={`b-${x}`} cx={x} cy="89" r="2" {...mediumFill} stroke="none" />
+        ))}
+      </g>
+      <circle cx="120" cy="80" r="5" fill={ACCENT} />
     </svg>
   )
 }
