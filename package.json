@@ -1,0 +1,18 @@
+{
+  "name": "electronica",
+  "version": "0.1.0",
+  "private": true,
+  "description": "나만의 Electron 학습/참고 문서 사이트 (Nextra + Next.js)",
+  "engines": {
+    "node": ">=20.0.0 <23"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "analyze": "ANALYZE=true next build",
+    "preview": "npx serve@latest out"
+  }
+}
