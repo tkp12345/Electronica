@@ -1,0 +1,44 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { HeadlessIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<HeadlessIllustration />}
+  title="Testing on headless CI"
+  subtitle="Run Electron on monitor-less GitHub Actions / GitLab runners."
+  badge="Testing · Headless CI"
+/>
+
+## The problem — Linux runners have no display
+
+`electron .` has nowhere to draw and errors out. Solve it with Xvfb, a _virtual X server_ that creates a fake display.
+
+## GitHub Actions sample
+
+```yaml filename=".github/workflows/test.yml"
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm ci
+      - run: xvfb-run --auto-servernum npm test
+```
+
+<Callout type="info" emoji="🧒">
+`xvfb-run` creates an _invisible virtual monitor_ for Electron to draw onto. Nobody sees it, but the pixels exist.
+</Callout>
+
+## macOS / Windows runners
+
+Both come with displays out of the box — no extra setup. Heads up: no GPU acceleration on these runners can make some graphics tests slower or render differently.
+
+## Auto-capture traces & screenshots
+
+Use Playwright's `--trace=on` to keep _video + HTML traces from the moment of failure_. That's half the debugging gone already.
+
+<Cards>
+  <Cards.Card title="Automated testing" href="/en/docs/testing/automated" arrow />
+</Cards>

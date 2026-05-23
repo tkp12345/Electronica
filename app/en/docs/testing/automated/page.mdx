@@ -1,0 +1,46 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { DebuggingIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<DebuggingIllustration />}
+  title="Automated testing"
+  subtitle="Drive a real Electron window with Playwright's Electron mode — clicks, keystrokes, and all."
+  badge="Testing · Automated"
+/>
+
+## Why Playwright
+
+- Launches _real Chromium_, exactly what users see.
+- Selectors, traces, video recording all built in.
+- WebdriverIO works too, but Playwright has the gentlest learning curve.
+
+## Smallest end-to-end example
+
+```js filename="tests/launch.spec.ts"
+import { test, expect, _electron as electron } from '@playwright/test'
+
+test('shows Hello World', async () => {
+  const app = await electron.launch({ args: ['.'] })
+  const win = await app.firstWindow()
+
+  await expect(win.getByText('Hello, Electron')).toBeVisible()
+
+  await app.close()
+})
+```
+
+<Callout type="info" emoji="🧒">
+`electron.launch` _starts the real app_; `firstWindow()` _auto-focuses the first window_. From there it's regular Playwright.
+</Callout>
+
+## A good test split
+
+- Keep **Main logic** in pure functions → unit-test with Jest/Vitest.
+- Cover **UI behaviour** with Playwright E2E.
+- **IPC handlers** are callable directly, so prefer fast unit tests there.
+
+<Cards>
+  <Cards.Card title="DevTools deeper" href="/en/docs/testing/devtools" arrow />
+  <Cards.Card title="Headless CI" href="/en/docs/testing/headless" arrow />
+</Cards>

@@ -1,0 +1,43 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { ProfilingIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<ProfilingIllustration />}
+  title="성능 프로파일링"
+  subtitle="DevTools Performance + Node --prof 로 진짜 어디가 느린지 측정하기."
+  badge="Testing · Profiling"
+/>
+
+## 측정 → 가설 → 수정 → 재측정
+
+추측 대신 데이터로 일하는 4단계. 한 번에 한 가지 변경만 바꾸세요.
+
+## Renderer: DevTools Performance
+
+1. DevTools 열기 → Performance 탭
+2. 빨간 ⬤ Record 누르고 시나리오 수행
+3. 정지 후 _Main Thread_ 영역에서 가장 굵은 막대(노란/주황)부터 살피기
+
+<Callout type="info" emoji="🧒">
+가장 굵은 막대 하나가 _90% 의 느림_ 을 만들곤 해요. 작은 막대 100개보다 큰 막대 1개를 먼저 잡는 게 보통 더 효과적.
+</Callout>
+
+## Main: Node --prof
+
+```bash filename="terminal"
+electron --prof --enable-logging .
+# 종료 후 isolate-*.log 가 생성됨
+
+node --prof-process isolate-*.log > prof.txt
+```
+
+`prof.txt` 안에 함수별 누적 시간 통계가 나옵니다.
+
+## 메모리 프로파일
+
+DevTools _Memory_ → Heap Snapshot. _Retainers_ 트리를 따라가며 _참조가 풀리지 않은 객체_ 찾기.
+
+<Cards>
+  <Cards.Card title="Best Practices: 성능" href="/ko/docs/best-practices/performance" arrow />
+</Cards>

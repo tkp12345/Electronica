@@ -1,0 +1,43 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { ProfilingIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<ProfilingIllustration />}
+  title="Performance profiling"
+  subtitle="DevTools Performance + Node --prof — measure first, then change one thing."
+  badge="Testing · Profiling"
+/>
+
+## Measure → hypothesize → fix → re-measure
+
+A four-step loop instead of guesswork. Change exactly one thing per iteration.
+
+## Renderer: DevTools Performance
+
+1. Open DevTools → Performance tab.
+2. Press the red ⬤ Record, run the scenario.
+3. Stop. In the _Main Thread_ swim-lane, look at the widest yellow/orange bars first.
+
+<Callout type="info" emoji="🧒">
+One fat bar usually causes _90% of the slowness_. Chase the big bar before the hundred small ones.
+</Callout>
+
+## Main: Node --prof
+
+```bash filename="terminal"
+electron --prof --enable-logging .
+# After quitting you'll have isolate-*.log
+
+node --prof-process isolate-*.log > prof.txt
+```
+
+`prof.txt` has cumulative time per function.
+
+## Memory profile
+
+DevTools _Memory_ → Heap Snapshot. Follow the _Retainers_ tree to find objects that are still referenced when they shouldn't be.
+
+<Cards>
+  <Cards.Card title="Best practices: performance" href="/en/docs/best-practices/performance" arrow />
+</Cards>

@@ -1,0 +1,52 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { DevToolsIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<DevToolsIllustration />}
+  title="DevTools 활용"
+  subtitle="크롬 개발자 도구의 어떤 탭이 Electron 디버깅에 가장 유용한지 — 5가지 추천."
+  badge="Testing · DevTools"
+/>
+
+## 자주 켜는 5개 탭
+
+| 탭 | 무엇 |
+|---|---|
+| **Elements** | DOM 검사, CSS 즉시 수정 |
+| **Console** | 로그·표현식·에러 스택 |
+| **Network** | API 호출 / 파일 로드 추적 |
+| **Performance** | 프레임·CPU 프로파일 |
+| **Memory** | 누수·힙 스냅샷 |
+
+## 자동으로 띄우기
+
+```js filename="main.js"
+if (process.env.NODE_ENV === 'development') {
+  win.webContents.openDevTools({ mode: 'detach' })
+}
+```
+
+<Callout type="info" emoji="🧒">
+`mode: 'detach'` 는 _DevTools 를 별도 창으로_ 띄워, 작은 앱 창에서 화면을 가리지 않게 해 줘요.
+</Callout>
+
+## 키보드 단축키 직접 매핑
+
+```js filename="main.js"
+win.webContents.on('before-input-event', (event, input) => {
+  if (input.key === 'F12') win.webContents.toggleDevTools()
+})
+```
+
+## 운영 빌드에서 막기
+
+```js
+if (process.env.NODE_ENV === 'production') {
+  win.webContents.on('devtools-opened', () => win.webContents.closeDevTools())
+}
+```
+
+<Cards>
+  <Cards.Card title="앱 디버깅" href="/ko/docs/development/debugging" arrow />
+</Cards>

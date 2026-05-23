@@ -1,0 +1,46 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { DebuggingIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<DebuggingIllustration />}
+  title="자동화 테스트"
+  subtitle="Playwright 의 Electron 모드로 진짜 창을 띄워 클릭·키 입력까지 검증하기."
+  badge="Testing · Automated"
+/>
+
+## 왜 Playwright 인가
+
+- _진짜 Chromium_ 을 띄우므로 사용자가 보는 것과 동일
+- 셀렉터·트레이스·비디오 녹화까지 한 도구로
+- WebdriverIO 등 다른 옵션도 있지만 학습 곡선은 Playwright 가 가장 완만
+
+## 한 번에 끝내는 예제
+
+```js filename="tests/launch.spec.ts"
+import { test, expect, _electron as electron } from '@playwright/test'
+
+test('Hello World 가 보인다', async () => {
+  const app = await electron.launch({ args: ['.'] })
+  const win = await app.firstWindow()
+
+  await expect(win.getByText('Hello, Electron')).toBeVisible()
+
+  await app.close()
+})
+```
+
+<Callout type="info" emoji="🧒">
+`electron.launch` 가 _진짜 우리 앱을 띄우고_, `firstWindow()` 가 _첫 창에 자동으로 포커스_ 해 줘요. 그 뒤로는 일반 Playwright 와 동일.
+</Callout>
+
+## 좋은 테스트 디자인
+
+- **Main 로직** 은 별도 함수로 분리 → Jest/Vitest 로 단위 테스트
+- **UI 동작** 만 Playwright 로 E2E 검증
+- **IPC 핸들러** 는 직접 호출 가능하므로 단위 테스트로 빠르게
+
+<Cards>
+  <Cards.Card title="DevTools 더 깊이" href="/ko/docs/testing/devtools" arrow />
+  <Cards.Card title="헤드리스 CI" href="/ko/docs/testing/headless" arrow />
+</Cards>

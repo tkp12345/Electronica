@@ -1,0 +1,44 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { HeadlessIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<HeadlessIllustration />}
+  title="헤드리스 CI 에서 테스트하기"
+  subtitle="모니터가 없는 GitHub Actions / GitLab CI 러너에서 Electron 을 띄우는 법."
+  badge="Testing · Headless CI"
+/>
+
+## 문제 — Linux 러너엔 디스플레이가 없다
+
+`electron .` 가 _창을 띄울 곳_ 을 못 찾아 에러. Xvfb(가상 X 서버)로 _가짜 디스플레이_ 를 만들어 해결.
+
+## GitHub Actions 예시
+
+```yaml filename=".github/workflows/test.yml"
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm ci
+      - run: xvfb-run --auto-servernum npm test
+```
+
+<Callout type="info" emoji="🧒">
+`xvfb-run` 가 _보이지 않는 가상 모니터_ 를 만들어 주고, 그 위에 Electron 이 창을 띄워요. 사람 눈엔 안 보이지만 픽셀은 그려져 있어요.
+</Callout>
+
+## macOS / Windows 러너
+
+이 두 OS 는 디스플레이가 기본 제공되므로 별도 설정 없이 동작합니다. 단 _GPU 가속 부재_ 로 일부 그래픽 테스트가 느리거나 다를 수 있어요.
+
+## 트레이스 / 스크린샷 자동 수집
+
+Playwright 의 `--trace=on` 옵션으로 _실패 시점의 동영상·HTML 트레이스_ 자동 보관 → 디버깅 절반 끝.
+
+<Cards>
+  <Cards.Card title="자동화 테스트" href="/ko/docs/testing/automated" arrow />
+</Cards>
