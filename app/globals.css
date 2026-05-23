@@ -12,3 +12,9 @@
 
 /* 다크모드는 Nextra의 `html[class~="dark"]` 시그널을 따라간다 */
 @custom-variant dark (&:where(.dark, .dark *));
+
+/* next/font/google 의 Inter 변수를 Nextra의 본문 폰트 변수에 매핑 */
+html {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}

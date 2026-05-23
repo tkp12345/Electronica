@@ -1,4 +1,5 @@
 import nextra from 'nextra'
+import bundleAnalyzer from '@next/bundle-analyzer'
 
 /**
  * Nextra 4 설정.
@@ -10,6 +11,11 @@ const withNextra = nextra({
     codeblocks: true,
   },
   defaultShowCopyCode: true,
+})
+
+// `ANALYZE=true npm run build` 로 호출 시 번들 시각화 리포트 생성
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
 })
 
 // GitHub Pages 프로젝트 사이트 (`tkp12345.github.io/Electronica`) 기준 basePath.
@@ -29,6 +35,18 @@ const nextConfig = {
   images: { unoptimized: true },
   // GitHub Pages 라우팅 안정성 (모든 경로가 `/`로 끝나도록)
   trailingSlash: true,
+  // 패키지 임포트 최적화 — 큰 패키지의 트리셰이킹 강화 (체감 번들 ↓)
+  experimental: {
+    optimizePackageImports: [
+      'nextra',
+      'nextra-theme-docs',
+      'nextra/components',
+    ],
+  },
+  // 빌드 시 console.log 제거 (warn/error는 유지) — CLAUDE.md 규칙 보조
+  compiler: {
+    removeConsole: isProd ? { exclude: ['warn', 'error'] } : false,
+  },
 }
 
-export default withNextra(nextConfig)
+export default withBundleAnalyzer(withNextra(nextConfig))

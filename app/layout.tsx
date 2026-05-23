@@ -1,10 +1,19 @@
 import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
 import { Footer, Layout, Navbar } from 'nextra-theme-docs'
 import { Head } from 'nextra/components'
 import { getPageMap } from 'nextra/page-map'
 import 'nextra-theme-docs/style.css'
 // Tailwind utilities — nextra css 뒤에 와야 utility 클래스가 override 가능
 import './globals.css'
+
+// 폰트 self-host — 빌드 시 .woff2 가 _next/static/media 로 번들되어
+// 외부 google fonts CDN 요청 0회 (FCP/CLS 개선)
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+})
 
 // 사이트 메타 — 검색엔진 최적화와 OG 미리보기에 사용됨
 export const metadata: Metadata = {
@@ -38,7 +47,7 @@ export default async function RootLayout({
   const pageMap = await getPageMap()
 
   return (
-    <html lang="ko" dir="ltr" suppressHydrationWarning>
+    <html lang="ko" dir="ltr" suppressHydrationWarning className={inter.variable}>
       <Head />
       <body>
         <Layout
