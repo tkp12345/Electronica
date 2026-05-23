@@ -79,7 +79,6 @@ export async function LangLayoutShell({ lang, children }: LangLayoutShellProps) 
       sidebar={{ defaultMenuCollapseLevel: 1, toggleButton: true }}
       themeSwitch={{ dark: t.dark, light: t.light, system: t.system }}
       toc={{ title: t.tocTitle, backToTop: t.backToTop }}
-      search={{ placeholder: t.search }}
       i18n={[
         { locale: 'ko', name: '한국어' },
         { locale: 'en', name: 'English' },
