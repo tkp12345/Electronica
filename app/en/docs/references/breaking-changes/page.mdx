@@ -1,0 +1,47 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { BreakingChangesIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<BreakingChangesIllustration />}
+  title="Breaking changes"
+  subtitle="How to track the changes most likely to bite during a major upgrade."
+  badge="References · Breaking Changes"
+/>
+
+## Where to look
+
+Every major releases an updated `BREAKING-CHANGES.md` in the official repo. Walk it as a checklist against your codebase and plan the migration from that.
+
+## Common shapes of breakage
+
+| Shape | Example |
+|---|---|
+| **API removed** | The `remote` module → use `contextBridge` instead |
+| **Default flipped** | `nodeIntegration` defaults to false |
+| **Renamed** | Things like `app.runningUnderRosettaTranslation` |
+| **Signature** | `dialog.showOpenDialog` became async |
+
+<Callout type="info" emoji="🧒">
+A function flipping from sync to Promise sounds tiny — and stacks into a giant when you skip multiple majors. Hop one major at a time.
+</Callout>
+
+## A safe migration pattern
+
+1. Branch off for the new major.
+2. `npm i electron@latest` and **build only**.
+3. Fix compile errors one at a time.
+4. Run **automated tests**, then manual scenarios.
+5. Ship to a beta channel to a small subset of users first.
+
+## Don't ignore deprecation warnings
+
+```js
+console.warn('xxx is deprecated, use yyy')
+```
+
+That's the announcement that the next major will remove it. Move now and you'll have nothing left to fix later.
+
+<Cards>
+  <Cards.Card title="Versioning" href="/en/docs/references/versioning" arrow />
+</Cards>

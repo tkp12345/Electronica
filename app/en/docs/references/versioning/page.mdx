@@ -1,0 +1,45 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { VersioningIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<VersioningIllustration />}
+  title="Versioning"
+  subtitle="Electron's SemVer rules and release channels — pick a version with confidence."
+  badge="References · Versioning"
+/>
+
+## SemVer at a glance
+
+`MAJOR.MINOR.PATCH` — e.g. `29.2.0`
+
+| Slot | When it bumps |
+|---|---|
+| **MAJOR** | Backward-incompatible changes (e.g. `require` → `import` enforcement) |
+| **MINOR** | Backward-compatible new features |
+| **PATCH** | Bug fixes + security patches |
+
+<Callout type="info" emoji="🧒">
+"Can I upgrade without touching my code?" → MINOR/PATCH yes, MAJOR no — read the migration notes first.
+</Callout>
+
+## Release channels
+
+- **Stable** — what production should track.
+- **Beta** — preview of the next major.
+- **Alpha** — quick experiments.
+- **Nightly** — built daily.
+
+## Support window
+
+Roughly the _current major plus the two previous_ (three lines in total) receive security patches. Older majors may not see backports.
+
+## Recommended cadence
+
+- Check for the latest stable every quarter.
+- Don't skip more than one major at a time — migration debt compounds.
+
+<Cards>
+  <Cards.Card title="Breaking changes" href="/en/docs/references/breaking-changes" arrow />
+  <Cards.Card title="Patches" href="/en/docs/references/patches" arrow />
+</Cards>

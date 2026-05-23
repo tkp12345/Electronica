@@ -1,0 +1,47 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { BreakingChangesIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<BreakingChangesIllustration />}
+  title="Breaking Changes"
+  subtitle="메이저 업그레이드 시 _깨질 가능성이 있는_ 변경점을 추적하는 법."
+  badge="References · Breaking Changes"
+/>
+
+## 어디서 찾나
+
+각 메이저 릴리스마다 공식 저장소에 `BREAKING-CHANGES.md` 가 갱신돼요. 우리 앱이 그 항목 중 어떤 걸 사용하는지 _체크박스처럼_ 보고 마이그레이션 계획을 세우세요.
+
+## 자주 만나는 변경 유형
+
+| 유형 | 예시 |
+|---|---|
+| **API 제거** | `remote` 모듈 → `contextBridge` 로 대체 |
+| **기본값 변경** | `nodeIntegration` 기본 false |
+| **이름 변경** | `app.runningUnderRosettaTranslation` 등 |
+| **타입 시그니처** | `dialog.showOpenDialog` 비동기화 |
+
+<Callout type="info" emoji="🧒">
+"이 함수, 옛날엔 동기였는데 이제 Promise 반환" 같은 자잘한 변경이 누적되어 큰 문제가 돼요. 한 번에 한 메이저씩만 옮기는 이유.
+</Callout>
+
+## 안전한 마이그레이션 패턴
+
+1. 새 메이저용 브랜치 분리
+2. `npm i electron@latest` 후 **빌드만**
+3. 컴파일 에러 → 한 항목씩 잡기
+4. **자동화 테스트** 통과 후 수동 시나리오
+5. 베타 채널로 _옛 사용자 일부_ 만 먼저 배포
+
+## Deprecation 경고를 무시하지 마세요
+
+```js
+console.warn('xxx is deprecated, use yyy')
+```
+
+다음 메이저에서 사라질 예고예요. 그 시점에 이미 옮겨 두면 나중에 한꺼번에 고생할 일이 없어요.
+
+<Cards>
+  <Cards.Card title="Versioning" href="/ko/docs/references/versioning" arrow />
+</Cards>

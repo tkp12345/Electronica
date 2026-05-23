@@ -1,0 +1,51 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { GlossaryIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GlossaryIllustration />}
+  title="용어 사전 (Glossary)"
+  subtitle="Electron 학습에서 자주 만나는 단어들을 한 줄씩 정리."
+  badge="References · Glossary"
+/>
+
+## A — F
+
+| 용어 | 한 줄 |
+|---|---|
+| **ASAR** | 여러 JS 파일을 하나의 아카이브로 묶어 빠른 로딩과 단순 패키징을 돕는 포맷 |
+| **autoUpdater** | 실행 중인 앱이 새 버전 확인·다운로드·교체하는 Electron 내장 모듈 |
+| **BrowserWindow** | 한 개의 데스크톱 창을 표현하는 객체. 안에서 페이지를 그림 |
+| **Chromium** | 크롬의 오픈소스 기반 브라우저 엔진. Electron 의 화면 그리기 담당 |
+| **contextBridge** | preload 와 페이지를 안전하게 잇는 다리 API |
+| **contextIsolation** | 페이지와 preload 의 JS 세계를 분리해 둠 (보안) |
+| **CSP** | Content-Security-Policy. 허용된 출처의 코드만 실행하도록 정하는 메모 |
+
+## I — N
+
+| 용어 | 한 줄 |
+|---|---|
+| **IPC** | 프로세스 간 통신. Main 과 Renderer 사이의 메시지 채널 |
+| **ipcMain / ipcRenderer** | 각각 Main·Renderer 측의 IPC 인터페이스 |
+| **Main process** | Node.js 로 도는 "감독" — 창·메뉴·OS 자원 담당 |
+| **MAS** | Mac App Store — Apple 의 데스크톱 앱 마켓 |
+
+## O — Z
+
+| 용어 | 한 줄 |
+|---|---|
+| **Preload script** | 페이지 로딩 직전에 실행되는 작은 스크립트. 안전한 브릿지 자리 |
+| **Renderer process** | 한 BrowserWindow 당 하나 도는 Chromium 프로세스. 실제 UI |
+| **Sandbox** | Renderer 의 OS 권한을 최소화하는 보안 컨테이너 |
+| **Squirrel** | Forge 가 사용하는 Windows·macOS 자동 업데이트 프레임워크 |
+| **trayIcon** | 시스템 트레이/메뉴바에 상주하는 작은 아이콘 |
+| **webContents** | 한 BrowserWindow 안의 _웹 콘텐츠_ 자체를 가리키는 객체 |
+
+<Callout type="info" emoji="🧒">
+모르는 단어가 보이면 _바로 여기로 돌아오세요_. 한 줄 설명만 봐도 어느 페이지로 더 깊이 들어가야 할지 감이 와요.
+</Callout>
+
+<Cards>
+  <Cards.Card title="Versioning" href="/ko/docs/references/versioning" arrow />
+  <Cards.Card title="Breaking changes" href="/ko/docs/references/breaking-changes" arrow />
+</Cards>

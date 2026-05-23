@@ -1,0 +1,45 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { VersioningIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<VersioningIllustration />}
+  title="버전 정책"
+  subtitle="Electron 의 SemVer 규칙과 LTS 채널 — 어떤 버전을 골라야 할지 결정하기."
+  badge="References · Versioning"
+/>
+
+## SemVer 한눈에
+
+`MAJOR.MINOR.PATCH` — 예) `29.2.0`
+
+| 자리 | 언제 올라가나 |
+|---|---|
+| **MAJOR** | 호환성을 깨는 변경 (`require → import` 강제 등) |
+| **MINOR** | 호환되는 새 기능 추가 |
+| **PATCH** | 버그 수정 + 보안 패치 |
+
+<Callout type="info" emoji="🧒">
+"내 코드 그대로 두고 올려도 안 깨질 거야?" → MINOR/PATCH 는 OK, MAJOR 는 _공식 마이그레이션 노트 읽고 옮겨야_ 함.
+</Callout>
+
+## 릴리스 채널
+
+- **Stable** — 운영 빌드는 여기서
+- **Beta** — 다음 메이저의 미리보기
+- **Alpha** — 매우 빠른 실험판
+- **Nightly** — 매일 빌드
+
+## 지원 기간
+
+각 메이저 버전은 일반적으로 _현재 + 직전 2개_ (총 3개) 가 보안 패치를 받습니다. 그 외 버전은 보안 픽스가 더 이상 백포트되지 않을 수 있어요.
+
+## 업그레이드 추천 주기
+
+- 분기마다 (3개월) 한 번씩 최신 stable 로 점검
+- 한 번에 두 메이저 이상 건너뛰지 마세요 — 마이그레이션이 누적되어 어려워짐
+
+<Cards>
+  <Cards.Card title="Breaking changes" href="/ko/docs/references/breaking-changes" arrow />
+  <Cards.Card title="Patches 관리" href="/ko/docs/references/patches" arrow />
+</Cards>

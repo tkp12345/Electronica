@@ -1,0 +1,53 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { PatchesIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<PatchesIllustration />}
+  title="패치 관리 (Patches)"
+  subtitle="Electron 의 Chromium·Node 위에 얹힌 _작은 수정들_ 이 어떻게 관리되는지 — 그리고 우리도 따라 할 수 있는 패턴."
+  badge="References · Patches"
+/>
+
+## Electron 의 사정
+
+Electron 은 Chromium/Node 를 _그대로_ 쓰는 게 아니라, 데스크톱 앱에 맞춰 일부 동작을 _작은 패치_ 들로 바꿔서 빌드합니다. 메이저 업그레이드마다 이 패치들을 다시 _리베이스_ 해야 해서 작업이 작지 않아요.
+
+## 우리 앱에 적용되는 교훈
+
+- 외부 라이브러리에 _직접 패치_ 가 필요할 땐 [`patch-package`](https://www.npmjs.com/package/patch-package) 권장
+- 패치는 **최소 변경 · 최대 주석** — 다음 사람이 _왜_ 를 알 수 있게
+- 업스트림에 PR 보내고, 머지될 때까지만 패치 유지
+
+## patch-package 사용 예
+
+```bash filename="terminal"
+npm install --save-dev patch-package
+
+# 1) node_modules/some-lib 의 파일을 고친 뒤
+npx patch-package some-lib
+
+# 2) patches/some-lib+1.2.3.patch 파일이 생긴다
+# 3) postinstall 에 적용
+```
+
+```json filename="package.json"
+{
+  "scripts": {
+    "postinstall": "patch-package"
+  }
+}
+```
+
+<Callout type="info" emoji="🧒">
+"이 패치는 _임시 반창고_ 라는 사실을 잊지 말 것". 라이브러리가 고쳐지면 즉시 떼어 내세요. 패치가 묵으면 업그레이드 지옥이 옵니다.
+</Callout>
+
+## Electron 자체에 패치를 제안하고 싶다면
+
+`electron/electron` 저장소의 `patches/` 폴더가 모든 활성 패치를 담고 있어요. PR 가이드는 CONTRIBUTING.md 참고.
+
+<Cards>
+  <Cards.Card title="Versioning" href="/ko/docs/references/versioning" arrow />
+  <Cards.Card title="Breaking changes" href="/ko/docs/references/breaking-changes" arrow />
+</Cards>

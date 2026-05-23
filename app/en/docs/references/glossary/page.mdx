@@ -1,0 +1,51 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { GlossaryIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GlossaryIllustration />}
+  title="Glossary"
+  subtitle="One-line definitions for the words you'll meet repeatedly while learning Electron."
+  badge="References · Glossary"
+/>
+
+## A — F
+
+| Term | One-liner |
+|---|---|
+| **ASAR** | An archive format that bundles many JS files into one for faster startup and simpler packaging |
+| **autoUpdater** | The built-in module that lets a running app check for, download, and swap in newer versions |
+| **BrowserWindow** | An object that represents a single desktop window; holds the rendered page |
+| **Chromium** | The open-source browser engine behind Chrome — Electron's pixel layer |
+| **contextBridge** | The safe API for connecting preload and the web page |
+| **contextIsolation** | Keeps the page's and preload's JS worlds separate (security) |
+| **CSP** | Content-Security-Policy: a note telling the browser which sources of code may run |
+
+## I — N
+
+| Term | One-liner |
+|---|---|
+| **IPC** | Inter-process communication — the message channel between Main and Renderer |
+| **ipcMain / ipcRenderer** | The IPC interfaces on the Main and Renderer side respectively |
+| **Main process** | The Node.js "director" process — windows, menus, OS resources |
+| **MAS** | Mac App Store — Apple's desktop app marketplace |
+
+## O — Z
+
+| Term | One-liner |
+|---|---|
+| **Preload script** | A tiny script that runs just before page load; the safe-bridge slot |
+| **Renderer process** | One Chromium process per BrowserWindow; the actual UI |
+| **Sandbox** | A security container that strips OS privileges from the Renderer |
+| **Squirrel** | The auto-update framework Forge uses on Windows and macOS |
+| **trayIcon** | The small icon that lives in the system tray / menu bar |
+| **webContents** | The object that represents the _web content_ inside a BrowserWindow |
+
+<Callout type="info" emoji="🧒">
+Lost on a term? Come back here. A single line is usually enough to pick which deeper page to read next.
+</Callout>
+
+<Cards>
+  <Cards.Card title="Versioning" href="/en/docs/references/versioning" arrow />
+  <Cards.Card title="Breaking changes" href="/en/docs/references/breaking-changes" arrow />
+</Cards>

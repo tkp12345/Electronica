@@ -1,0 +1,53 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { PatchesIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<PatchesIllustration />}
+  title="Patches"
+  subtitle="How the small patches Electron carries on top of Chromium and Node are managed — and a pattern you can reuse."
+  badge="References · Patches"
+/>
+
+## Electron's situation
+
+Electron doesn't ship Chromium/Node verbatim — it carries _small patches_ to adapt them for desktop apps. Every major upgrade requires those patches to be _rebased_, which is non-trivial work.
+
+## What it teaches us about our own apps
+
+- When you have to patch a third-party library, reach for [`patch-package`](https://www.npmjs.com/package/patch-package).
+- Keep patches **minimal in changes, maximal in comments** — the next person needs to know _why_.
+- Send a PR upstream; remove the patch the moment it lands.
+
+## patch-package recipe
+
+```bash filename="terminal"
+npm install --save-dev patch-package
+
+# 1) Edit the file under node_modules/some-lib, then
+npx patch-package some-lib
+
+# 2) A patches/some-lib+1.2.3.patch file is created
+# 3) Re-apply on every install
+```
+
+```json filename="package.json"
+{
+  "scripts": {
+    "postinstall": "patch-package"
+  }
+}
+```
+
+<Callout type="info" emoji="🧒">
+A patch is a _temporary band-aid_. The moment upstream ships a fix, peel the band-aid off — stale patches make future upgrades miserable.
+</Callout>
+
+## Want to propose a patch to Electron itself?
+
+Active patches live under `patches/` in the `electron/electron` repo. See CONTRIBUTING.md for the PR process.
+
+<Cards>
+  <Cards.Card title="Versioning" href="/en/docs/references/versioning" arrow />
+  <Cards.Card title="Breaking changes" href="/en/docs/references/breaking-changes" arrow />
+</Cards>
