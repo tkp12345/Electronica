@@ -1,4 +1,4 @@
-// 루트(navbar) 메뉴 순서.
+// 한국어 로케일의 네비바 메뉴 — 홈은 숨김, 문서만 노출
 export default {
   index: {
     title: '홈',

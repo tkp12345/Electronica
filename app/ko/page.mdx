@@ -1,0 +1,28 @@
+import { Cards } from 'nextra/components'
+import { PageHero } from '../components/PageHero'
+import { IntroIllustration } from '../components/illustrations'
+
+<PageHero
+  illustration={<IntroIllustration />}
+  title="Electronica — Electron 학습 노트"
+  subtitle="공식 문서의 핵심 흐름을 따라가며, 고등학생도 이해할 수 있도록 그림과 쉬운 풀이를 곁들인 학습 사이트입니다."
+  badge="KO · 한국어"
+/>
+
+## 무엇을 배울 수 있나요
+
+<Cards>
+  <Cards.Card title="🚀 빠르게 시작하기" href="/ko/docs/introduction" arrow />
+  <Cards.Card title="📘 튜토리얼 (전체)" href="/ko/docs/tutorial/prerequisites" arrow />
+  <Cards.Card title="🧠 프로세스 모델" href="/ko/docs/processes" arrow />
+  <Cards.Card title="🔒 보안 베스트 프랙티스" href="/ko/docs/best-practices/security" arrow />
+</Cards>
+
+## 이 사이트의 특징
+
+- 모든 페이지 **상단에 그림** — 한눈에 페이지 주제가 보입니다
+- 코드 옆에 **쉬운 한 줄 풀이** — 어려운 용어 없이 비유로 설명
+- **영문(EN) / 한글(KO)** 두 언어 동시 제공 — 네비바 우측에서 토글
+- **Shiki 신택스 하이라이팅**, FlexSearch 기반 코드 검색, 다크/라이트 자동 전환
+
+> 💡 처음이라면 [Electron 소개](/ko/docs/introduction) → [왜 Electron인가](/ko/docs/why-electron) → [튜토리얼 1편: 사전 준비](/ko/docs/tutorial/prerequisites) 순서로 읽어보세요.
