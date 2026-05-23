@@ -1,0 +1,86 @@
+import { Callout, Cards, Steps } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { FeaturesIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<FeaturesIllustration />}
+  title="튜토리얼 4편 — 기능 더하기"
+  subtitle="메뉴, 단축키, 대화상자, 알림, 트레이 아이콘 — 데스크톱답게 만드는 다섯 가지."
+  badge="Tutorial · 4/6"
+/>
+
+## 1) 애플리케이션 메뉴
+
+```js filename="main.js"
+const { app, Menu } = require('electron')
+
+const template = [
+  {
+    label: '파일',
+    submenu: [
+      { label: '새로 만들기', accelerator: 'CmdOrCtrl+N', click: () => console.log('new') },
+      { type: 'separator' },
+      { role: 'quit' },
+    ],
+  },
+]
+
+Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+```
+
+<Callout type="info" emoji="🧒">
+`accelerator: 'CmdOrCtrl+N'` 한 줄이 _"맥에서는 ⌘N, 윈도우/리눅스에서는 Ctrl+N"_ 을 자동으로 처리해 줍니다.
+</Callout>
+
+## 2) 전역 단축키 (앱이 포커스 없어도 동작)
+
+```js filename="main.js"
+const { app, globalShortcut } = require('electron')
+
+app.whenReady().then(() => {
+  globalShortcut.register('CommandOrControl+Shift+P', () => {
+    console.log('Palette!')
+  })
+})
+
+app.on('will-quit', () => globalShortcut.unregisterAll())
+```
+
+## 3) 대화상자(Dialog)
+
+```js filename="main.js"
+const { dialog } = require('electron')
+
+dialog.showOpenDialog({
+  properties: ['openFile'],
+  filters: [{ name: 'Images', extensions: ['png', 'jpg'] }],
+}).then(({ filePaths }) => console.log(filePaths))
+```
+
+## 4) 시스템 알림
+
+```js filename="renderer or preload"
+new Notification('빌드 완료', { body: '5.2초 걸렸어요' })
+```
+
+<Callout type="info" emoji="🧒">
+브라우저의 Notification API 와 동일한 모양 — Electron 이 그대로 OS 알림 센터에 연결합니다.
+</Callout>
+
+## 5) 트레이 아이콘
+
+```js filename="main.js"
+const { app, Tray, Menu } = require('electron')
+const path = require('node:path')
+
+let tray
+app.whenReady().then(() => {
+  tray = new Tray(path.join(__dirname, 'icon.png'))
+  tray.setToolTip('My App')
+  tray.setContextMenu(Menu.buildFromTemplate([{ role: 'quit' }]))
+})
+```
+
+<Cards>
+  <Cards.Card title="다음: 패키징" href="/ko/docs/tutorial/packaging" arrow />
+</Cards>

@@ -1,0 +1,69 @@
+import { Callout, Cards, Steps, Tabs } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { PackagingIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<PackagingIllustration />}
+  title="Tutorial 5 — Packaging"
+  subtitle="Turn code that only runs on your machine into something a stranger can install with a double-click."
+  badge="Tutorial · 5/6"
+/>
+
+## What "packaging" even means
+
+So far, `npm start` only runs on your machine. To send the app to a user we need a format their OS knows: macOS wants `.dmg`/`.app`, Windows wants an `.exe` installer, Linux wants `.deb`/`.rpm`/`.AppImage`. **Electron Forge** handles all of this in one command.
+
+<Callout type="info" emoji="🧒">
+"Putting a lunchbox around the meal before mailing it to a friend" is exactly the right picture.
+</Callout>
+
+## Bring in Electron Forge
+
+<Steps>
+
+### Install and convert
+
+```bash filename="terminal"
+npm install --save-dev @electron-forge/cli
+npx electron-forge import
+```
+
+`import` rewrites your existing `package.json` into the shape Forge expects.
+
+### Make installers (for your current OS)
+
+```bash filename="terminal"
+npm run make
+```
+
+You'll find OS-native installers under `out/`.
+
+</Steps>
+
+## What you get
+
+<Tabs items={['macOS', 'Windows', 'Linux']}>
+  <Tabs.Tab>
+    A `.app` bundle plus a `.dmg` disk image. Pair with an Apple Developer certificate for _code signing_ (→ [Code Signing](/en/docs/distribution/code-signing)).
+  </Tabs.Tab>
+  <Tabs.Tab>
+    A Squirrel-based `.exe` installer. Hooks straight into the auto-update channel.
+  </Tabs.Tab>
+  <Tabs.Tab>
+    `.deb` (Debian/Ubuntu), `.rpm` (Fedora), `.AppImage` (distro-independent).
+  </Tabs.Tab>
+</Tabs>
+
+## Things that usually trip people up
+
+- **Icons** — supply a 256×256 PNG plus `.icns` for macOS and `.ico` for Windows.
+- **App name & version** — Forge picks them up from `productName` and `version` in package.json.
+- **First build time** — expect 5–10 minutes the first time as native dependencies download.
+
+<Callout type="warning">
+Cross-OS building (e.g. making a Windows `.exe` from macOS) _technically_ works but breaks code signing in practice. The real-world pattern is **one VM/runner per OS**.
+</Callout>
+
+<Cards>
+  <Cards.Card title="Next: Publishing & updating" href="/en/docs/tutorial/publishing" arrow />
+</Cards>

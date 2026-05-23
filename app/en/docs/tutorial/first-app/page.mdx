@@ -1,0 +1,116 @@
+import { Callout, Cards, Steps, Tabs } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { FirstAppIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<FirstAppIllustration />}
+  title="Tutorial 2 — Build your first app"
+  subtitle="Empty folder to a Hello-World window in under five minutes."
+  badge="Tutorial · 2/6"
+/>
+
+## Make a folder
+
+<Steps>
+
+### Create the project
+```bash filename="terminal"
+mkdir my-electron-app && cd my-electron-app
+npm init -y
+```
+
+`npm init -y` means _"create package.json with defaults — don't ask me anything."_
+
+### Install Electron
+
+<Tabs items={['npm', 'pnpm', 'yarn']}>
+  <Tabs.Tab>
+    ```bash filename="terminal"
+    npm install --save-dev electron
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ```bash filename="terminal"
+    pnpm add -D electron
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ```bash filename="terminal"
+    yarn add -D electron
+    ```
+  </Tabs.Tab>
+</Tabs>
+
+<Callout type="info" emoji="🧒">
+`--save-dev` says _"this package is only needed while we develop; don't ship it inside the final app."_ Electron is a build tool, so dev-only is the natural slot.
+</Callout>
+
+### Create `main.js` — the entry point
+
+```js filename="main.js"
+const { app, BrowserWindow } = require('electron')
+
+function createWindow() {
+  const win = new BrowserWindow({ width: 800, height: 600 })
+  win.loadFile('index.html')
+}
+
+// Runs once everything inside Electron is ready.
+app.whenReady().then(createWindow)
+
+// macOS — re-open a window when the dock icon is clicked.
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) createWindow()
+})
+
+// Windows/Linux — quit when the last window closes.
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit()
+})
+```
+
+<Callout type="info" emoji="🧒">
+The "app ready → create window" line is the real app. The other two callbacks just make the app behave the way each OS expects.
+</Callout>
+
+### Add `index.html` — what the user actually sees
+
+```html filename="index.html"
+<!DOCTYPE html>
+<html>
+  <body>
+    <h1>Hello, Electron 👋</h1>
+  </body>
+</html>
+```
+
+### Wire it up in `package.json`
+
+```json filename="package.json"
+{
+  "name": "my-electron-app",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  }
+}
+```
+
+### Run it
+
+```bash filename="terminal"
+npm start
+```
+
+A small window opens with "Hello, Electron 👋" — that's your first Electron app.
+
+</Steps>
+
+<Callout type="warning">
+No window? Check that ① you ran `electron .` from inside the project folder, and ② the `main` field in package.json matches your file name.
+</Callout>
+
+<Cards>
+  <Cards.Card title="Next: Preload scripts" href="/en/docs/tutorial/preload" arrow />
+</Cards>

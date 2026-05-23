@@ -1,0 +1,88 @@
+import { Callout, Cards, Steps } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { PreloadIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<PreloadIllustration />}
+  title="Tutorial 3 — Preload scripts"
+  subtitle="Build the bridge that lets the web page (Renderer) talk to Node (Main) safely."
+  badge="Tutorial · 3/6"
+/>
+
+## Why preload exists
+
+If web pages could call `require('fs')` directly, **one malicious site could read every file on your user's machine.** Electron defaults to keeping the web side and the Node side strictly separated. When they truly need to talk, you build a small **bridge** called a preload script and expose only the exact functions you want.
+
+<Callout type="info" emoji="🧒">
+Think of the "guest room" (Renderer) and the "kitchen" (Main). You don't hand the guest a knife — you cut a tiny window and pass only finished plates through it. That window is your preload.
+</Callout>
+
+## Add a preload
+
+<Steps>
+
+### Write `preload.js`
+
+```js filename="preload.js"
+const { contextBridge, ipcRenderer } = require('electron')
+
+// Only window.api.ping() is reachable from the web page.
+contextBridge.exposeInMainWorld('api', {
+  ping: () => ipcRenderer.invoke('ping'),
+})
+```
+
+<Callout type="info" emoji="🧒">
+`contextBridge.exposeInMainWorld` means _"push just these functions through the little window."_ Everything else stays in the kitchen.
+</Callout>
+
+### Register the preload + a handler in `main.js`
+
+```js filename="main.js"
+const { app, BrowserWindow, ipcMain } = require('electron')
+const path = require('node:path')
+
+app.whenReady().then(() => {
+  // Main side: "answer 'pong' to any 'ping'."
+  ipcMain.handle('ping', () => 'pong')
+
+  const win = new BrowserWindow({
+    width: 800,
+    height: 600,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+    },
+  })
+  win.loadFile('index.html')
+})
+```
+
+### Use it from `index.html`
+
+```html filename="index.html"
+<button id="b">Ping</button>
+<pre id="out"></pre>
+<script>
+  document.getElementById('b').addEventListener('click', async () => {
+    const reply = await window.api.ping()
+    document.getElementById('out').textContent = reply
+  })
+</script>
+```
+
+</Steps>
+
+## Three rules to remember
+
+1. **Context isolation (default ON)** — keeps the web's JS and the preload's JS from sharing globals.
+2. **Node integration (OFF)** — never let `require()` reach the renderer; this is rule #1 of Electron security.
+3. **Sandbox (ON)** — minimize what the page itself can do.
+
+<Callout type="warning">
+**If an old tutorial enables `nodeIntegration: true`, ignore it.** That single flag is the #1 cause of Electron security incidents.
+</Callout>
+
+<Cards>
+  <Cards.Card title="Next: Adding features" href="/en/docs/tutorial/adding-features" arrow />
+  <Cards.Card title="Deeper: context isolation" href="/en/docs/processes/context-isolation" arrow />
+</Cards>

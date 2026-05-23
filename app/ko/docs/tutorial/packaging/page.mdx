@@ -1,0 +1,69 @@
+import { Callout, Cards, Steps, Tabs } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { PackagingIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<PackagingIllustration />}
+  title="튜토리얼 5편 — 패키징"
+  subtitle="개발자 컴퓨터에서만 도는 코드를, 누구나 더블클릭으로 설치하는 진짜 앱으로 묶기."
+  badge="Tutorial · 5/6"
+/>
+
+## 무엇이 "패키징" 인가
+
+지금까지의 `npm start` 는 우리 컴퓨터에서만 동작해요. 사용자에게 보낼 땐 OS 가 알아보는 형태 — 맥은 `.dmg`/`.app`, 윈도우는 `.exe` 설치 파일, 리눅스는 `.deb`/`.rpm`/`.AppImage` 가 필요해요. **Electron Forge** 가 이걸 한 번에 해 줍니다.
+
+<Callout type="info" emoji="🧒">
+"내 도시락(=실행 코드)을 친구에게 보내려면 도시락통(=설치 파일)에 담아야 한다"가 정확한 비유예요.
+</Callout>
+
+## Electron Forge 도입
+
+<Steps>
+
+### 설치 + 초기화
+
+```bash filename="terminal"
+npm install --save-dev @electron-forge/cli
+npx electron-forge import
+```
+
+`import` 명령은 기존 프로젝트의 `package.json` 을 Forge 가 쓰는 형태로 자동 변환해 줍니다.
+
+### 패키지 만들기 (현재 OS 용)
+
+```bash filename="terminal"
+npm run make
+```
+
+`out/` 폴더에 OS 별 설치 파일이 생깁니다.
+
+</Steps>
+
+## 어떤 출력물이 나오나
+
+<Tabs items={['macOS', 'Windows', 'Linux']}>
+  <Tabs.Tab>
+    `.app` 번들 + `.dmg` 디스크 이미지. Apple Developer 인증서로 _코드 서명_ 도 함께 (→ [Code Signing](/ko/docs/distribution/code-signing)).
+  </Tabs.Tab>
+  <Tabs.Tab>
+    Squirrel 기반 `.exe` 설치 마법사. 자동 업데이트 채널과 연결 가능.
+  </Tabs.Tab>
+  <Tabs.Tab>
+    `.deb` (데비안/우분투), `.rpm` (페도라), `.AppImage` (배포판 독립).
+  </Tabs.Tab>
+</Tabs>
+
+## 자주 꼬이는 부분
+
+- **아이콘** — 256×256 PNG + 맥은 `.icns`, 윈도우는 `.ico` 도 필요
+- **앱 이름·버전** — `package.json` 의 `productName` 과 `version` 이 그대로 사용됨
+- **빌드 시간** — 첫 빌드는 5~10분 걸릴 수 있음 (네이티브 의존성 다운로드)
+
+<Callout type="warning">
+크로스 OS 빌드(맥에서 윈도우 .exe 만들기 같은)는 _이론상_ 가능하지만 코드 서명 때문에 실무에선 추천하지 않아요. **각 OS 의 가상머신/러너에서 빌드** 하는 게 정석입니다.
+</Callout>
+
+<Cards>
+  <Cards.Card title="다음: 배포·자동 업데이트" href="/ko/docs/tutorial/publishing" arrow />
+</Cards>

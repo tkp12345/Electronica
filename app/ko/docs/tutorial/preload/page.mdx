@@ -1,0 +1,88 @@
+import { Callout, Cards, Steps } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { PreloadIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<PreloadIllustration />}
+  title="튜토리얼 3편 — Preload 스크립트"
+  subtitle="웹 페이지(Renderer)와 Node.js 세계(Main) 사이를 안전하게 잇는 다리 만들기."
+  badge="Tutorial · 3/6"
+/>
+
+## 왜 preload 가 필요한가
+
+웹 페이지 안에서 `require('fs')` 를 직접 부르도록 두면, **악성 사이트 한 줄로 사용자 파일을 다 읽힐 수 있어요**. 그래서 Electron 은 _기본적으로_ 웹과 Node.js 를 격리해 둡니다. 그 둘이 꼭 대화해야 할 때만 **preload 라는 작은 다리** 를 통해, 우리가 _허락한 함수만_ 노출시키는 게 정석이에요.
+
+<Callout type="info" emoji="🧒">
+"손님 방(Renderer)" 과 "주방(Main)" 을 직접 연결하면 손님이 칼을 쓸 수 있죠. 대신 _배달구(preload)_ 만 뚫어두고 "주문" 같은 단순 행동만 통과시키는 거예요.
+</Callout>
+
+## preload 파일 만들기
+
+<Steps>
+
+### `preload.js` 작성
+
+```js filename="preload.js"
+const { contextBridge, ipcRenderer } = require('electron')
+
+// 웹 페이지에서 window.api.ping() 으로만 접근 가능
+contextBridge.exposeInMainWorld('api', {
+  ping: () => ipcRenderer.invoke('ping'),
+})
+```
+
+<Callout type="info" emoji="🧒">
+`contextBridge.exposeInMainWorld` 가 _"이 함수만 손님 방 창문으로 내밀어라"_ 라는 뜻이에요. 나머지 위험한 Node 기능은 손님이 절대 만질 수 없습니다.
+</Callout>
+
+### `main.js` 에서 preload 등록 + 핸들러
+
+```js filename="main.js"
+const { app, BrowserWindow, ipcMain } = require('electron')
+const path = require('node:path')
+
+app.whenReady().then(() => {
+  // Main 쪽 핸들러 — "ping 받으면 pong 돌려줘"
+  ipcMain.handle('ping', () => 'pong')
+
+  const win = new BrowserWindow({
+    width: 800,
+    height: 600,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+    },
+  })
+  win.loadFile('index.html')
+})
+```
+
+### `index.html` 에서 호출
+
+```html filename="index.html"
+<button id="b">Ping</button>
+<pre id="out"></pre>
+<script>
+  document.getElementById('b').addEventListener('click', async () => {
+    const reply = await window.api.ping()
+    document.getElementById('out').textContent = reply
+  })
+</script>
+```
+
+</Steps>
+
+## 핵심 규칙 3개
+
+1. **컨텍스트 격리(default ON)** — 웹과 preload 의 자바스크립트가 같은 변수로 충돌하지 않도록 분리
+2. **노드 통합(off)** — Renderer 에서 `require()` 직접 호출 금지 — 보안 1순위
+3. **샌드박스(on)** — 페이지의 JS 권한을 최소화
+
+<Callout type="warning">
+**예전 튜토리얼에서 `nodeIntegration: true` 를 본 적 있다면 잊으세요.** 그 옵션은 보안 사고의 첫 번째 원인입니다.
+</Callout>
+
+<Cards>
+  <Cards.Card title="다음: 기능 추가" href="/ko/docs/tutorial/adding-features" arrow />
+  <Cards.Card title="컨텍스트 격리 더 깊게" href="/ko/docs/processes/context-isolation" arrow />
+</Cards>

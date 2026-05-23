@@ -1,0 +1,78 @@
+import { Callout, Cards, Steps } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { PublishingIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<PublishingIllustration />}
+  title="튜토리얼 6편 — 배포와 자동 업데이트"
+  subtitle="GitHub Releases 에 올리고, 사용자가 켤 때마다 새 버전을 자동으로 받아 오게 만들기."
+  badge="Tutorial · 6/6"
+/>
+
+## 어디에 올릴까
+
+가장 흔한 두 가지:
+
+- **GitHub Releases** — 무료, Forge 가 기본 지원
+- **자체 S3 / R2 같은 오브젝트 스토리지** — 회사 배포 채널이 별도일 때
+
+## GitHub 으로 배포하기
+
+<Steps>
+
+### Forge publisher 설정
+
+```js filename="forge.config.js"
+module.exports = {
+  publishers: [
+    {
+      name: '@electron-forge/publisher-github',
+      config: {
+        repository: { owner: 'your-name', name: 'your-app' },
+        prerelease: false,
+      },
+    },
+  ],
+}
+```
+
+### GitHub 토큰
+
+`GITHUB_TOKEN` 환경변수로 `repo` 권한 토큰을 넣어 둡니다.
+
+### 한 줄로 업로드
+
+```bash filename="terminal"
+npm run publish
+```
+
+`out/` 의 모든 설치 파일이 새 Release 로 올라가요.
+
+</Steps>
+
+## 자동 업데이트 동작 방식
+
+```js filename="main.js"
+const { updateElectronApp } = require('update-electron-app')
+updateElectronApp() // 기본값으로 GitHub Releases 확인
+```
+
+<Callout type="info" emoji="🧒">
+이 한 줄이 _"앱이 켜질 때마다 → 최신 버전 있는지 GitHub 에 물어보고 → 있으면 조용히 받아두고 → 사용자가 나갈 때 적용"_ 까지를 다 해 줍니다.
+</Callout>
+
+## 코드 서명을 꼭 같이
+
+서명되지 않은 앱은 맥 Gatekeeper / 윈도우 SmartScreen 이 _"이 앱은 안전하지 않을 수 있어요"_ 경고를 띄워요. 진지하게 배포하려면 거의 필수입니다 (→ [Code Signing](/ko/docs/distribution/code-signing)).
+
+## 릴리스 체크리스트
+
+- ✅ `package.json` 의 버전 올렸나요?
+- ✅ 빌드 OS 가 코드 서명 인증서를 들고 있나요?
+- ✅ `update-electron-app` 이 main.js 에 한 번이라도 호출되나요?
+- ✅ 릴리스 노트(CHANGELOG)에 사용자가 볼 변경점 한 줄이라도 적었나요?
+
+<Cards>
+  <Cards.Card title="처음으로 — Introduction" href="/ko/docs/introduction" arrow />
+  <Cards.Card title="다음 섹션: 프로세스 모델" href="/ko/docs/processes" arrow />
+</Cards>

@@ -1,0 +1,78 @@
+import { Callout, Cards, Steps } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { PublishingIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<PublishingIllustration />}
+  title="Tutorial 6 — Publishing & auto-updates"
+  subtitle="Push your app to GitHub Releases and have it pull future versions on its own."
+  badge="Tutorial · 6/6"
+/>
+
+## Where to publish
+
+The two common picks:
+
+- **GitHub Releases** — free, supported by Forge out of the box.
+- **Your own S3 / R2 / object storage** — when your company has a separate distribution channel.
+
+## Publishing to GitHub
+
+<Steps>
+
+### Configure a Forge publisher
+
+```js filename="forge.config.js"
+module.exports = {
+  publishers: [
+    {
+      name: '@electron-forge/publisher-github',
+      config: {
+        repository: { owner: 'your-name', name: 'your-app' },
+        prerelease: false,
+      },
+    },
+  ],
+}
+```
+
+### GitHub token
+
+Set `GITHUB_TOKEN` to a personal access token with `repo` scope.
+
+### One command to upload
+
+```bash filename="terminal"
+npm run publish
+```
+
+Every installer under `out/` is uploaded to a new GitHub Release.
+
+</Steps>
+
+## How auto-update works
+
+```js filename="main.js"
+const { updateElectronApp } = require('update-electron-app')
+updateElectronApp() // checks GitHub Releases by default
+```
+
+<Callout type="info" emoji="🧒">
+That one line means _"on every launch, ask GitHub if there's a newer version, download it quietly if so, and apply it the next time the user quits."_ Three big things, one call.
+</Callout>
+
+## Sign your code
+
+Unsigned apps get an "unidentified developer" warning from macOS Gatekeeper and a SmartScreen prompt on Windows. For any serious release it's effectively required (→ [Code Signing](/en/docs/distribution/code-signing)).
+
+## Release checklist
+
+- ✅ Bumped the version in `package.json`?
+- ✅ Build machine has the signing certificates loaded?
+- ✅ `update-electron-app` is called at least once in main.js?
+- ✅ One line in the release notes for the user to read?
+
+<Cards>
+  <Cards.Card title="Back to the start — Introduction" href="/en/docs/introduction" arrow />
+  <Cards.Card title="Next section: Process model" href="/en/docs/processes" arrow />
+</Cards>

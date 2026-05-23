@@ -1,0 +1,62 @@
+import { Callout, Cards, Steps, Tabs } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { PrerequisitesIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<PrerequisitesIllustration />}
+  title="Tutorial 1 — Prerequisites"
+  subtitle="Four things to have installed before we build the first window."
+  badge="Tutorial · 1/6"
+/>
+
+## What you need
+
+<Steps>
+
+### Node.js 20 or newer
+Electron runs on top of Node.js. Verify with:
+
+```bash filename="terminal"
+node -v   # v20.x or higher is fine
+```
+
+<Callout type="info" emoji="🧒">
+Node.js is _the engine that runs JavaScript outside of a browser_. The "Main" process of every Electron app is, under the hood, a Node.js program.
+</Callout>
+
+### npm (ships with Node.js)
+The package manager that fetches external code. Confirm with `npm -v`.
+
+### Comfort with the command line
+You only need `cd`, `ls`, `mkdir`, `npm install` to get going.
+
+### A code editor
+VS Code is the easiest — first-class JS/TS support and a healthy Electron debugging extension scene.
+
+</Steps>
+
+## Optional but recommended: Git
+
+Version control. The tutorial works without it, but any real app will need it before long.
+
+```bash filename="terminal"
+git --version
+```
+
+## One extra step per OS
+
+<Tabs items={['macOS', 'Windows', 'Linux']}>
+  <Tabs.Tab>
+    Xcode Command Line Tools — one `xcode-select --install` is all it takes.
+  </Tabs.Tab>
+  <Tabs.Tab>
+    The old "Windows Build Tools" auto-installer is gone. You only need a C++ toolchain if you compile native modules later.
+  </Tabs.Tab>
+  <Tabs.Tab>
+    Varies by distro: usually `build-essential` (Debian family) or `base-devel` (Arch family).
+  </Tabs.Tab>
+</Tabs>
+
+<Cards>
+  <Cards.Card title="Next: Building your first app" href="/en/docs/tutorial/first-app" arrow />
+</Cards>
