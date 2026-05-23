@@ -1,5 +1,6 @@
 import { Callout, Cards } from 'nextra/components'
 import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
 import { BreakingChangesIllustration } from '../../../../components/illustrations'
 
 <PageHero
@@ -22,9 +23,9 @@ import { BreakingChangesIllustration } from '../../../../components/illustration
 | **이름 변경** | `app.runningUnderRosettaTranslation` 등 |
 | **타입 시그니처** | `dialog.showOpenDialog` 비동기화 |
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 "이 함수, 옛날엔 동기였는데 이제 Promise 반환" 같은 자잘한 변경이 누적되어 큰 문제가 돼요. 한 번에 한 메이저씩만 옮기는 이유.
-</Callout>
+</EasyNote>
 
 ## 안전한 마이그레이션 패턴
 

@@ -1,5 +1,6 @@
 import { Callout, Cards } from 'nextra/components'
 import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
 import { DragDropIllustration } from '../../../../components/illustrations'
 
 <PageHero
@@ -43,9 +44,9 @@ ipcMain.on('ondragstart', (event, filePath) => {
 })
 ```
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 `event.sender.startDrag` is the magic call that starts an _OS-level_ drag — something the browser cannot do.
-</Callout>
+</EasyNote>
 
 <Cards>
   <Cards.Card title="Notifications" href="/en/docs/development/notifications" arrow />

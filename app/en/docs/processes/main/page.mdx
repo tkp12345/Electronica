@@ -1,5 +1,6 @@
 import { Callout, Cards } from 'nextra/components'
 import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
 import { MainProcessIllustration } from '../../../../components/illustrations'
 
 <PageHero
@@ -34,9 +35,9 @@ app.whenReady().then(() => {
 - Touch the DOM directly — Main has no `document`.
 - Draw pixels — that's the Renderer's job.
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 Calling `document.getElementById(...)` from Main throws immediately. _The director can't perform on stage._
-</Callout>
+</EasyNote>
 
 ## Lifecycle events you'll use
 

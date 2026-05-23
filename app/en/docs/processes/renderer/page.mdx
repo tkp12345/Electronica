@@ -1,5 +1,6 @@
 import { Callout, Cards } from 'nextra/components'
 import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
 import { RendererProcessIllustration } from '../../../../components/illustrations'
 
 <PageHero
@@ -27,9 +28,9 @@ Each `BrowserWindow` spawns its own Chromium process. The code inside is just a 
 - Whatever `window.api.*` your preload exposed
 - (With sandbox ON, which is the default) it cannot directly use Node
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 Treat the Renderer as _just a Chrome tab._ Write code the same way you would for any plain website.
-</Callout>
+</EasyNote>
 
 ## Talking to Main
 

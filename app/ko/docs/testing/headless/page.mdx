@@ -1,5 +1,6 @@
 import { Callout, Cards } from 'nextra/components'
 import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
 import { HeadlessIllustration } from '../../../../components/illustrations'
 
 <PageHero
@@ -27,9 +28,9 @@ jobs:
       - run: xvfb-run --auto-servernum npm test
 ```
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 `xvfb-run` 가 _보이지 않는 가상 모니터_ 를 만들어 주고, 그 위에 Electron 이 창을 띄워요. 사람 눈엔 안 보이지만 픽셀은 그려져 있어요.
-</Callout>
+</EasyNote>
 
 ## macOS / Windows 러너
 

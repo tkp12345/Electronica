@@ -1,5 +1,6 @@
 import { Callout, Cards } from 'nextra/components'
 import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
 import { IntroIllustration } from '../../../components/illustrations'
 
 <PageHero
@@ -47,9 +48,9 @@ app.whenReady().then(() => {
 })
 ```
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 That code is basically a one-line recipe: _"once the app is ready, open an 800×600 window and show index.html in it."_ Every real Electron app is just this pattern, scaled up.
-</Callout>
+</EasyNote>
 
 ```html filename="index.html"
 <!DOCTYPE html>

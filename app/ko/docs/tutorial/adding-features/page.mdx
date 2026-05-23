@@ -1,5 +1,6 @@
 import { Callout, Cards, Steps } from 'nextra/components'
 import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
 import { FeaturesIllustration } from '../../../../components/illustrations'
 
 <PageHero
@@ -28,9 +29,9 @@ const template = [
 Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 ```
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 `accelerator: 'CmdOrCtrl+N'` 한 줄이 _"맥에서는 ⌘N, 윈도우/리눅스에서는 Ctrl+N"_ 을 자동으로 처리해 줍니다.
-</Callout>
+</EasyNote>
 
 ## 2) 전역 단축키 (앱이 포커스 없어도 동작)
 
@@ -63,9 +64,9 @@ dialog.showOpenDialog({
 new Notification('빌드 완료', { body: '5.2초 걸렸어요' })
 ```
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 브라우저의 Notification API 와 동일한 모양 — Electron 이 그대로 OS 알림 센터에 연결합니다.
-</Callout>
+</EasyNote>
 
 ## 5) 트레이 아이콘
 

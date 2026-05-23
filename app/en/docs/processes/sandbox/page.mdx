@@ -1,5 +1,6 @@
 import { Callout, Cards } from 'nextra/components'
 import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
 import { SandboxIllustration } from '../../../../components/illustrations'
 
 <PageHero
@@ -13,9 +14,9 @@ import { SandboxIllustration } from '../../../../components/illustrations'
 
 A sandboxed Renderer runs at the _lowest privilege level_ the OS allows. It cannot call file-system or network APIs directly; it can only _ask_ the Main process via IPC.
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 "The customer can't reach over the counter. They read the menu and _ask the waiter (IPC)_ for everything."
-</Callout>
+</EasyNote>
 
 ## The default is ON
 

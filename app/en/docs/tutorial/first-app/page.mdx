@@ -1,5 +1,6 @@
 import { Callout, Cards, Steps, Tabs } from 'nextra/components'
 import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
 import { FirstAppIllustration } from '../../../../components/illustrations'
 
 <PageHero
@@ -41,9 +42,9 @@ npm init -y
   </Tabs.Tab>
 </Tabs>
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 `--save-dev` says _"this package is only needed while we develop; don't ship it inside the final app."_ Electron is a build tool, so dev-only is the natural slot.
-</Callout>
+</EasyNote>
 
 ### Create `main.js` — the entry point
 
@@ -69,9 +70,9 @@ app.on('window-all-closed', () => {
 })
 ```
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 The "app ready → create window" line is the real app. The other two callbacks just make the app behave the way each OS expects.
-</Callout>
+</EasyNote>
 
 ### Add `index.html` — what the user actually sees
 

@@ -1,5 +1,6 @@
 import { Callout, Cards } from 'nextra/components'
 import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
 import { DebuggingIllustration } from '../../../../components/illustrations'
 
 <PageHero
@@ -30,9 +31,9 @@ test('Hello World 가 보인다', async () => {
 })
 ```
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 `electron.launch` 가 _진짜 우리 앱을 띄우고_, `firstWindow()` 가 _첫 창에 자동으로 포커스_ 해 줘요. 그 뒤로는 일반 Playwright 와 동일.
-</Callout>
+</EasyNote>
 
 ## 좋은 테스트 디자인
 

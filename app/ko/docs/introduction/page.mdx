@@ -1,5 +1,6 @@
 import { Callout, Cards } from 'nextra/components'
 import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
 import { IntroIllustration } from '../../../components/illustrations'
 
 <PageHero
@@ -47,9 +48,9 @@ app.whenReady().then(() => {
 })
 ```
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 위 코드는 사실상 _"앱이 준비되면 → 가로 800·세로 600 짜리 창을 열고 → index.html 을 띄워라"_ 한 줄짜리 요리법이에요. Electron 의 핵심은 결국 이 패턴의 확장입니다.
-</Callout>
+</EasyNote>
 
 ```html filename="index.html"
 <!DOCTYPE html>

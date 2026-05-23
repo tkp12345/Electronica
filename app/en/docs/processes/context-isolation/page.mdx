@@ -1,5 +1,6 @@
 import { Callout, Cards } from 'nextra/components'
 import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
 import { ContextIsolationIllustration } from '../../../../components/illustrations'
 
 <PageHero
@@ -13,9 +14,9 @@ import { ContextIsolationIllustration } from '../../../../components/illustratio
 
 If preload and the web page shared one JavaScript world, a hostile script on the page could read preload internals and grab IPC handles. **Context isolation** drops a glass wall between them.
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 "Two people in the same room share the desk. Put them in separate rooms and only the _service hatch (contextBridge)_ lets things move between."
-</Callout>
+</EasyNote>
 
 ## The safe way to expose things: `contextBridge`
 

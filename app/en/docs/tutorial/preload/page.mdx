@@ -1,5 +1,6 @@
 import { Callout, Cards, Steps } from 'nextra/components'
 import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
 import { PreloadIllustration } from '../../../../components/illustrations'
 
 <PageHero
@@ -13,9 +14,9 @@ import { PreloadIllustration } from '../../../../components/illustrations'
 
 If web pages could call `require('fs')` directly, **one malicious site could read every file on your user's machine.** Electron defaults to keeping the web side and the Node side strictly separated. When they truly need to talk, you build a small **bridge** called a preload script and expose only the exact functions you want.
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 Think of the "guest room" (Renderer) and the "kitchen" (Main). You don't hand the guest a knife — you cut a tiny window and pass only finished plates through it. That window is your preload.
-</Callout>
+</EasyNote>
 
 ## Add a preload
 
@@ -32,9 +33,9 @@ contextBridge.exposeInMainWorld('api', {
 })
 ```
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 `contextBridge.exposeInMainWorld` means _"push just these functions through the little window."_ Everything else stays in the kitchen.
-</Callout>
+</EasyNote>
 
 ### Register the preload + a handler in `main.js`
 

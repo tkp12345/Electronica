@@ -1,5 +1,6 @@
 import { Callout, Cards } from 'nextra/components'
 import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
 import { SandboxIllustration } from '../../../../components/illustrations'
 
 <PageHero
@@ -13,9 +14,9 @@ import { SandboxIllustration } from '../../../../components/illustrations'
 
 Sandbox 가 켜진 Renderer 는 _OS 의 가장 낮은 권한_ 으로 돌아갑니다. 파일 시스템·네트워크 같은 OS API 를 직접 못 부르고, 오직 IPC 로 Main 에 _부탁_ 만 할 수 있어요.
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 "손님은 카운터 너머로 손을 못 뻗어요. 메뉴판 보고 종업원(IPC)에게 _시키기만_ 가능."
-</Callout>
+</EasyNote>
 
 ## 기본값은 ON
 

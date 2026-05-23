@@ -1,5 +1,6 @@
 import { Callout, Cards } from 'nextra/components'
 import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
 import { ExamplesIllustration } from '../../../components/illustrations'
 
 <PageHero
@@ -32,9 +33,9 @@ contextBridge.exposeInMainWorld('api', {
 })
 ```
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 "클립보드에 뭐가 있어?" 같은 단순 IPC 도 _Main 에 부탁 → preload 통과 → 페이지가 결과 받음_ 의 3단계예요. 이 형태가 Electron 앱의 거의 모든 통신 패턴입니다.
-</Callout>
+</EasyNote>
 
 <Cards>
   <Cards.Card title="개발 도구 모음" href="/ko/docs/development/accessibility" arrow />

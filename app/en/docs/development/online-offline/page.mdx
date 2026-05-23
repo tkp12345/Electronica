@@ -1,5 +1,6 @@
 import { Callout, Cards } from 'nextra/components'
 import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
 import { SignalIllustration } from '../../../../components/illustrations'
 
 <PageHero
@@ -29,9 +30,9 @@ app.whenReady().then(() => {
 })
 ```
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 Main itself has no `navigator`. A common pattern is to spin up a _hidden window_ that listens for the event and forwards it over IPC.
-</Callout>
+</EasyNote>
 
 ## Ping for real reachability
 

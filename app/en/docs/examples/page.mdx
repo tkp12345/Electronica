@@ -1,5 +1,6 @@
 import { Callout, Cards } from 'nextra/components'
 import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
 import { ExamplesIllustration } from '../../../components/illustrations'
 
 <PageHero
@@ -32,9 +33,9 @@ contextBridge.exposeInMainWorld('api', {
 })
 ```
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 Even a "what's on the clipboard?" call goes through _ask Main → preload bridges it → page receives the result_. Almost every Electron interaction looks like this trio.
-</Callout>
+</EasyNote>
 
 <Cards>
   <Cards.Card title="Development tools" href="/en/docs/development/accessibility" arrow />

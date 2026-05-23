@@ -1,5 +1,6 @@
 import { Callout, Cards } from 'nextra/components'
 import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
 import { DragDropIllustration } from '../../../../components/illustrations'
 
 <PageHero
@@ -43,9 +44,9 @@ ipcMain.on('ondragstart', (event, filePath) => {
 })
 ```
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 `event.sender.startDrag` 가 _브라우저로는 불가능하던 OS-수준 드래그_ 를 시작해 주는 마법의 함수예요.
-</Callout>
+</EasyNote>
 
 <Cards>
   <Cards.Card title="알림" href="/ko/docs/development/notifications" arrow />

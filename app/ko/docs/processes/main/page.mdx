@@ -1,5 +1,6 @@
 import { Callout, Cards } from 'nextra/components'
 import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
 import { MainProcessIllustration } from '../../../../components/illustrations'
 
 <PageHero
@@ -34,9 +35,9 @@ app.whenReady().then(() => {
 - DOM 을 직접 만지기 — Main 에는 `document` 가 없음
 - 화면을 직접 그리기 — 그건 Renderer 의 영역
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 Main 안에서 `document.getElementById(...)` 같은 걸 쓰면 곧장 에러예요. _감독이 무대 위로 뛰어 올라가 연기하려는 격_.
-</Callout>
+</EasyNote>
 
 ## 라이프사이클 이벤트 (자주 쓰는 것)
 

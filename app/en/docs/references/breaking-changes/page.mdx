@@ -1,5 +1,6 @@
 import { Callout, Cards } from 'nextra/components'
 import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
 import { BreakingChangesIllustration } from '../../../../components/illustrations'
 
 <PageHero
@@ -22,9 +23,9 @@ Every major releases an updated `BREAKING-CHANGES.md` in the official repo. Walk
 | **Renamed** | Things like `app.runningUnderRosettaTranslation` |
 | **Signature** | `dialog.showOpenDialog` became async |
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 A function flipping from sync to Promise sounds tiny — and stacks into a giant when you skip multiple majors. Hop one major at a time.
-</Callout>
+</EasyNote>
 
 ## A safe migration pattern
 

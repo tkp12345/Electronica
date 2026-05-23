@@ -45,3 +45,6 @@ analyze/
 
 # editor — keep .idea minimal (user already has it tracked? if not, ignore)
 .vscode/
+
+# screenshot scratch (브라우저 확인용 임시 캡처)
+.tmp-shots/

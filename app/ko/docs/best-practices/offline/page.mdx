@@ -1,5 +1,6 @@
 import { Callout, Cards } from 'nextra/components'
 import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
 import { OfflineIllustration } from '../../../../components/illustrations'
 
 <PageHero
@@ -29,9 +30,9 @@ window.addEventListener('online', () => syncQueue())
 window.addEventListener('offline', () => showOfflineBanner())
 ```
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 브라우저의 `navigator.onLine` 은 _Wi-Fi 가 연결되었나_ 정도만 봐요. 진짜 서버가 살았는지 확인하려면 직접 ping 을 보내는 헬스체크가 필요해요.
-</Callout>
+</EasyNote>
 
 ## 큐 패턴 (간단 버전)
 

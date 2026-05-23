@@ -1,5 +1,6 @@
 import { Callout, Cards, Steps } from 'nextra/components'
 import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
 import { PreloadIllustration } from '../../../../components/illustrations'
 
 <PageHero
@@ -13,9 +14,9 @@ import { PreloadIllustration } from '../../../../components/illustrations'
 
 웹 페이지 안에서 `require('fs')` 를 직접 부르도록 두면, **악성 사이트 한 줄로 사용자 파일을 다 읽힐 수 있어요**. 그래서 Electron 은 _기본적으로_ 웹과 Node.js 를 격리해 둡니다. 그 둘이 꼭 대화해야 할 때만 **preload 라는 작은 다리** 를 통해, 우리가 _허락한 함수만_ 노출시키는 게 정석이에요.
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 "손님 방(Renderer)" 과 "주방(Main)" 을 직접 연결하면 손님이 칼을 쓸 수 있죠. 대신 _배달구(preload)_ 만 뚫어두고 "주문" 같은 단순 행동만 통과시키는 거예요.
-</Callout>
+</EasyNote>
 
 ## preload 파일 만들기
 
@@ -32,9 +33,9 @@ contextBridge.exposeInMainWorld('api', {
 })
 ```
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 `contextBridge.exposeInMainWorld` 가 _"이 함수만 손님 방 창문으로 내밀어라"_ 라는 뜻이에요. 나머지 위험한 Node 기능은 손님이 절대 만질 수 없습니다.
-</Callout>
+</EasyNote>
 
 ### `main.js` 에서 preload 등록 + 핸들러
 

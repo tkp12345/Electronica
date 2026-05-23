@@ -1,5 +1,6 @@
 import { Callout, Cards } from 'nextra/components'
 import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
 import { DebuggingIllustration } from '../../../../components/illustrations'
 
 <PageHero
@@ -30,9 +31,9 @@ test('shows Hello World', async () => {
 })
 ```
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 `electron.launch` _starts the real app_; `firstWindow()` _auto-focuses the first window_. From there it's regular Playwright.
-</Callout>
+</EasyNote>
 
 ## A good test split
 

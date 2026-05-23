@@ -1,5 +1,6 @@
 import { Callout, Cards, Steps, Tabs } from 'nextra/components'
 import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
 import { PrerequisitesIllustration } from '../../../../components/illustrations'
 
 <PageHero
@@ -20,9 +21,9 @@ Electron runs on top of Node.js. Verify with:
 node -v   # v20.x or higher is fine
 ```
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 Node.js is _the engine that runs JavaScript outside of a browser_. The "Main" process of every Electron app is, under the hood, a Node.js program.
-</Callout>
+</EasyNote>
 
 ### npm (ships with Node.js)
 The package manager that fetches external code. Confirm with `npm -v`.

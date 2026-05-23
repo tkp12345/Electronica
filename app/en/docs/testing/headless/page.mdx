@@ -1,5 +1,6 @@
 import { Callout, Cards } from 'nextra/components'
 import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
 import { HeadlessIllustration } from '../../../../components/illustrations'
 
 <PageHero
@@ -27,9 +28,9 @@ jobs:
       - run: xvfb-run --auto-servernum npm test
 ```
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 `xvfb-run` creates an _invisible virtual monitor_ for Electron to draw onto. Nobody sees it, but the pixels exist.
-</Callout>
+</EasyNote>
 
 ## macOS / Windows runners
 

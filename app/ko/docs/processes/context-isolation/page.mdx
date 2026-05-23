@@ -1,5 +1,6 @@
 import { Callout, Cards } from 'nextra/components'
 import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
 import { ContextIsolationIllustration } from '../../../../components/illustrations'
 
 <PageHero
@@ -13,9 +14,9 @@ import { ContextIsolationIllustration } from '../../../../components/illustratio
 
 만약 preload 와 웹 페이지가 _같은_ 자바스크립트 세상을 공유한다면, 웹 페이지의 악성 스크립트가 preload 내부 변수를 그대로 들여다보고 IPC 핸들을 훔칠 수 있어요. **컨텍스트 격리** 는 둘 사이에 _다른 차원의 벽_ 을 세웁니다.
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 "같은 방에 둘이 있으면 책상도 같이 써요. 벽으로 막은 두 방으로 나누면 _배달구(contextBridge)_ 로만 물건이 오갈 수 있죠."
-</Callout>
+</EasyNote>
 
 ## 안전한 노출 방법: `contextBridge`
 

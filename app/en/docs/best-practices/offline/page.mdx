@@ -1,5 +1,6 @@
 import { Callout, Cards } from 'nextra/components'
 import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
 import { OfflineIllustration } from '../../../../components/illustrations'
 
 <PageHero
@@ -29,9 +30,9 @@ window.addEventListener('online', () => syncQueue())
 window.addEventListener('offline', () => showOfflineBanner())
 ```
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 `navigator.onLine` only really checks _whether Wi-Fi is up_. For "is the actual server alive?" you need a real health-check ping.
-</Callout>
+</EasyNote>
 
 ## A tiny queue pattern
 

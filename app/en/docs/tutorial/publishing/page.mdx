@@ -1,5 +1,6 @@
 import { Callout, Cards, Steps } from 'nextra/components'
 import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
 import { PublishingIllustration } from '../../../../components/illustrations'
 
 <PageHero
@@ -57,9 +58,9 @@ const { updateElectronApp } = require('update-electron-app')
 updateElectronApp() // checks GitHub Releases by default
 ```
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 That one line means _"on every launch, ask GitHub if there's a newer version, download it quietly if so, and apply it the next time the user quits."_ Three big things, one call.
-</Callout>
+</EasyNote>
 
 ## Sign your code
 

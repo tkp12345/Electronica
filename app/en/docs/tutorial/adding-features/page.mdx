@@ -1,5 +1,6 @@
 import { Callout, Cards, Steps } from 'nextra/components'
 import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
 import { FeaturesIllustration } from '../../../../components/illustrations'
 
 <PageHero
@@ -28,9 +29,9 @@ const template = [
 Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 ```
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 `accelerator: 'CmdOrCtrl+N'` is shorthand for _"⌘N on macOS, Ctrl+N everywhere else."_ Electron handles the per-OS mapping for you.
-</Callout>
+</EasyNote>
 
 ## 2) Global shortcut (works even when the app is in the background)
 
@@ -63,9 +64,9 @@ dialog.showOpenDialog({
 new Notification('Build finished', { body: 'Took 5.2s' })
 ```
 
-<Callout type="info" emoji="🧒">
+<EasyNote>
 Same shape as the browser Notification API — Electron just routes it to the real OS notification center.
-</Callout>
+</EasyNote>
 
 ## 5) Tray icon
 
