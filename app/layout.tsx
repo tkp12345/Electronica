@@ -6,6 +6,7 @@ import { getPageMap } from 'nextra/page-map'
 import 'nextra-theme-docs/style.css'
 // Tailwind utilities — nextra css 뒤에 와야 utility 클래스가 override 가능
 import './globals.css'
+import { ElectronIcon } from './components/ElectronIcon'
 
 // 폰트 self-host — 빌드 시 .woff2 가 _next/static/media 로 번들되어
 // 외부 google fonts CDN 요청 0회 (FCP/CLS 개선)
@@ -25,10 +26,23 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://tkp12345.github.io/Electronica'),
 }
 
-// 상단 네비게이션바: 로고 + 우측 GitHub 링크
+// 상단 네비게이션바: 빨간 Electron 아이콘 로고 + 우측 GitHub 링크
+// 아이콘은 currentColor 기반이므로 text-red-500 으로 색을 강제한다.
 const navbar = (
   <Navbar
-    logo={<b>⚡ Electronica</b>}
+    logo={
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          fontWeight: 700,
+        }}
+      >
+        <ElectronIcon className="text-red-500" size={26} />
+        Electronica
+      </span>
+    }
     projectLink="https://github.com/tkp12345/Electronica"
   />
 )
