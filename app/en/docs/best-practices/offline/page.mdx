@@ -1,0 +1,67 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { OfflineIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<OfflineIllustration />}
+  title="Offline first"
+  subtitle="How to build something that's still useful when the network drops."
+  badge="Best Practices · Offline"
+/>
+
+## Desktop users expect offline to work
+
+Browser users tolerate "offline = broken." Desktop users assume _"my notes will still open even on a plane, right?"_ Meeting that expectation is where best practices begin.
+
+## Four pillars
+
+| Pillar | One line |
+|---|---|
+| **Local storage** | SQLite, LevelDB, IndexedDB — keep a _readable copy_ no matter what |
+| **Request queue** | Queue work while offline, drain it automatically when back online |
+| **Status signal** | Use `online`/`offline` events to clearly tell the user "you're offline now" |
+| **Retry policy** | Exponential backoff — never an infinite retry loop |
+
+## Detecting online/offline
+
+```js filename="renderer.js"
+window.addEventListener('online', () => syncQueue())
+window.addEventListener('offline', () => showOfflineBanner())
+```
+
+<Callout type="info" emoji="🧒">
+`navigator.onLine` only really checks _whether Wi-Fi is up_. For "is the actual server alive?" you need a real health-check ping.
+</Callout>
+
+## A tiny queue pattern
+
+```js filename="renderer.js"
+const queue = []
+
+async function send(msg) {
+  if (navigator.onLine) {
+    await fetch('/api', { method: 'POST', body: JSON.stringify(msg) })
+  } else {
+    queue.push(msg)
+  }
+}
+
+async function flush() {
+  while (queue.length) {
+    const next = queue[0]
+    await fetch('/api', { method: 'POST', body: JSON.stringify(next) })
+    queue.shift()
+  }
+}
+
+window.addEventListener('online', flush)
+```
+
+## Cache invalidation
+
+- Read-only flows: cache aggressively.
+- Read-write flows: design clear cache-busting keys driven by server responses.
+
+<Cards>
+  <Cards.Card title="Online/offline events" href="/en/docs/development/online-offline" arrow />
+</Cards>

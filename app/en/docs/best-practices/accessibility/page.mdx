@@ -1,0 +1,53 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { AccessibilityIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<AccessibilityIllustration />}
+  title="Accessibility"
+  subtitle="Five basics for keyboard-only users, screen-reader users, and color-blind users."
+  badge="Best Practices · Accessibility"
+/>
+
+## It matters more on desktop
+
+Desktop tools live with people for hours. Friction accumulates. Accessibility lapses that feel minor on a webpage are painful in a daily-driver app.
+
+## The five essentials
+
+1. **Every focusable element reachable by keyboard** — proper `tabindex` and semantic tags.
+2. **Use `<button>` — never `<div onClick>` for actions.**
+3. **Labels** — `<label for="...">` or `aria-label`.
+4. **Don't encode information with color alone** — pair with text/icon.
+5. **Contrast ratio ≥ 4.5:1** — measure with DevTools' Lighthouse.
+
+<Callout type="info" emoji="🧒">
+"Accessibility is part of basic quality, not a separate phase." Get it right from day one and it adds no time.
+</Callout>
+
+## Avoid keyboard traps
+
+```jsx
+// 🚫 a div pretending to be a button — keyboard users can't press it
+<div onClick={save}>Save</div>
+
+// ✅
+<button onClick={save}>Save</button>
+```
+
+## Screen-reader live regions
+
+Wrap async-status areas in `aria-live` so screen-reader users hear the change.
+
+```html
+<div aria-live="polite" id="status"></div>
+```
+
+## Electron-specific tips
+
+- Menu `accelerator` values double as automatic shortcut documentation.
+- Expose font-zoom (`webContents.setZoomFactor()`) in your menu.
+
+<Cards>
+  <Cards.Card title="Development: Accessibility" href="/en/docs/development/accessibility" arrow />
+</Cards>

@@ -1,0 +1,53 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { AccessibilityIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<AccessibilityIllustration />}
+  title="접근성 (Accessibility)"
+  subtitle="키보드만 쓰는 사람, 스크린리더 쓰는 사람, 색약 사용자 — 모두를 위한 기본 5가지."
+  badge="Best Practices · Accessibility"
+/>
+
+## 데스크톱이라서 더 중요하다
+
+웹 페이지보다 _오래 쓰는_ 도구라서, 접근성 문제는 누적돼 큰 불편이 됩니다.
+
+## 5가지 핵심
+
+1. **포커스 가능한 모든 요소에 키보드 도달 가능** — `tabindex` 와 적절한 시맨틱 태그
+2. **버튼은 `<button>` — `<div onClick>` 절대 금지**
+3. **레이블** — `<label for="...">` 또는 `aria-label`
+4. **색만으로 정보 전달 금지** — 텍스트/아이콘 함께
+5. **대비비(contrast) 4.5:1 이상** — DevTools 의 Lighthouse 로 측정
+
+<Callout type="info" emoji="🧒">
+"접근성은 따로 있는 영역이 아니라 _기본 품질의 일부_". 처음부터 신경 쓰면 따로 시간 안 들어요.
+</Callout>
+
+## 키보드 트랩 방지
+
+```jsx
+// 🚫 div 로 만든 버튼 — 키보드 사용자가 못 누름
+<div onClick={save}>저장</div>
+
+// ✅
+<button onClick={save}>저장</button>
+```
+
+## 스크린리더 라이브 영역
+
+상태가 비동기로 바뀌는 영역엔 `aria-live` 를 붙여서, 시각 장애 사용자도 변경을 알게 하세요.
+
+```html
+<div aria-live="polite" id="status"></div>
+```
+
+## Electron 전용 팁
+
+- 메뉴 항목의 `accelerator` 는 단축키 _문서화_ 의 효과도 있음
+- 글자 크기 조정: `webContents.setZoomFactor()` 를 메뉴에 노출
+
+<Cards>
+  <Cards.Card title="Development: Accessibility" href="/ko/docs/development/accessibility" arrow />
+</Cards>

@@ -1,0 +1,67 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { SecurityIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<SecurityIllustration />}
+  title="Security best practices"
+  subtitle="The checklist that matters because Electron apps carry more privilege than a normal browser tab."
+  badge="Best Practices · Security"
+/>
+
+## Why you have to care more
+
+When a browser tab gets compromised, it can't touch the file system. But an Electron tab can — through Main. A single XSS that's "annoying" in a browser becomes "catastrophic" on the desktop.
+
+## 17-point checklist (the 5 people fail most often)
+
+| ✅/❌ | Item | Why |
+|---|---|---|
+| ✅ | `contextIsolation: true` | Stops XSS from grabbing your preload's IPC handles |
+| ✅ | `sandbox: true` | Strips OS privileges from the Renderer |
+| ❌ | `nodeIntegration: true` | The page itself can call `fs.unlinkSync` |
+| ❌ | `webSecurity: false` | Disables Same-Origin — never do this |
+| ✅ | Allow-list external URLs you load | Block redirects into unknown territory |
+| ✅ | Validate input to `shell.openExternal()` | Don't let arbitrary URLs launch |
+| ✅ | Strong CSP | Block inline scripts and 3rd-party domains |
+
+<Callout type="warning">
+The two ❌ rows account for roughly _80% of real Electron incidents._ If you forget everything else, remember those two.
+</Callout>
+
+## CSP in one line
+
+```html filename="index.html"
+<meta
+  http-equiv="Content-Security-Policy"
+  content="default-src 'self'; script-src 'self'"
+/>
+```
+
+<Callout type="info" emoji="🧒">
+CSP is a note that says _"this page can only run code from these places."_ `'self'` means only files served from your own app — every third-party script is blocked.
+</Callout>
+
+## URL allow-list pattern
+
+```js filename="main.js"
+const { shell } = require('electron')
+const allow = ['https://github.com', 'https://example.com']
+
+function safeOpen(url) {
+  const u = new URL(url)
+  if (!allow.some((origin) => u.origin === origin)) return
+  shell.openExternal(url)
+}
+```
+
+## Ongoing hygiene
+
+- Stay on the latest Electron LTS (vulnerability patches).
+- `npm audit` weekly.
+- Re-review when you add a new entry point that loads remote content.
+
+<Cards>
+  <Cards.Card title="More on context isolation" href="/en/docs/processes/context-isolation" arrow />
+  <Cards.Card title="Sandbox" href="/en/docs/processes/sandbox" arrow />
+</Cards>

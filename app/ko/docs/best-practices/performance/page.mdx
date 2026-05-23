@@ -1,0 +1,56 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { PerformanceIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<PerformanceIllustration />}
+  title="성능 (Performance)"
+  subtitle="Electron 앱이 무겁다는 평판은 _대부분 우리가 만들어 낸 것_ — 줄일 수 있는 5가지."
+  badge="Best Practices · Performance"
+/>
+
+## 가장 자주 죽이는 5가지
+
+1. **시작 시 너무 많은 npm 모듈 require** — 첫 페인트 전엔 꼭 필요한 것만 부르세요
+2. **거대한 번들된 JS** — Renderer 도 트리셰이킹/코드 스플릿 가능
+3. **불필요한 BrowserWindow 다중 생성** — 창 하나 = Chromium 한 통째
+4. **DevTools 를 프로덕션에서 켜진 채 배포** — 사용자 메모리 ↑
+5. **IPC 폭주** — 마우스 이동마다 IPC 보내지 마세요. throttle/debounce 필수
+
+## 측정 먼저, 추측 금지
+
+```js
+console.time('expensive')
+doExpensive()
+console.timeEnd('expensive')
+```
+
+또는 DevTools → Performance 탭에서 녹화. _측정 없이 최적화는 거의 항상 빗나갑니다_.
+
+<Callout type="info" emoji="🧒">
+"느려요" 라는 말은 보통 _시작이 느림_, _스크롤이 끊김_, _창 전환이 느림_ 의 셋 중 하나. 어디가 느린지부터 짚으세요.
+</Callout>
+
+## 시작 시간 줄이기
+
+```js filename="main.js"
+// 🚫 동기 require 폭탄
+const heavy = require('heavy-pkg')
+
+// ✅ 필요한 시점에 lazy import
+ipcMain.handle('use-heavy', async () => {
+  const { default: heavy } = await import('heavy-pkg')
+  return heavy.compute()
+})
+```
+
+## 메모리 줄이기
+
+- `BrowserWindow` 의 `backgroundThrottling` 활용 (백그라운드 창의 CPU 사용량 ↓)
+- 더 이상 안 쓰는 창은 `destroy()` 로 명확히 해제
+- 큰 이미지/비디오는 OS 캐시 활용 (CDN URL 대신 로컬 캐시 경로)
+
+<Cards>
+  <Cards.Card title="프로파일링 도구" href="/ko/docs/testing/profiling" arrow />
+  <Cards.Card title="자동 업데이트" href="/ko/docs/distribution/auto-updates" arrow />
+</Cards>

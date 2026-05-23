@@ -1,0 +1,67 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { SecurityIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<SecurityIllustration />}
+  title="보안 베스트 프랙티스"
+  subtitle="Electron 앱이 일반 웹사이트보다 더 많은 권한을 가진다는 점에서 반드시 짚어야 할 체크리스트."
+  badge="Best Practices · Security"
+/>
+
+## 왜 더 조심해야 하나
+
+브라우저의 탭이 해킹되어도 OS 파일에는 손을 못 대요. 하지만 Electron 안의 탭은 _Main 을 거쳐_ 파일 시스템·셸을 만질 수 있죠. 한 줄의 XSS 도 _브라우저에서 잔잔한 문제 → 데스크톱에선 큰 사고_ 가 됩니다.
+
+## 17가지 핵심 체크리스트 (자주 어기는 5개 중심)
+
+| ✅/❌ | 항목 | 이유 |
+|---|---|---|
+| ✅ | `contextIsolation: true` | preload 와 페이지를 분리해 XSS → IPC 탈취 차단 |
+| ✅ | `sandbox: true` | Renderer 의 OS 권한 최소화 |
+| ❌ | `nodeIntegration: true` | 웹 페이지가 `fs.unlinkSync` 같은 걸 직접 호출 가능 |
+| ❌ | `webSecurity: false` | Same-Origin 검사 해제 — 절대 금지 |
+| ✅ | 외부 URL 로딩 시 화이트리스트 | 모르는 사이트로 흘러가지 못하게 |
+| ✅ | `shell.openExternal()` 입력 검증 | 임의 URL 실행 방지 |
+| ✅ | CSP(`Content-Security-Policy`) 설정 | 인라인 스크립트·외부 도메인 차단 |
+
+<Callout type="warning">
+이 표의 ❌ 줄 두 개가 _Electron 보안 사고의 80%_ 를 차지해요. 다른 건 다 까먹어도 이 두 줄은 기억하세요.
+</Callout>
+
+## CSP 한 줄 설정
+
+```html filename="index.html"
+<meta
+  http-equiv="Content-Security-Policy"
+  content="default-src 'self'; script-src 'self'"
+/>
+```
+
+<Callout type="info" emoji="🧒">
+CSP 는 _"이 페이지가 어디서 가져온 코드만 실행할지"_ 적어 두는 메모예요. `'self'` 만 적으면 외부 도메인의 스크립트는 모두 차단됩니다.
+</Callout>
+
+## URL 화이트리스트 패턴
+
+```js filename="main.js"
+const { shell } = require('electron')
+const allow = ['https://github.com', 'https://example.com']
+
+function safeOpen(url) {
+  const u = new URL(url)
+  if (!allow.some((origin) => u.origin === origin)) return
+  shell.openExternal(url)
+}
+```
+
+## 정기 점검
+
+- Electron 최신 LTS 로 업데이트 (취약점 패치 ↑)
+- `npm audit` 매주
+- 외부 콘텐츠 로딩 지점이 늘었는지 회고
+
+<Cards>
+  <Cards.Card title="Context Isolation 더 보기" href="/ko/docs/processes/context-isolation" arrow />
+  <Cards.Card title="Sandbox" href="/ko/docs/processes/sandbox" arrow />
+</Cards>

@@ -1,0 +1,67 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { OfflineIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<OfflineIllustration />}
+  title="오프라인 우선 (Offline First)"
+  subtitle="네트워크가 없어도 _쓸 만한_ 앱을 만들기 위한 패턴."
+  badge="Best Practices · Offline"
+/>
+
+## 데스크톱 앱은 오프라인을 기대한다
+
+브라우저 사용자는 "오프라인이면 안 되는 게 당연" 정도지만, 데스크톱 앱 사용자는 _"인터넷 없을 때도 노트는 보이겠지?"_ 라고 기대해요. 그 기대를 만족시키는 게 베스트 프랙티스의 시작입니다.
+
+## 4가지 축
+
+| 축 | 한 줄 |
+|---|---|
+| **로컬 저장** | SQLite, LevelDB, IndexedDB — 무엇이든 _읽을 수 있는 사본_ 을 유지 |
+| **요청 큐** | 오프라인일 때 한 일을 줄 세웠다가, 온라인 되면 자동 동기화 |
+| **상태 신호** | `online`/`offline` 이벤트로 UI 가 명확히 "지금 오프라인" 표시 |
+| **재시도 정책** | 지수 백오프(exponential backoff) — 무한 재시도 금지 |
+
+## 온오프 감지
+
+```js filename="renderer.js"
+window.addEventListener('online', () => syncQueue())
+window.addEventListener('offline', () => showOfflineBanner())
+```
+
+<Callout type="info" emoji="🧒">
+브라우저의 `navigator.onLine` 은 _Wi-Fi 가 연결되었나_ 정도만 봐요. 진짜 서버가 살았는지 확인하려면 직접 ping 을 보내는 헬스체크가 필요해요.
+</Callout>
+
+## 큐 패턴 (간단 버전)
+
+```js filename="renderer.js"
+const queue = []
+
+async function send(msg) {
+  if (navigator.onLine) {
+    await fetch('/api', { method: 'POST', body: JSON.stringify(msg) })
+  } else {
+    queue.push(msg)
+  }
+}
+
+async function flush() {
+  while (queue.length) {
+    const next = queue[0]
+    await fetch('/api', { method: 'POST', body: JSON.stringify(next) })
+    queue.shift()
+  }
+}
+
+window.addEventListener('online', flush)
+```
+
+## 캐시 무효화
+
+- 사용자가 _읽기_ 만 할 거면 캐시를 적극 사용
+- 쓰기/수정이 있다면 서버 응답으로 캐시 무효화하는 명확한 키 설계
+
+<Cards>
+  <Cards.Card title="온오프 이벤트" href="/ko/docs/development/online-offline" arrow />
+</Cards>
