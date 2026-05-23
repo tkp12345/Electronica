@@ -1,8 +1,16 @@
 import nextra from 'nextra'
 
-// Nextra 4: 옵션은 search, contentDirBasePath 등. 테마는 import로 적용.
+/**
+ * Nextra 4 설정.
+ * - `search`: FlexSearch 인덱싱 활성 (코드블럭 포함)
+ * - `contentDirBasePath`: app/ 하위의 .mdx 가 라우팅되는 베이스 경로
+ * - `defaultShowCopyCode`: 모든 코드블럭에 복사 버튼 자동 노출
+ */
 const withNextra = nextra({
-  // 빌드 시 .md/.mdx 내 모든 코드블럭에 대해 Shiki 하이라이트 (기본 활성)
+  search: {
+    codeblocks: true,
+  },
+  defaultShowCopyCode: true,
 })
 
 /** @type {import('next').NextConfig} */

@@ -46,7 +46,13 @@ export default async function RootLayout({
           footer={footer}
           pageMap={pageMap}
           docsRepositoryBase="https://github.com/tkp12345/Electronica/tree/main"
-          sidebar={{ defaultMenuCollapseLevel: 1 }}
+          editLink="이 페이지 편집"
+          feedback={{ content: '오타·개선 의견' }}
+          // 사이드바: 폴더는 기본 접힘(1단계만 펼침), 토글 버튼 노출
+          sidebar={{ defaultMenuCollapseLevel: 1, toggleButton: true }}
+          // 다크/라이트/시스템 라벨 한글화
+          themeSwitch={{ dark: '다크', light: '라이트', system: '시스템' }}
+          toc={{ title: '목차', backToTop: '맨 위로' }}
         >
           {children}
         </Layout>
