@@ -1,0 +1,57 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { WhyIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<WhyIllustration />}
+  title="Why Electron"
+  subtitle="What you gain and what you give up versus going native — laid out on a single page before you commit."
+  badge="Get Started · 2"
+/>
+
+## One codebase, three operating systems
+
+"Make it run on Windows, macOS, and Linux" is the most common request you'll hear from users. Instead of learning Swift, C#, and GTK and writing three separate apps, Electron lets you ship **one web codebase to all three**. That's the headline win.
+
+<Callout type="info" emoji="🌍">
+Think "one bicycle that can ride to three cities" rather than "three different driving tests for three different cities."
+</Callout>
+
+## What you gain
+
+- **Speed of development**: HTML/CSS/JS as-is — zero new languages to learn.
+- **Reuse**: any design system or component library your team already has carries over.
+- **Ecosystem**: hundreds of thousands of npm packages, all available.
+- **Desktop primitives** built in: auto-update, tray, menus, global shortcuts.
+- **DevTools**: the full Chrome DevTools you know, attached to your own app.
+
+## What you give up
+
+- **Size on disk and in RAM**: the bundled Chromium runtime is heavy — usually 50–150MB on disk.
+- **Startup time**: slower than native; first paint sits in the 100–300ms range.
+- **Deep OS integration**: if you truly need native widgets, you'll hit limits.
+- **Security responsibility**: an Electron app has more power than a browser tab, so you have to think about it carefully (→ [Security](/en/docs/best-practices/security)).
+
+## How it compares
+
+| Option | Pros | Cons |
+|---|---|---|
+| **Electron** | One codebase, huge ecosystem | Heavy |
+| **Tauri** | Tiny binaries (system webview) | Webview differs per OS, weaker tooling |
+| **Native (Swift/Kotlin/...)** | Fastest and lightest | Build three times |
+| **React Native Desktop** | Reuse RN ecosystem | Desktop story still maturing |
+
+## When Electron is the right call
+
+- You already have a web app and need a _desktop_ version (the natural case).
+- You must ship to all three OSes with limited engineering capacity.
+- You're building a tooling app — editor, chat, design surface — where rich UI and fast iteration matter most.
+
+<Callout type="warning">
+If "must be as lightweight as possible" is your number-one requirement, look at **Tauri** or native before reaching for Electron.
+</Callout>
+
+<Cards>
+  <Cards.Card title="Next: Process model" href="/en/docs/processes" arrow />
+  <Cards.Card title="Start the tutorial" href="/en/docs/tutorial/prerequisites" arrow />
+</Cards>

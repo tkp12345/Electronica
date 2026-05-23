@@ -1,0 +1,57 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { WhyIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<WhyIllustration />}
+  title="왜 Electron 인가"
+  subtitle="네이티브로 따로 만들 때와 비교해 얻는 것 / 잃는 것 — 결정하기 전에 한 페이지로 정리합니다."
+  badge="Get Started · 2"
+/>
+
+## 한 코드, 세 운영체제
+
+"이 앱은 윈도우에도 있고, 맥에도 있고, 우분투에도 있어요" — 사용자에게 가장 흔히 듣는 요구예요. Swift, C#, GTK 셋을 따로 배워 셋을 따로 만드는 대신, **웹 한 벌로 셋 다** 내보내는 게 Electron 의 가장 큰 가치입니다.
+
+<Callout type="info" emoji="🌍">
+"세 개의 운전면허 시험을 보는 대신, 자전거 한 대로 세 도시를 돌아다닌다" 가 비유로 가장 정확해요.
+</Callout>
+
+## 얻는 것 (Pros)
+
+- **속도**: HTML/CSS/JS 그대로 — 새 언어 학습 0
+- **재사용**: 회사가 이미 가진 웹 디자인 시스템·컴포넌트를 그대로
+- **풍부한 생태계**: npm 의 수십만 패키지를 그대로 쓸 수 있음
+- **자동 업데이트, 트레이, 메뉴, 단축키** 등 데스크톱 전용 기능이 모듈로 다 준비됨
+- **DevTools** — 크롬 개발자 도구를 그대로 켜서 디버깅
+
+## 잃는 것 (Cons)
+
+- **메모리·디스크 무게**: Chromium 런타임이 함께 실려 50~150MB 정도 차지
+- **시작 속도**: 네이티브보다 느림 — 첫 페인트 100~300ms 가량 무거움
+- **OS 깊은 통합**: 진짜 네이티브 위젯이 필요하면 한계가 있음
+- **보안 책임**: 브라우저보다 더 많은 권한을 갖기 때문에 신경 쓸 일이 늘어남 (→ [Security](/ko/docs/best-practices/security))
+
+## 다른 선택지와의 비교
+
+| 선택지 | 장점 | 단점 |
+|---|---|---|
+| **Electron** | 한 코드, 큰 생태계 | 무거움 |
+| **Tauri** | 매우 가벼움 (시스템 웹뷰) | OS 별로 렌더링 다름, 디버깅 도구 빈약 |
+| **Native (Swift/Kotlin/...)** | 가장 빠르고 가벼움 | 셋 따로 개발 |
+| **React Native Desktop** | RN 생태계 재사용 | 데스크톱 지원 미성숙 |
+
+## 그래서 언제 쓰면 좋을까
+
+- 이미 웹 앱이 있고, _데스크톱_ 버전이 필요할 때 (가장 자연스러운 케이스)
+- 셋 OS 를 다 지원해야 하는데 인력은 한정될 때
+- 풍부한 UI 와 빠른 반복이 필요한 도구류 (편집기, 채팅, 디자인 툴)
+
+<Callout type="warning">
+"가능한 한 가볍게 만들어야 한다" 가 요구사항의 1순위라면 Electron 보다 **Tauri** 또는 네이티브를 먼저 검토하세요.
+</Callout>
+
+<Cards>
+  <Cards.Card title="다음: 프로세스 모델" href="/ko/docs/processes" arrow />
+  <Cards.Card title="튜토리얼 시작" href="/ko/docs/tutorial/prerequisites" arrow />
+</Cards>

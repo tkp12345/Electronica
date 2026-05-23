@@ -1,0 +1,69 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { IntroIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<IntroIllustration />}
+  title="Introducing Electron"
+  subtitle="Electron lets you ship the same HTML/CSS/JS you already write for the web as a real desktop app on Windows, macOS, and Linux."
+  badge="Get Started · 1"
+/>
+
+## In one sentence
+
+> **"A wrapper that turns a website into a double-clickable app."**
+
+Take any web UI you can write today and let Chromium (the browser engine inside Chrome) render it, while Node.js (the tool that runs JavaScript outside the browser) gives you access to files, the network, windows, and other OS-level things web pages normally can't touch.
+
+<Callout type="info" emoji="💡">
+**Analogy**: if a website is a _painting_, Electron adds the _frame, stand, and power cord_ so it can sit on a desk instead of hanging on a wall.
+</Callout>
+
+## Apps you already use that ship with Electron
+
+VS Code, Slack, Discord, Figma desktop, Notion, Postman — all of them are Electron under the hood. "That app you live in" is probably a website wearing a tuxedo.
+
+## Three building blocks
+
+Any Electron app boils down to these three pieces working together.
+
+| Piece | What it does | Analogy |
+|---|---|---|
+| **Chromium** | Draws the pixels on screen | Projector |
+| **Node.js** | Talks to files, network, the OS | Backstage crew |
+| **Electron APIs** | Windows, menus, tray, auto-updates | Stage lighting & props |
+
+## The smallest possible app
+
+```js filename="main.js"
+// The entry point — Electron runs this file first.
+const { app, BrowserWindow } = require('electron')
+
+app.whenReady().then(() => {
+  // One on-screen window.
+  const win = new BrowserWindow({ width: 800, height: 600 })
+  // Load our own HTML inside it.
+  win.loadFile('index.html')
+})
+```
+
+<Callout type="info" emoji="🧒">
+That code is basically a one-line recipe: _"once the app is ready, open an 800×600 window and show index.html in it."_ Every real Electron app is just this pattern, scaled up.
+</Callout>
+
+```html filename="index.html"
+<!DOCTYPE html>
+<html>
+  <body>
+    <h1>Hello, Electron!</h1>
+  </body>
+</html>
+```
+
+## Where to go next
+
+<Cards>
+  <Cards.Card title="Why Electron" href="/en/docs/why-electron" arrow />
+  <Cards.Card title="Process model (Main vs Renderer)" href="/en/docs/processes" arrow />
+  <Cards.Card title="Tutorial 1 — Prerequisites" href="/en/docs/tutorial/prerequisites" arrow />
+</Cards>
