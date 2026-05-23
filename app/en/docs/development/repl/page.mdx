@@ -36,6 +36,14 @@ require('node:repl').start({ prompt: 'electron> ' })
 
 When the Node attach debugger is connected, the _Debug Console_ evaluates expressions on the live process. A lightweight REPL alternative.
 
+## In plain words
+
+Ever want to _try one line of code before writing the file_? "What exactly does this function return?", "Does this option even work?" — the REPL answers these in five seconds. `electron --interactive` is all you need to launch it.
+
+Think of it as _pressing the vending machine buttons before inserting any coins_. You test the layout, the responses, the edge cases by hand first. `require('electron').screen.getAllDisplays()` instantly shows your monitor info. Solving these tiny questions in the REPL _before_ touching real code makes the real code much cleaner.
+
+VS Code's "Attach to Node" Debug Console is effectively a _live REPL_. Once the debugger is attached, you can evaluate expressions against the running app from the Debug Console — no separate REPL needed, and you get to inspect the actual live state of the program, which is far more powerful.
+
 <Cards>
   <Cards.Card title="Debugging" href="/en/docs/development/debugging" arrow />
 </Cards>

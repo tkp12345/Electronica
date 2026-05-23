@@ -51,6 +51,14 @@ VS Code 의 `.vscode/launch.json`:
 - `process.versions` 로 Node/Electron/Chrome 버전 한 줄 확인
 - `electron --enable-logging` — Electron 내부 로그까지 모두 출력
 
+## 쉽게 풀어 설명
+
+디버깅이 다른 앱보다 _두 배 까다로워 보이는_ 이유는 Electron 안엔 사실 _두 종류의 프로그램_ 이 동시에 도는 것 같기 때문이에요. _배우(Renderer)_ 의 무대를 살펴봐야 할 땐 우리가 익숙한 **Chrome DevTools** 를 그대로 열면 돼요. F12 또는 Cmd/Ctrl+Shift+I. 변수 확인·DOM 검사·네트워크 모두 평소 웹 디버깅과 똑같아요.
+
+_감독(Main)_ 의 뒷무대를 보고 싶으면 도구가 달라져요. Node 디버거를 붙여야 해요. `electron --inspect=5858 .` 처럼 _포트 번호_ 와 함께 켜고, VS Code 의 "Attach to Node" 가 같은 포트로 노크하면 들어갈 수 있어요. 그 안에서 브레이크포인트, step over/into, 변수 모두 가능해요. 이 _두 도구를 따로 띄워 두는 습관_ 이 진짜 실력 격차를 만들어요.
+
+소소하지만 유용한 트릭들도 잊지 마세요. `console.trace()` 는 "이 함수가 어디서 호출됐지?" 의 답을 한 줄로 줍니다. `process.versions` 는 Node·Electron·Chromium 버전을 한꺼번에 보여 줘요. `electron --enable-logging` 는 평소 숨겨져 있던 Electron 내부 로그까지 다 토해 내서, 이상하게 화면이 안 그려질 때 원인을 빨리 찾게 해 줘요.
+
 <Cards>
   <Cards.Card title="DevTools Extension" href="/ko/docs/development/devtools-extension" arrow />
   <Cards.Card title="자동화 테스트" href="/ko/docs/testing/automated" arrow />

@@ -42,6 +42,14 @@ if (process.env.NODE_ENV === 'development') {
 }
 ```
 
+## In plain words
+
+React DevTools, Redux DevTools — the same extensions you already use in Chrome _just work_ inside Electron. That's because the Renderer literally _is_ Chromium. The one twist is that you point at an _unpacked extension folder_ instead of the Chrome Web Store, which is actually a feature: it works offline and in corporate environments where the Web Store is blocked.
+
+The usual stack is the same one most React/Redux developers reach for daily. Component tree and props → **React Developer Tools**. State changes and time travel → **Redux DevTools**. Network → the built-in DevTools _Network_ tab. Get fluent with those three and your debugging speed roughly doubles.
+
+One last thing: _never ship extensions in production builds_. They cost RAM, and they let users peer into your component tree, which isn't great for security or product perception either. A single `NODE_ENV === 'development'` guard around `loadExtension` is enough.
+
 <Cards>
   <Cards.Card title="Debugging" href="/en/docs/development/debugging" arrow />
 </Cards>

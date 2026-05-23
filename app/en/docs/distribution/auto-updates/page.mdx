@@ -48,6 +48,14 @@ autoUpdater.checkForUpdates()
 
 Pick something like _Squirrel.Mac / Squirrel.Windows / Nuts / Hazel_, or roll your own.
 
+## In plain words
+
+The gap between a good app and one that _truly stays with users for years_ is auto-update. You can't email every user "please download the new version!", so the app has to _check, fetch, and apply_ updates on its own. Electron's `update-electron-app` package does that in a single line: `updateElectronApp({ repo: 'your/repo' })`.
+
+A lot of careful behavior hides behind that one line. On launch, the app _compares the current version to the newest tag on GitHub Releases_; if there's a newer one, it _downloads in the background_; when the user next quits, it _swaps the binary quietly_. From the user's perspective it's just "huh, the design shifted a little today."
+
+If you'd rather run your own update server, `autoUpdater.setFeedURL` is all you need to point at it. Server-side, you can speak the Squirrel.Mac/Windows protocol or stand up an open-source option like Hazel or Nuts in an afternoon. The non-obvious requirement: _code signing must match between old and new versions_. If the signatures diverge, the OS treats the new build as "a different app" and the update silently fails.
+
 <Cards>
   <Cards.Card title="Publishing tutorial" href="/en/docs/tutorial/publishing" arrow />
   <Cards.Card title="Code signing" href="/en/docs/distribution/code-signing" arrow />

@@ -39,6 +39,14 @@ npx electron-windows-store \
 - **버전 번호 4자리** (예: `1.0.0.0`) — Store 규칙
 - **앱 ID** — Partner Center 에서 발급받아야 함
 
+## 쉽게 풀어 설명
+
+Windows 사용자는 _두 가지 다른 길_ 로 우리 앱을 받아요. 첫째는 _전통적인 .exe 인스톨러_ — 내 사이트나 GitHub 에서 받아 더블클릭. 둘째는 _Microsoft Store_ — 시작 메뉴의 검색에서 찾아 클릭. 둘은 사용자 경험이 완전히 달라요. 후자가 _훨씬 안전해 보이고 _ 자동 업데이트도 Store 가 알아서 해 줘요.
+
+기술적으로는 `.exe` 가 `.msix` 라는 _Store 가 알아보는 박스_ 로 _재포장_ 돼요. 변환 도구(`electron-windows-store`) 가 _이미 만든 .exe 폴더_ 를 입력으로 받아 _Store 형식의 .msix_ 를 뱉어 줘요. 같은 코드, 다른 포장지.
+
+자주 막히는 함정 셋: ① _버전 번호는 반드시 4자리_ (예: `1.0.0.0`) — Store 규칙이라 `1.0.0` 으로는 거절돼요. ② 우리 앱이 카메라·블루투스 같은 _UWP 권한_ 을 쓴다면 매니페스트에 _명시적으로 선언_ 해야 작동해요. ③ Partner Center 에서 받는 _앱 ID_ 가 빌드와 일치해야 합니다.
+
 <Cards>
   <Cards.Card title="자동 업데이트" href="/ko/docs/distribution/auto-updates" arrow />
 </Cards>

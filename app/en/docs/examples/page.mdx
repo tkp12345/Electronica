@@ -37,6 +37,14 @@ contextBridge.exposeInMainWorld('api', {
 Even a "what's on the clipboard?" call goes through _ask Main → preload bridges it → page receives the result_. Almost every Electron interaction looks like this trio.
 </EasyNote>
 
+## In plain words
+
+The fastest way to internalize a tool is to _wire up one small thing yourself_. The clipboard example on this page is exactly that. Asking "what did the user just copy?" builds the entire three-step pipeline at once: _Main talks to the real OS → preload bridges the result → the page renders it_. That triangle is how almost every Electron feature is shaped.
+
+Jumping straight into a giant boilerplate (like electron-react-boilerplate) hides _which lines are yours_, and that's confusing while you're learning. A cleaner path is to start from the tiniest possible base — **electron-quick-start** — and add parts (React, TS, Redux) one at a time. Once the pattern lives in your hands, it's instantly recognizable inside any boilerplate.
+
+If you just want to test something without building a project, **Electron Fiddle** is the answer. Two lines and a "run" button in the browser pop a real Electron window. It's a five-second sandbox for "what exactly does this API return?"
+
 <Cards>
   <Cards.Card title="Development tools" href="/en/docs/development/accessibility" arrow />
   <Cards.Card title="Start from first app" href="/en/docs/tutorial/first-app" arrow />

@@ -32,6 +32,14 @@ The OS usually only turns it on when a screen reader runs. To force it in CI:
 app.setAccessibilitySupportEnabled(true)
 ```
 
+## In plain words
+
+You can't really know how a screen reader hears your page until you listen with one. Two tools cover this. ① The **Accessibility panel** in DevTools shows every element as a tree of _roles_, so you can see what each thing is announced as. ② An **actual screen reader** — VoiceOver on macOS (⌘F5), NVDA on Windows, Orca on Linux. Half a minute is enough to surface most missing labels.
+
+There's a quiet trap when running automated accessibility tests in CI. The OS only builds the accessibility tree when a screen reader is actually running — in headless CI, that tree is just _missing_. Add `app.setAccessibilitySupportEnabled(true)` to main.js to force it on, and tools like Playwright can then walk the accessibility nodes.
+
+One-line takeaway: turn on VoiceOver _once a week_ and use your own app for five minutes. It's the single fastest habit for raising real-user satisfaction.
+
 <Cards>
   <Cards.Card title="Best practices: accessibility" href="/en/docs/best-practices/accessibility" arrow />
 </Cards>

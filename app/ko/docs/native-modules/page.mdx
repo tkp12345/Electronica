@@ -42,6 +42,14 @@ Electron Forge 를 쓰고 있다면 `npm run make` 시점에 자동으로 rebuil
 - _Python not found_ → macOS/Linux 는 `xcode-select --install` / `apt install build-essential`
 - _Visual Studio not found_ (Windows) → "Desktop development with C++" 워크로드 설치
 
+## 쉽게 풀어 설명
+
+npm 에서 받는 라이브러리는 두 종류예요. 첫째는 _순수 자바스크립트_ — 어디서나 똑같이 도는 종이접기 같은 도구. 둘째는 _네이티브 모듈_ — C/C++ 코드로 만들어져, _운영체제 별·CPU 별로 다르게 컴파일된 진짜 부품_ 이에요. 빠른 암호화(`node-sodium`), 로컬 DB(`better-sqlite3`), USB·시리얼 같은 하드웨어를 다룰 땐 결국 이쪽 도구가 필요해요.
+
+문제는 _Electron 안의 Node 버전이 시스템 Node 와 다를 수 있다_ 는 점이에요. 그래서 평소처럼 `npm install` 만 하면, 시스템 Node 용으로 컴파일된 바이너리가 깔려서 _Electron 안에선 안 돌아요_. 해결책은 `npx electron-rebuild` 한 줄. _Electron 의 Node 버전에 맞춰 다시 컴파일_ 해 줍니다. Electron Forge 를 쓰고 있다면 패키징 시점에 자동으로 해 주니 신경 쓸 일이 적어요.
+
+자주 보는 에러는 셋. ① `NODE_MODULE_VERSION mismatch` → `electron-rebuild` 한 번이면 해결. ② 맥/리눅스의 _Python/build tools_ 누락 → `xcode-select --install` 또는 `apt install build-essential`. ③ 윈도우의 _Visual Studio C++ 워크로드_ 없음 → Visual Studio Installer 에서 "Desktop development with C++" 설치. 한 번 설정해 두면 그 뒤로는 거의 막힐 일이 없어요.
+
 <Cards>
   <Cards.Card title="패키징" href="/ko/docs/tutorial/packaging" arrow />
 </Cards>

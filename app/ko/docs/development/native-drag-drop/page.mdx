@@ -48,6 +48,14 @@ ipcMain.on('ondragstart', (event, filePath) => {
 `event.sender.startDrag` 가 _브라우저로는 불가능하던 OS-수준 드래그_ 를 시작해 주는 마법의 함수예요.
 </EasyNote>
 
+## 쉽게 풀어 설명
+
+브라우저 안에서 끄는 드래그앤드롭은 _페이지 안_ 까지가 한계예요. 사진을 끌어다 빈 영역에 떨어뜨릴 순 있어도, _Finder/탐색기 같은 OS 의 파일 매니저_ 로는 못 보내요. Electron 은 데스크톱 앱이라서 그 벽을 넘어요. 사용자가 우리 창에서 시작한 드래그가 _진짜 OS 의 파일 드래그_ 로 변신해, Finder 에 떨어뜨려도 진짜 파일로 저장돼요.
+
+핵심 한 줄이 `event.sender.startDrag({ file, icon })` 예요. 이 함수는 _Renderer 가 직접 호출하지 못해요_ — 보안 때문에 IPC 를 거쳐 Main 에서만 호출 가능해요. 그래서 코드 흐름이 _renderer 의 dragstart → preload → ipcMain.on('ondragstart') → startDrag_ 로 한 단계 더 길어요. 익숙해지면 패턴은 단순.
+
+자주 막히는 부분 하나: 드래그 _아이콘_ 파일은 _반드시 PNG_, 그리고 _절대 경로_ 로 넘기세요. 상대 경로를 넘기면 OS 가 못 찾아서 _드래그 자체가 작동을 안_ 해요.
+
 <Cards>
   <Cards.Card title="알림" href="/ko/docs/development/notifications" arrow />
 </Cards>

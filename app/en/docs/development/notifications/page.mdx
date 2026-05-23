@@ -47,6 +47,14 @@ n.show()
 - macOS: nothing shows → check System Settings → Notifications and grant the app permission.
 - Windows: a wrong AppUserModelID breaks notifications entirely (only works after code-signing + packaging).
 
+## In plain words
+
+The browser's `new Notification('...')` works as-is in a desktop app, but the destination is different. In the browser you'd see a balloon inside the page; in Electron it lands in _the real OS notification center_ — top-right on macOS, bottom-right on Windows. The user sees it even when the app window is hidden.
+
+Same API, but each OS decides _how it looks_. Corner radius, icon position, sound — all up to the OS. You just send the signal. That's actually a feature: your notifications arrive in the exact same visual style as the user's other apps, which feels native.
+
+Two traps to know. ① On macOS the very first notification triggers a permission prompt; if the user declines, every notification afterward is silently dropped. They have to flip the switch again in System Settings → Notifications. ② On Windows a bad _AppUserModelID_ wipes notifications entirely. This ID only works correctly in builds that have been _packaged and code-signed_.
+
 <Cards>
   <Cards.Card title="Pair with auto-updates" href="/en/docs/distribution/auto-updates" arrow />
 </Cards>

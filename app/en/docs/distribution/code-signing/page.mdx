@@ -48,6 +48,14 @@ Use an EV certificate (file or USB token) with `signtool` against your `.exe` an
 - Never log certificate paths or passwords during the build.
 - Put the expiry date on a calendar.
 
+## In plain words
+
+People don't want to open a package whose _tamper-evident seal_ is missing — anyone could have opened it on the way over. Digital apps are no different. _Code signing_ is the seal that says "this app was built by us, and nothing has touched it since." Unsigned apps get scary warnings on macOS and Windows, and may get blocked outright.
+
+macOS needs _two steps_: sign + notarize. Signing alone lets the app open on your own machine but not on a stranger's Mac. Notarization is _Apple's servers scanning the app and stamping it "safe"_, which is required on macOS Catalina and later for the app to open without warnings. On Windows, sign your `.exe` and installer with an EV certificate via `signtool`.
+
+In CI, _the certificate itself is your most sensitive secret_. Never commit it to the repo. Keep it in environment variables or a secret manager, and make sure paths/passwords never leak into build logs. Last but not least, _put the expiry date on a calendar_ — when a certificate dies unexpectedly, your auto-update channel dies with it.
+
 <Cards>
   <Cards.Card title="Auto-updates" href="/en/docs/distribution/auto-updates" arrow />
 </Cards>

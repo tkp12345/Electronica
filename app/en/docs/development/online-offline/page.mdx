@@ -49,6 +49,14 @@ async function isAlive() {
 }
 ```
 
+## In plain words
+
+Networks don't behave like a clean light switch — on or off. Wi-Fi can flap on and off every second when the signal is weak, and even when Wi-Fi is solid, _your server_ might be down. So you need two layers of detection.
+
+The first layer is _what the OS tells you_. The browser's `window.addEventListener('online' / 'offline', ...)` events are the cheapest, fastest signal — perfect for the UI's first reaction. The second layer is _asking the server directly_ with a small ping. Sending a lightweight request every second or two catches the "Wi-Fi is fine but the server is dead" case the OS can't see.
+
+Main itself has no `navigator`. The common workaround is to spin up a _hidden tiny window_ that listens to `online`/`offline` and forwards the events via IPC. It feels a bit awkward, but it's the most reliable pattern in practice.
+
 <Cards>
   <Cards.Card title="Best practices: offline" href="/en/docs/best-practices/offline" arrow />
 </Cards>

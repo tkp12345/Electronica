@@ -42,6 +42,14 @@ if (process.env.NODE_ENV === 'development') {
 }
 ```
 
+## 쉽게 풀어 설명
+
+크롬을 쓸 때 익숙한 React DevTools 나 Redux DevTools — 사실 그 도구들이 _Electron 안에서도 똑같이_ 돌아요. 우리 앱의 _Renderer 가 Chromium 그 자체_ 이기 때문이에요. 다만 크롬 웹스토어를 거치는 대신, _압축이 풀린 확장 폴더_ 를 직접 가리키는 점만 달라요. 회사 보안 정책으로 웹스토어 접근이 막힌 환경에서도 동작한다는 장점이 있어요.
+
+가장 자주 쓰는 조합은 거의 정해져 있어요. React 컴포넌트 트리·props 흐름은 **React Developer Tools**, Redux 상태 변화 추적은 **Redux DevTools**, 네트워크는 DevTools 의 기본 _Network_ 탭. 이 셋만 익숙해져도 디버깅 속도가 두 배는 빨라져요.
+
+마지막 주의 한 가지: _운영 빌드에는 절대 확장을 싣지 마세요_. 메모리만 더 먹고, 사용자가 우리 앱 안에서 _React 소스 트리를 그대로 볼 수 있게_ 되면 보안에도 좋지 않아요. `NODE_ENV === 'development'` 가드 한 줄이면 충분합니다.
+
 <Cards>
   <Cards.Card title="앱 디버깅" href="/ko/docs/development/debugging" arrow />
 </Cards>

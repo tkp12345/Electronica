@@ -35,6 +35,14 @@ electron-forge make --arch=x64
 
 Apple Silicon 사용자 비율이 빠르게 늘어서, _arm64 macOS 빌드는 사실상 필수_ 입니다.
 
+## 쉽게 풀어 설명
+
+"Electron 은 모든 OS 에서 돌아요!" 라는 말은 절반만 맞아요. 데스크톱 안에서만 그래요. 아이폰, 안드로이드 — _안 돌아요_. 그러니 일정 짤 때 "모바일도 같은 코드로 가능하겠지?" 라고 가정하면 안 됩니다. 모바일이 필요하면 React Native, Flutter, Capacitor 같은 다른 도구를 골라야 해요.
+
+또 하나 자주 잊는 게 _아키텍처_ 예요. 같은 macOS 라도 _Intel(x64)_ 칩과 _Apple Silicon(arm64)_ 칩의 빌드가 따로 필요해요. 2020년 이후의 맥은 거의 arm64 라서, _arm64 빌드를 안 만들면_ 새 맥에서 자동 번역기(Rosetta) 를 거치고 _체감 속도가 30% 가량 느려져요_. 윈도우도 ARM 노트북이 늘고 있어서 점점 같은 상황이 돼요.
+
+해결책은 단순. `electron-forge make --arch=arm64` 와 `--arch=x64` 를 둘 다 빌드해서 둘 다 배포하면 끝. 자동 업데이트도 두 채널을 각각 신경 써 주세요.
+
 <Cards>
   <Cards.Card title="패키징" href="/ko/docs/tutorial/packaging" arrow />
   <Cards.Card title="Forge 개요" href="/ko/docs/distribution/forge" arrow />

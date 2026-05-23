@@ -48,6 +48,14 @@ autoUpdater.checkForUpdates()
 
 서버는 _Squirrel.Mac / Squirrel.Windows / Nuts / Hazel_ 같은 오픈소스를 직접 운영하거나 자체 구현.
 
+## 쉽게 풀어 설명
+
+좋은 앱과 _진짜로 사용자 곁에 오래 머무는_ 앱의 차이는 _업데이트_ 에 있어요. 매번 사용자에게 "새 버전 다운받으세요!" 메일을 보낼 순 없으니, 앱이 _스스로_ 새 버전을 확인하고 받아 적용해야 해요. Electron 의 `update-electron-app` 패키지가 그 일을 _한 줄_ 로 해 줍니다. `updateElectronApp({ repo: 'your/repo' })`.
+
+이 한 줄 뒤에서 일어나는 일이 꽤 똑똑해요. 앱이 켜질 때 GitHub Releases 에 _현재 버전과 가장 최신 버전을 비교_, 새 버전이 있으면 _백그라운드에서 다운로드_, 다운로드 완료 후 _사용자가 다음에 종료할 때 조용히 적용_. 사용자는 어느 날 켰을 때 _"어, 이거 디자인이 살짝 바뀌었네?"_ 만 느껴요.
+
+자체 서버를 쓰고 싶다면 `autoUpdater.setFeedURL` 로 _업데이트 피드 URL_ 만 알려 주면 돼요. 서버 쪽은 Squirrel.Mac/Windows 프로토콜을 따르거나 Hazel/Nuts 같은 오픈소스를 쓰면 빠르게 만들 수 있어요. 가장 중요한 건 _코드 서명이 새 버전과 옛 버전에 동일하게 유지_ 되어야 한다는 점. 서명이 어긋나면 OS 가 "이건 다른 앱이야" 라고 판단해 업데이트가 안 돼요.
+
 <Cards>
   <Cards.Card title="Publishing 튜토리얼" href="/ko/docs/tutorial/publishing" arrow />
   <Cards.Card title="코드 서명" href="/ko/docs/distribution/code-signing" arrow />

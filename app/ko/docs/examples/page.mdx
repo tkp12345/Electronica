@@ -37,6 +37,14 @@ contextBridge.exposeInMainWorld('api', {
 "클립보드에 뭐가 있어?" 같은 단순 IPC 도 _Main 에 부탁 → preload 통과 → 페이지가 결과 받음_ 의 3단계예요. 이 형태가 Electron 앱의 거의 모든 통신 패턴입니다.
 </EasyNote>
 
+## 쉽게 풀어 설명
+
+새로운 도구를 배울 때 가장 좋은 방법은 _작은 동작 하나를 직접 해 보는 것_ 이에요. 이 페이지의 클립보드 예제가 그래요. "사용자가 복사한 글을 우리 앱에서 읽어 오기" 라는 단순한 일을 만들면, _Main 이 진짜 OS 와 대화하고 → preload 가 그 결과를 페이지로 다리 놓아 주고 → 페이지가 화면에 표시_ 하는 3단계가 한 번에 그려져요. 이게 거의 모든 Electron 통신의 모양입니다.
+
+처음부터 큰 보일러플레이트(electron-react-boilerplate 같은) 로 시작하면 _어디서부터가 내 코드_ 인지 헷갈려요. 그래서 학습 단계에서는 **electron-quick-start** 처럼 가장 작은 출발점에서 시작해, 필요한 부품(React, TS, Redux 등) 을 한 개씩 더해 가는 게 좋아요. 손바닥에 한 번 익은 패턴은 큰 보일러플레이트에 가서도 그대로 보여요.
+
+코드를 _직접 안 짜고도_ 시험만 해 보고 싶을 땐 **Electron Fiddle** 이 답이에요. 브라우저 안에서 한 두 줄 적고 실행 버튼만 누르면 진짜 Electron 창이 떠요. "이 API 가 정확히 뭘 돌려주는지" 같은 호기심 해소에 5초면 충분해요.
+
 <Cards>
   <Cards.Card title="개발 도구 모음" href="/ko/docs/development/accessibility" arrow />
   <Cards.Card title="첫 앱부터" href="/ko/docs/tutorial/first-app" arrow />

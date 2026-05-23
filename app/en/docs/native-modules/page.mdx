@@ -42,6 +42,14 @@ If you're using Electron Forge, `npm run make` triggers a rebuild automatically.
 - _Python not found_ → macOS/Linux: `xcode-select --install` or `apt install build-essential`.
 - _Visual Studio not found_ (Windows) → install the "Desktop development with C++" workload.
 
+## In plain words
+
+There are two kinds of npm libraries. First, _pure JavaScript_ — origami-like tools that fold the same way everywhere. Second, _native modules_ — written in C/C++ and shipped as _real binaries compiled separately for each OS and CPU_. Fast crypto (`node-sodium`), local databases (`better-sqlite3`), USB and serial port access — these all live in the second group.
+
+The catch is that the Node version _embedded inside Electron_ doesn't always match the Node you have on your system. So a plain `npm install` lays down a binary built for your system Node, and it _won't load inside Electron_. The fix is a single `npx electron-rebuild` — it _recompiles against Electron's own Node version_. If you're using Electron Forge, packaging triggers a rebuild automatically.
+
+Three errors come up almost daily. ① `NODE_MODULE_VERSION mismatch` → `electron-rebuild` once and you're done. ② Missing _Python / build tools_ on macOS/Linux → `xcode-select --install` or `apt install build-essential`. ③ Missing _Visual Studio C++ workload_ on Windows → open Visual Studio Installer and add "Desktop development with C++." Set this up once and you rarely think about it again.
+
 <Cards>
   <Cards.Card title="Packaging" href="/en/docs/tutorial/packaging" arrow />
 </Cards>

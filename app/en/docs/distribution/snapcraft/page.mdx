@@ -46,6 +46,14 @@ snapcraft upload my-app_1.0.0_amd64.snap --release=stable
 - `.AppImage` — no install, single file.
 - **Snap** — biggest win is auto-update.
 
+## In plain words
+
+Linux's strength and weakness is the sheer number of distributions. Ubuntu, Fedora, Debian, Arch — each has its own favorite package format. Snap is a container-style format that hides all of those differences. Build one `.snap` and it installs the same way on _any_ distro, and the OS even handles _automatic updates_ for you. From the user's side it finally feels like "Linux apps that update themselves," which is closer to what they're used to elsewhere.
+
+Versus the alternatives, you can see a triangle of _size – convenience – automation_. `.deb`/`.rpm` are _the lightest and most distro-native_ and feel right at home, but you build your own update channel. `.AppImage` is a _single file users can double-click without installing_, ideal for USB-stick distribution, but again no built-in updates. Snap is _heavier because it ships a container_, but trades that weight for hands-off automation.
+
+A practical channel tip: Snap Store runs four parallel channels — _Stable / Candidate / Beta / Edge_. Push new features to Edge first so only early adopters get them, soak for a day or two, then promote to Stable. That staged rollout catches a surprising number of release-day disasters before they reach everyone.
+
 <Cards>
   <Cards.Card title="Auto-updates" href="/en/docs/distribution/auto-updates" arrow />
 </Cards>

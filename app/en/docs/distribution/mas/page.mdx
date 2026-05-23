@@ -37,6 +37,14 @@ The signing step needs the _Mac App Store_ certificate (`3rd Party Mac Developer
 - **Name, icon, screenshots** — App Store review is strict.
 - **Payments** — in-app purchases must go through StoreKit; external payments forbidden.
 
+## In plain words
+
+You can open a shop on the street or rent a booth in a department store. The street shop keeps _100% of revenue but you have to drive your own traffic_. The department store _takes a cut, but customers walk in by themselves_. Mac App Store vs direct distribution is the same trade-off. If your users are _general consumers comfortable with the App Store_, revenue tends to grow there. If they're _developers or power users_, direct distribution is more flexible.
+
+Going through the App Store also tightens the _sandbox_. Direct builds enjoy broad privileges; MAS builds need an _entitlements_ file declaring _exactly which privileges_ you intend to use. If you forget to list camera, microphone, or file access there, those features simply _don't work_. Same code; different behavior in MAS vs direct builds. Surprising bugs come from exactly this gap.
+
+Payments are also constrained. In-app purchases must go through Apple's _StoreKit_ only; any other payment path (a Stripe link, for example) is rejected at review. If external payments are core to your business, you'll need to ship direct. Many teams run both models in parallel (direct as the default; MAS as a separate paid SKU for store-loyal users).
+
 <Cards>
   <Cards.Card title="Code signing" href="/en/docs/distribution/code-signing" arrow />
 </Cards>

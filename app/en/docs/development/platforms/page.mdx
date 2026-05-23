@@ -35,6 +35,14 @@ electron-forge make --arch=x64
 
 Apple Silicon share keeps growing — a macOS **arm64** build is now table stakes.
 
+## In plain words
+
+"Electron runs on every OS!" is only half true. It runs on every _desktop_ OS. Phones, tablets — _not supported_. So if your roadmap quietly assumes "same code on mobile too," you're heading for a bad month. For mobile, reach for React Native, Flutter, or Capacitor instead.
+
+The other thing teams forget is _architecture_. Same macOS, but _Intel (x64)_ chips and _Apple Silicon (arm64)_ chips need separate builds. Most Macs sold since 2020 are arm64, and skipping an arm64 build means newer Macs run your app through Rosetta, costing roughly 30% in perceived speed. Windows is heading the same way as ARM laptops gain share.
+
+The fix is simple: build with `electron-forge make --arch=arm64` and `--arch=x64` and ship both. Then mind both channels in auto-updates.
+
 <Cards>
   <Cards.Card title="Packaging" href="/en/docs/tutorial/packaging" arrow />
   <Cards.Card title="Forge overview" href="/en/docs/distribution/forge" arrow />

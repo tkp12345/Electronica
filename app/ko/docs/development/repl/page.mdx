@@ -36,6 +36,14 @@ require('node:repl').start({ prompt: 'electron> ' })
 
 VS Code 의 "Attach to Node" 디버거가 붙어 있으면, _Debug Console_ 에서 즉시 표현식을 평가할 수 있어요. REPL 의 가벼운 대안.
 
+## 쉽게 풀어 설명
+
+코드를 _파일에 적기 전에 한 줄씩 먼저 시험해 보고 싶을 때_ 있죠? "이 함수가 정확히 뭘 돌려주는지", "옵션을 이렇게 줘도 동작하는지" 같은 작은 호기심을 _5초 안에_ 풀어 줄 도구가 REPL 이에요. `electron --interactive` 한 줄이면 켜져요.
+
+REPL 은 _자판기 시험_ 같아요. 자판기 앞에서 진짜로 돈을 넣기 전에, 버튼 위치·반응 방식을 손으로 한번 만져 보는 거예요. `require('electron').screen.getAllDisplays()` 한 줄로 모니터 정보를 즉시 확인해 볼 수 있어요. 작은 시험을 _실제 코드에 들어가기 전_ 에 끝내면, 진짜 코드는 훨씬 깔끔해져요.
+
+VS Code 의 "Attach to Node" 디버그 콘솔도 사실상 _라이브 REPL_ 이에요. 우리 앱이 도는 동안 디버거를 붙여 두면, Debug Console 에서 즉시 표현식을 평가할 수 있어요. 따로 REPL 을 띄울 필요 없이 _실행 중인 앱의 상태_ 그대로 검사할 수 있어 훨씬 강력해요.
+
 <Cards>
   <Cards.Card title="앱 디버깅" href="/ko/docs/development/debugging" arrow />
 </Cards>

@@ -48,6 +48,14 @@ ipcMain.on('ondragstart', (event, filePath) => {
 `event.sender.startDrag` is the magic call that starts an _OS-level_ drag — something the browser cannot do.
 </EasyNote>
 
+## In plain words
+
+Drag-and-drop inside a browser only goes as far as the _edges of the page_. You can drop an image into a different area of the same site, but you can't drag from the site into _Finder or Explorer_. Because Electron is a desktop app, it can cross that line — a drag that starts in your window becomes a _real OS file drag_, so dropping it on Finder actually saves a file there.
+
+The key call is `event.sender.startDrag({ file, icon })`. The Renderer _can't call it directly_ (security), so the flow is one hop longer than usual: _renderer's dragstart → preload → ipcMain.on('ondragstart') → startDrag_. Once that shape clicks, it stays the same forever.
+
+One gotcha: the drag _icon_ must be a **PNG** and supplied as an **absolute path**. A relative path leaves the OS unable to find the icon and the drag silently does nothing.
+
 <Cards>
   <Cards.Card title="Notifications" href="/en/docs/development/notifications" arrow />
 </Cards>

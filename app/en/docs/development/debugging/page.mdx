@@ -51,6 +51,14 @@ The port number (`5858`) is _the door Main opens for the debugger_. VS Code knoc
 - `process.versions` is a one-liner check for Node/Electron/Chrome versions.
 - `electron --enable-logging` dumps Electron internals to stdout.
 
+## In plain words
+
+Debugging feels _twice as tricky_ as other apps because there really are two kinds of programs running side by side. When you want to inspect the actor on stage (Renderer), pop open the **Chrome DevTools** you already know — F12 or Cmd/Ctrl+Shift+I. Variables, DOM, Network — exactly the same as debugging any web page.
+
+When you want to peek backstage at the director (Main), the toolkit changes. You attach the Node debugger. Start the app with a port — `electron --inspect=5858 .` — and have VS Code's "Attach to Node" knock on the same port. Breakpoints, step over/into, live variable inspection all work. The habit of keeping _both debuggers open in parallel_ is one of the bigger productivity multipliers in Electron work.
+
+Don't sleep on the small tricks either. `console.trace()` answers "where did this call come from?" in one line. `process.versions` prints Node, Electron, and Chromium versions at once. `electron --enable-logging` dumps Electron's normally-hidden internal logs to stdout, which is gold when a window mysteriously refuses to render.
+
 <Cards>
   <Cards.Card title="DevTools extensions" href="/en/docs/development/devtools-extension" arrow />
   <Cards.Card title="Automated testing" href="/en/docs/testing/automated" arrow />

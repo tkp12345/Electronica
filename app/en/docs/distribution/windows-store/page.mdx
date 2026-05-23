@@ -39,6 +39,14 @@ The converter takes your existing .exe folder and rewraps it as the .msix the St
 - **4-part version number** (e.g. `1.0.0.0`) — Store rule.
 - **App ID** — issued through Partner Center.
 
+## In plain words
+
+Windows users get your app down _two distinctly different paths_. First, the _classic .exe installer_ — download from your site or GitHub and double-click. Second, the _Microsoft Store_ — search from the Start menu and click "Get." The two feel completely different. The Store route looks _more trustworthy_ to mainstream users and the Store handles auto-update for you.
+
+Technically, your `.exe` is _repackaged_ as `.msix`, the format the Store recognizes. The converter (`electron-windows-store`) takes _your existing .exe folder_ and produces a Store-shaped `.msix`. Same code, different wrapping paper.
+
+Three traps to watch. ① The _version number must be 4 parts_ (e.g. `1.0.0.0`) — a Store rule. `1.0.0` is rejected. ② If your app uses _UWP-restricted permissions_ like camera or Bluetooth, you must declare them in the manifest, or the API silently fails. ③ The _App ID_ issued through Partner Center has to match what your build embeds.
+
 <Cards>
   <Cards.Card title="Auto-updates" href="/en/docs/distribution/auto-updates" arrow />
 </Cards>
