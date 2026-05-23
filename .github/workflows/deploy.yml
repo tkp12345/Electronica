@@ -1,0 +1,58 @@
+name: Deploy to GitHub Pages
+
+on:
+  # main 브랜치 푸시 시 자동 배포
+  push:
+    branches: [main]
+  # 액션 탭에서 수동 실행도 가능
+  workflow_dispatch:
+
+# GitHub Pages 배포 권한
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 동시에 두 배포가 돌지 않도록 — 진행 중인 것은 새 푸시가 오면 취소
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          # .nvmrc에 명시된 Node 버전 사용 (20 LTS)
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (static export)
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # next.config.mjs의 output:'export' 결과 디렉터리
+          path: ./out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
