@@ -1,0 +1,52 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { DragDropIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<DragDropIllustration />}
+  title="네이티브 파일 드래그·드롭"
+  subtitle="앱 _밖으로_ 파일을 끌어다 놓는 — 데스크톱 앱만 할 수 있는 일."
+  badge="Development · Drag & Drop"
+/>
+
+## 브라우저 드래그와 무엇이 다른가
+
+웹 페이지의 드래그는 _페이지 내부_ 까지가 한계예요. Electron 은 OS 의 파일 시스템과 연결돼, 사용자가 _Finder/Explorer 로 직접 끌어다 놓는_ 경험을 만들 수 있어요.
+
+## Renderer 에서 시작
+
+```js filename="renderer.js"
+document.querySelector('.draggable').addEventListener('dragstart', (e) => {
+  e.preventDefault()
+  window.api.startDrag('/tmp/export.pdf')
+})
+```
+
+## preload + main
+
+```js filename="preload.js"
+const { contextBridge, ipcRenderer } = require('electron')
+contextBridge.exposeInMainWorld('api', {
+  startDrag: (filePath) => ipcRenderer.send('ondragstart', filePath),
+})
+```
+
+```js filename="main.js"
+const { ipcMain } = require('electron')
+const path = require('node:path')
+
+ipcMain.on('ondragstart', (event, filePath) => {
+  event.sender.startDrag({
+    file: filePath,
+    icon: path.join(__dirname, 'drag-icon.png'),
+  })
+})
+```
+
+<Callout type="info" emoji="🧒">
+`event.sender.startDrag` 가 _브라우저로는 불가능하던 OS-수준 드래그_ 를 시작해 주는 마법의 함수예요.
+</Callout>
+
+<Cards>
+  <Cards.Card title="알림" href="/ko/docs/development/notifications" arrow />
+</Cards>

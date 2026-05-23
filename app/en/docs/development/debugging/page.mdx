@@ -1,0 +1,56 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { DebuggingIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<DebuggingIllustration />}
+  title="Debugging your app"
+  subtitle="Main and Renderer need different debuggers. One page, both stories."
+  badge="Development · Debugging"
+/>
+
+## Two processes, two tools
+
+| Target | Tool |
+|---|---|
+| **Renderer** | Chrome DevTools (Cmd/Ctrl+Shift+I) |
+| **Main** | Node Inspector + VS Code's "Attach to Node" |
+
+## Renderer: regular web debugging
+
+```js
+// open DevTools automatically (dev mode only)
+win.webContents.openDevTools({ mode: 'detach' })
+```
+
+## Main: attach the Node debugger
+
+```bash filename="terminal"
+electron --inspect=5858 .
+```
+
+VS Code launch config:
+
+```json filename=".vscode/launch.json"
+{
+  "type": "node",
+  "request": "attach",
+  "name": "Electron Main",
+  "port": 5858
+}
+```
+
+<Callout type="info" emoji="🧒">
+The port number (`5858`) is _the door Main opens for the debugger_. VS Code knocks on the same door and walks in.
+</Callout>
+
+## Handy tricks
+
+- `console.trace()` prints the call stack to "where did this come from?"
+- `process.versions` is a one-liner check for Node/Electron/Chrome versions.
+- `electron --enable-logging` dumps Electron internals to stdout.
+
+<Cards>
+  <Cards.Card title="DevTools extensions" href="/en/docs/development/devtools-extension" arrow />
+  <Cards.Card title="Automated testing" href="/en/docs/testing/automated" arrow />
+</Cards>

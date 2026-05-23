@@ -1,0 +1,51 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { NotificationIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<NotificationIllustration />}
+  title="System notifications"
+  subtitle="The browser Notification API as-is — wired straight into the OS notification center."
+  badge="Development · Notifications"
+/>
+
+## From the Renderer
+
+```js
+new Notification('Build finished', {
+  body: 'Took 5.2s',
+  silent: false,
+})
+```
+
+## From Main (works even without a window)
+
+```js filename="main.js"
+const { Notification } = require('electron')
+
+new Notification({
+  title: 'Update ready',
+  body: 'Will apply on next restart',
+}).show()
+```
+
+<Callout type="info" emoji="🧒">
+Same `Notification` name on every OS, but _macOS pops top-right_, _Windows bottom-right_, _Linux depends on the DE_. You send the signal; the OS decides the look.
+</Callout>
+
+## Handle clicks
+
+```js filename="main.js"
+const n = new Notification({ title: 'Hi', body: 'Click me' })
+n.on('click', () => focusMainWindow())
+n.show()
+```
+
+## Common gotchas
+
+- macOS: nothing shows → check System Settings → Notifications and grant the app permission.
+- Windows: a wrong AppUserModelID breaks notifications entirely (only works after code-signing + packaging).
+
+<Cards>
+  <Cards.Card title="Pair with auto-updates" href="/en/docs/distribution/auto-updates" arrow />
+</Cards>

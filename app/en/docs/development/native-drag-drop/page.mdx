@@ -1,0 +1,52 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { DragDropIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<DragDropIllustration />}
+  title="Native file drag & drop"
+  subtitle="Dragging a file _out_ of the app — something only a desktop app can do."
+  badge="Development · Drag & Drop"
+/>
+
+## How it differs from browser drag
+
+Browser drag-and-drop stays inside the page. Electron can hook into the OS so a user can drag _from your window into Finder/Explorer_ and drop a real file.
+
+## Kick it off from the Renderer
+
+```js filename="renderer.js"
+document.querySelector('.draggable').addEventListener('dragstart', (e) => {
+  e.preventDefault()
+  window.api.startDrag('/tmp/export.pdf')
+})
+```
+
+## Preload + Main
+
+```js filename="preload.js"
+const { contextBridge, ipcRenderer } = require('electron')
+contextBridge.exposeInMainWorld('api', {
+  startDrag: (filePath) => ipcRenderer.send('ondragstart', filePath),
+})
+```
+
+```js filename="main.js"
+const { ipcMain } = require('electron')
+const path = require('node:path')
+
+ipcMain.on('ondragstart', (event, filePath) => {
+  event.sender.startDrag({
+    file: filePath,
+    icon: path.join(__dirname, 'drag-icon.png'),
+  })
+})
+```
+
+<Callout type="info" emoji="🧒">
+`event.sender.startDrag` is the magic call that starts an _OS-level_ drag — something the browser cannot do.
+</Callout>
+
+<Cards>
+  <Cards.Card title="Notifications" href="/en/docs/development/notifications" arrow />
+</Cards>

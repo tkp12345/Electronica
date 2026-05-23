@@ -1,0 +1,46 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { ExtensionIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<ExtensionIllustration />}
+  title="Using DevTools extensions"
+  subtitle="React DevTools, Redux DevTools — load the extensions you already know into your Electron app."
+  badge="Development · DevTools Extensions"
+/>
+
+## One-line load
+
+```js filename="main.js"
+const { app, session } = require('electron')
+const path = require('node:path')
+
+app.whenReady().then(async () => {
+  // Point at the unpacked extension folder
+  await session.defaultSession.loadExtension(
+    path.join(__dirname, 'extensions', 'react-devtools'),
+  )
+})
+```
+
+<Callout type="info" emoji="🧒">
+You point at an _unpacked folder_, not the Chrome Web Store. That makes it work offline and in locked-down corporate environments.
+</Callout>
+
+## Good combos
+
+- React component tree → **React Developer Tools**
+- Redux/RTK state → **Redux DevTools**
+- Network → the built-in DevTools _Network_ tab
+
+## Don't ship them in production
+
+```js
+if (process.env.NODE_ENV === 'development') {
+  await session.defaultSession.loadExtension(/* ... */)
+}
+```
+
+<Cards>
+  <Cards.Card title="Debugging" href="/en/docs/development/debugging" arrow />
+</Cards>

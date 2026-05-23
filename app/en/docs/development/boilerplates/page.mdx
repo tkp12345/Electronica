@@ -1,0 +1,38 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { BoilerplateIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<BoilerplateIllustration />}
+  title="Boilerplates and CLIs"
+  subtitle="Don't start from a blank file — pick a well-tended starter."
+  badge="Development · Boilerplates"
+/>
+
+## Three to know
+
+| Name | Vibe |
+|---|---|
+| **electron-quick-start** | Smallest possible starting line, great for learning the shape |
+| **electron-forge** + templates (`vite`, `webpack-typescript`) | The official full toolchain |
+| **electron-react-boilerplate** | React + TS + Redux/RTK + Jest pre-wired |
+
+## Spin up a Forge template
+
+```bash filename="terminal"
+npx create-electron-app@latest my-app --template=vite-typescript
+```
+
+<Callout type="info" emoji="🧒">
+`--template=` swaps "blank paper" for "graph paper." You also get Vite's fast HMR for free.
+</Callout>
+
+## How to choose
+
+- _Will this be company code?_ → React boilerplate.
+- _Personal learning?_ → quick-start.
+- _Demo/throwaway?_ → Fiddle.
+
+<Cards>
+  <Cards.Card title="Build your first app" href="/en/docs/tutorial/first-app" arrow />
+</Cards>

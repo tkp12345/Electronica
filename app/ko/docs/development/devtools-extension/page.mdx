@@ -1,0 +1,46 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { ExtensionIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<ExtensionIllustration />}
+  title="DevTools 확장 사용하기"
+  subtitle="React DevTools, Redux DevTools 같은 익숙한 확장을 Electron 안에서도 쓰는 법."
+  badge="Development · DevTools Extensions"
+/>
+
+## 한 줄 사용법
+
+```js filename="main.js"
+const { app, session } = require('electron')
+const path = require('node:path')
+
+app.whenReady().then(async () => {
+  // 크롬 확장의 unpacked 폴더를 가리키면 끝
+  await session.defaultSession.loadExtension(
+    path.join(__dirname, 'extensions', 'react-devtools'),
+  )
+})
+```
+
+<Callout type="info" emoji="🧒">
+크롬 웹스토어가 아니라 _압축 풀린 폴더_ 를 직접 가리킨다는 게 포인트예요. 회사 라이센스/오프라인 환경에서도 동작합니다.
+</Callout>
+
+## 잘 쓰는 조합
+
+- React 컴포넌트 트리 → **React Developer Tools**
+- Redux/RTK 상태 변화 → **Redux DevTools**
+- 네트워크 → DevTools 기본 _Network_ 탭
+
+## 운영 빌드에서는 끄세요
+
+```js
+if (process.env.NODE_ENV === 'development') {
+  await session.defaultSession.loadExtension(/* ... */)
+}
+```
+
+<Cards>
+  <Cards.Card title="앱 디버깅" href="/ko/docs/development/debugging" arrow />
+</Cards>

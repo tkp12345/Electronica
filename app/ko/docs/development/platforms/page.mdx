@@ -1,0 +1,40 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { WhyIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<WhyIllustration />}
+  title="지원 플랫폼"
+  subtitle="어느 OS, 어느 아키텍처에서 Electron 이 도는지 — 결정 전에 한 페이지로."
+  badge="Development · Platforms"
+/>
+
+## 지원 매트릭스 (요약)
+
+| OS | 최소 버전 | 아키텍처 |
+|---|---|---|
+| **macOS** | 11 Big Sur 이상 | x64, arm64(Apple Silicon) |
+| **Windows** | 10 (1809) 이상 | x64, arm64, ia32 |
+| **Linux** | glibc 2.28 이상 | x64, arm64, armv7l |
+
+## 모바일은?
+
+지원 안 합니다. iOS/Android 가 필요하면 React Native / Flutter / Capacitor 를 보세요.
+
+<Callout type="info" emoji="🧒">
+Electron 은 _데스크톱 전용_ 이에요. "모바일에도 그대로 돈다" 가정으로 일정 짜면 사고 나요.
+</Callout>
+
+## 아키텍처별 빌드
+
+```bash filename="terminal"
+electron-forge make --arch=arm64
+electron-forge make --arch=x64
+```
+
+Apple Silicon 사용자 비율이 빠르게 늘어서, _arm64 macOS 빌드는 사실상 필수_ 입니다.
+
+<Cards>
+  <Cards.Card title="패키징" href="/ko/docs/tutorial/packaging" arrow />
+  <Cards.Card title="Forge 개요" href="/ko/docs/distribution/forge" arrow />
+</Cards>

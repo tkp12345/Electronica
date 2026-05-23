@@ -1,0 +1,53 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { SignalIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<SignalIllustration />}
+  title="Online / offline events"
+  subtitle="Detect connectivity changes and keep your UI and sync queue in lockstep with reality."
+  badge="Development · Online/Offline"
+/>
+
+## Two events in the Renderer
+
+```js filename="renderer.js"
+window.addEventListener('online', () => setBanner('Online'))
+window.addEventListener('offline', () => setBanner('Offline'))
+```
+
+## Detect from Main (even windowless)
+
+```js filename="main.js"
+const { BrowserWindow, app } = require('electron')
+
+app.whenReady().then(() => {
+  const hidden = new BrowserWindow({ show: false })
+  hidden.webContents.executeJavaScript(`
+    window.addEventListener('online', () => { /* notify via IPC */ })
+  `)
+})
+```
+
+<Callout type="info" emoji="🧒">
+Main itself has no `navigator`. A common pattern is to spin up a _hidden window_ that listens for the event and forwards it over IPC.
+</Callout>
+
+## Ping for real reachability
+
+`navigator.onLine` only checks the Wi-Fi link. For "is the server actually alive?":
+
+```js
+async function isAlive() {
+  try {
+    const r = await fetch('/api/ping', { cache: 'no-store' })
+    return r.ok
+  } catch {
+    return false
+  }
+}
+```
+
+<Cards>
+  <Cards.Card title="Best practices: offline" href="/en/docs/best-practices/offline" arrow />
+</Cards>

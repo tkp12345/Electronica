@@ -1,0 +1,53 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { SignalIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<SignalIllustration />}
+  title="온라인 / 오프라인 이벤트"
+  subtitle="네트워크 연결 상태 변화를 감지하고, UI 와 동기화 큐를 적절히 반응시키기."
+  badge="Development · Online/Offline"
+/>
+
+## Renderer 의 두 이벤트
+
+```js filename="renderer.js"
+window.addEventListener('online', () => setBanner('연결됨'))
+window.addEventListener('offline', () => setBanner('오프라인'))
+```
+
+## Main 에서 감지하기 (창 없이도)
+
+```js filename="main.js"
+const { BrowserWindow, app } = require('electron')
+
+app.whenReady().then(() => {
+  const hidden = new BrowserWindow({ show: false })
+  hidden.webContents.executeJavaScript(`
+    window.addEventListener('online', () => { /* IPC 로 알림 */ })
+  `)
+})
+```
+
+<Callout type="info" emoji="🧒">
+Main 자체에는 `navigator` 가 없어서, _숨겨진 창 하나_ 를 만들어 거기서 이벤트를 듣고 IPC 로 받아 오는 패턴을 많이 써요.
+</Callout>
+
+## 진짜로 살아있는지 확인하려면 핑
+
+`navigator.onLine` 은 Wi-Fi 연결만 확인. 서버 헬스체크는 별도로:
+
+```js
+async function isAlive() {
+  try {
+    const r = await fetch('/api/ping', { cache: 'no-store' })
+    return r.ok
+  } catch {
+    return false
+  }
+}
+```
+
+<Cards>
+  <Cards.Card title="Best Practices: 오프라인" href="/ko/docs/best-practices/offline" arrow />
+</Cards>

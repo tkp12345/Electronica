@@ -1,0 +1,51 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { NotificationIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<NotificationIllustration />}
+  title="시스템 알림"
+  subtitle="브라우저 Notification API 가 그대로 — 단, OS 알림 센터에 직접 연결됩니다."
+  badge="Development · Notifications"
+/>
+
+## Renderer 에서
+
+```js
+new Notification('빌드 완료', {
+  body: '5.2초 걸렸어요',
+  silent: false,
+})
+```
+
+## Main 에서 (창 없이도 가능)
+
+```js filename="main.js"
+const { Notification } = require('electron')
+
+new Notification({
+  title: '업데이트 준비됨',
+  body: '재시작 시 적용됩니다',
+}).show()
+```
+
+<Callout type="info" emoji="🧒">
+같은 `Notification` 이름이지만 _맥은 위 오른쪽_, _윈도우는 아래 오른쪽_, _리눅스는 데스크톱마다 다름_ — OS 알림 센터의 모양은 OS 가 결정해요. 우리는 신호만 보내는 거예요.
+</Callout>
+
+## 클릭/응답 처리
+
+```js filename="main.js"
+const n = new Notification({ title: 'Hi', body: 'Click me' })
+n.on('click', () => focusMainWindow())
+n.show()
+```
+
+## 자주 막히는 부분
+
+- macOS: 알림이 안 뜨면 _시스템 환경설정 → 알림_ 에서 앱 권한 확인
+- Windows: AppUserModelID 가 잘못되면 알림이 끊김 (코드 서명 + 패키지 후에만 정상)
+
+<Cards>
+  <Cards.Card title="자동 업데이트와 함께" href="/ko/docs/distribution/auto-updates" arrow />
+</Cards>

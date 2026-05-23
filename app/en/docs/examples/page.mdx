@@ -1,0 +1,42 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { ExamplesIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<ExamplesIllustration />}
+  title="Examples"
+  subtitle="electron-quick-start, Electron Fiddle, and electron-react-boilerplate — where to begin."
+  badge="Examples"
+/>
+
+## Three quickest entry points
+
+| Resource | What it is | When to grab it |
+|---|---|---|
+| **electron-quick-start** | The minimal one-file boilerplate | First time learning the pattern |
+| **Electron Fiddle** | Try Electron code in-browser | Sanity-check one API quickly |
+| **electron-react-boilerplate** | React + TS + Webpack, batteries included | Production-flavored starter |
+
+## Mini example — read the clipboard
+
+```js filename="main.js"
+const { app, BrowserWindow, clipboard, ipcMain } = require('electron')
+
+ipcMain.handle('read-clipboard', () => clipboard.readText())
+```
+
+```js filename="preload.js"
+const { contextBridge, ipcRenderer } = require('electron')
+contextBridge.exposeInMainWorld('api', {
+  read: () => ipcRenderer.invoke('read-clipboard'),
+})
+```
+
+<Callout type="info" emoji="🧒">
+Even a "what's on the clipboard?" call goes through _ask Main → preload bridges it → page receives the result_. Almost every Electron interaction looks like this trio.
+</Callout>
+
+<Cards>
+  <Cards.Card title="Development tools" href="/en/docs/development/accessibility" arrow />
+  <Cards.Card title="Start from first app" href="/en/docs/tutorial/first-app" arrow />
+</Cards>

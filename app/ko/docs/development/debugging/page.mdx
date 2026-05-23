@@ -1,0 +1,56 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { DebuggingIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<DebuggingIllustration />}
+  title="앱 디버깅"
+  subtitle="Main 과 Renderer 는 다른 도구로 디버깅한다 — 이 페이지 한 장이면 끝."
+  badge="Development · Debugging"
+/>
+
+## 두 프로세스, 두 도구
+
+| 대상 | 도구 |
+|---|---|
+| **Renderer** | Chrome DevTools (Cmd/Ctrl+Shift+I) |
+| **Main** | Node Inspector + VS Code "Attach to Node" |
+
+## Renderer: 평소 웹 디버깅 그대로
+
+```js
+// 자동으로 DevTools 띄우기 (개발 모드에서만)
+win.webContents.openDevTools({ mode: 'detach' })
+```
+
+## Main: Node 디버거 붙이기
+
+```bash filename="terminal"
+electron --inspect=5858 .
+```
+
+VS Code 의 `.vscode/launch.json`:
+
+```json filename=".vscode/launch.json"
+{
+  "type": "node",
+  "request": "attach",
+  "name": "Electron Main",
+  "port": 5858
+}
+```
+
+<Callout type="info" emoji="🧒">
+포트 번호(`5858`)는 _Main 이 디버거에게 켜놓은 문 번호_ 예요. VS Code 가 같은 문 번호로 노크하면 들어갈 수 있어요.
+</Callout>
+
+## 자주 쓰는 트릭
+
+- `console.trace()` — 어디서 호출됐는지 스택 출력
+- `process.versions` 로 Node/Electron/Chrome 버전 한 줄 확인
+- `electron --enable-logging` — Electron 내부 로그까지 모두 출력
+
+<Cards>
+  <Cards.Card title="DevTools Extension" href="/ko/docs/development/devtools-extension" arrow />
+  <Cards.Card title="자동화 테스트" href="/ko/docs/testing/automated" arrow />
+</Cards>

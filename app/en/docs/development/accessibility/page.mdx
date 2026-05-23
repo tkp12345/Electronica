@@ -1,0 +1,36 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { AccessibilityIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<AccessibilityIllustration />}
+  title="Development: accessibility tooling"
+  subtitle="The DevTools Accessibility panel and macOS VoiceOver, used hands-on."
+  badge="Development · Accessibility"
+/>
+
+## DevTools Accessibility panel
+
+Right-click in the Renderer → Inspect → _Elements_ tab → _Accessibility_ pane on the right. You see a node-by-node view of how a screen reader hears the page.
+
+## Try a screen reader at least once
+
+- **macOS**: ⌘F5 toggles VoiceOver.
+- **Windows**: NVDA (free) is the standard.
+- **Linux**: Orca.
+
+<Callout type="info" emoji="🧒">
+Listening for 30 seconds — "is this announced as a Save button?", "can Tab reach this card?" — finds missing labels faster than any audit.
+</Callout>
+
+## Force the accessibility tree on
+
+The OS usually only turns it on when a screen reader runs. To force it in CI:
+
+```js filename="main.js"
+app.setAccessibilitySupportEnabled(true)
+```
+
+<Cards>
+  <Cards.Card title="Best practices: accessibility" href="/en/docs/best-practices/accessibility" arrow />
+</Cards>

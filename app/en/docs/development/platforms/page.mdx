@@ -1,0 +1,40 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { WhyIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<WhyIllustration />}
+  title="Supported platforms"
+  subtitle="Which OSes and architectures run Electron — settle this before you scope."
+  badge="Development · Platforms"
+/>
+
+## Support matrix (short version)
+
+| OS | Minimum version | Architectures |
+|---|---|---|
+| **macOS** | 11 Big Sur+ | x64, arm64 (Apple Silicon) |
+| **Windows** | 10 (1809)+ | x64, arm64, ia32 |
+| **Linux** | glibc 2.28+ | x64, arm64, armv7l |
+
+## What about mobile?
+
+Not supported. For iOS/Android, look at React Native, Flutter, or Capacitor.
+
+<Callout type="info" emoji="🧒">
+Electron is _desktop-only_. Plan a schedule that assumes "it'll work on mobile too" and you'll have a bad month.
+</Callout>
+
+## Per-arch builds
+
+```bash filename="terminal"
+electron-forge make --arch=arm64
+electron-forge make --arch=x64
+```
+
+Apple Silicon share keeps growing — a macOS **arm64** build is now table stakes.
+
+<Cards>
+  <Cards.Card title="Packaging" href="/en/docs/tutorial/packaging" arrow />
+  <Cards.Card title="Forge overview" href="/en/docs/distribution/forge" arrow />
+</Cards>

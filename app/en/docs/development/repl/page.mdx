@@ -1,0 +1,40 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { ReplIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<ReplIllustration />}
+  title="REPL mode"
+  subtitle="Run Electron as an interactive shell and probe APIs one line at a time."
+  badge="Development · REPL"
+/>
+
+## How to start it
+
+```bash filename="terminal"
+electron --interactive
+```
+
+Or, in code:
+
+```js filename="main.js"
+require('node:repl').start({ prompt: 'electron> ' })
+```
+
+## When it shines
+
+- Spot-check a new API in seconds (`require('electron').screen.getAllDisplays()`).
+- Inspect live variables mid-debug.
+- Get the call shape right _before_ you write the file.
+
+<Callout type="info" emoji="🧒">
+"Press the vending machine buttons before you actually buy the ticket." A risk-free try-out room.
+</Callout>
+
+## VS Code's Debug Console does the same
+
+When the Node attach debugger is connected, the _Debug Console_ evaluates expressions on the live process. A lightweight REPL alternative.
+
+<Cards>
+  <Cards.Card title="Debugging" href="/en/docs/development/debugging" arrow />
+</Cards>

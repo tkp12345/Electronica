@@ -1,0 +1,42 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { ExamplesIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<ExamplesIllustration />}
+  title="예제 (Examples)"
+  subtitle="공식 electron/fiddle 과 electron/electron-quick-start 를 출발점으로 — 어디서 시작하면 되는지."
+  badge="Examples"
+/>
+
+## 가장 빠른 출발점 3가지
+
+| 자료 | 무엇이냐 | 언제 좋음 |
+|---|---|---|
+| **electron-quick-start** | 한 페이지짜리 최소 보일러플레이트 | 처음 패턴을 손에 익힐 때 |
+| **Electron Fiddle** | 브라우저 안에서 즉시 코드 시험 | 한 API 동작 확인용 |
+| **electron-react-boilerplate** | React + TS + Webpack 풀세팅 | 회사용 앱 빠르게 시작 |
+
+## 미니 예제 — 클립보드 읽기
+
+```js filename="main.js"
+const { app, BrowserWindow, clipboard, ipcMain } = require('electron')
+
+ipcMain.handle('read-clipboard', () => clipboard.readText())
+```
+
+```js filename="preload.js"
+const { contextBridge, ipcRenderer } = require('electron')
+contextBridge.exposeInMainWorld('api', {
+  read: () => ipcRenderer.invoke('read-clipboard'),
+})
+```
+
+<Callout type="info" emoji="🧒">
+"클립보드에 뭐가 있어?" 같은 단순 IPC 도 _Main 에 부탁 → preload 통과 → 페이지가 결과 받음_ 의 3단계예요. 이 형태가 Electron 앱의 거의 모든 통신 패턴입니다.
+</Callout>
+
+<Cards>
+  <Cards.Card title="개발 도구 모음" href="/ko/docs/development/accessibility" arrow />
+  <Cards.Card title="첫 앱부터" href="/ko/docs/tutorial/first-app" arrow />
+</Cards>

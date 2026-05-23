@@ -1,0 +1,38 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { BoilerplateIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<BoilerplateIllustration />}
+  title="보일러플레이트와 CLI"
+  subtitle="처음부터 짜지 말고, 잘 만든 출발점을 골라 쓰는 법."
+  badge="Development · Boilerplates"
+/>
+
+## 추천 3종
+
+| 이름 | 특징 |
+|---|---|
+| **electron-quick-start** | 가장 작은 시작점, 패턴 익히기 좋음 |
+| **electron-forge** + 템플릿 (`vite`, `webpack-typescript`) | 공식 풀스택 도구체인 |
+| **electron-react-boilerplate** | React + TypeScript + Redux/RTK + Jest 까지 세팅 |
+
+## Forge 템플릿으로 시작
+
+```bash filename="terminal"
+npx create-electron-app@latest my-app --template=vite-typescript
+```
+
+<Callout type="info" emoji="🧒">
+`--template=` 한 줄이 _"빈 종이 대신 격자 노트로 시작"_ 이라는 뜻이에요. Vite 의 빠른 HMR 까지 자동 세팅.
+</Callout>
+
+## 보일러플레이트를 고를 때 기준
+
+- _이 회사 코드에 들어갈 건가?_ → React 보일러플레이트
+- _내 학습용?_ → quick-start
+- _데모/실험?_ → Fiddle
+
+<Cards>
+  <Cards.Card title="첫 앱 만들기" href="/ko/docs/tutorial/first-app" arrow />
+</Cards>

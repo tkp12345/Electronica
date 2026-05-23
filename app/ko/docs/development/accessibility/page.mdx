@@ -1,0 +1,36 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { AccessibilityIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<AccessibilityIllustration />}
+  title="개발: 접근성 도구"
+  subtitle="DevTools 의 Accessibility 패널과 macOS VoiceOver 로 직접 테스트하는 법."
+  badge="Development · Accessibility"
+/>
+
+## DevTools 의 Accessibility 패널
+
+Renderer 에서 우클릭 → "검사" 로 DevTools 를 열고, _Elements_ 탭의 우측 _Accessibility_ 섹션을 보세요. 각 노드가 스크린리더에 어떻게 들리는지 트리로 확인할 수 있습니다.
+
+## 스크린리더로 한 번이라도 들어보기
+
+- **macOS**: ⌘F5 → VoiceOver 켜기
+- **Windows**: NVDA(무료) 가 표준
+- **Linux**: Orca
+
+<Callout type="info" emoji="🧒">
+"이 버튼이 _Save 버튼_ 으로 들리는지", "탭 키로 이 카드까지 도달 가능한지" — 30초만 들어봐도 빠진 레이블을 찾을 수 있어요.
+</Callout>
+
+## Electron 의 접근성 트리 강제 켜기
+
+기본적으로 접근성 API 는 OS 가 _필요할 때_ 만 활성화돼요. CI 에서 강제로 켜고 싶다면:
+
+```js filename="main.js"
+app.setAccessibilitySupportEnabled(true)
+```
+
+<Cards>
+  <Cards.Card title="Best Practices: 접근성" href="/ko/docs/best-practices/accessibility" arrow />
+</Cards>
