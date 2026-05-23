@@ -3,6 +3,8 @@ import { Footer, Layout, Navbar } from 'nextra-theme-docs'
 import { Head } from 'nextra/components'
 import { getPageMap } from 'nextra/page-map'
 import 'nextra-theme-docs/style.css'
+// Tailwind utilities — nextra css 뒤에 와야 utility 클래스가 override 가능
+import './globals.css'
 
 // 사이트 메타 — 검색엔진 최적화와 OG 미리보기에 사용됨
 export const metadata: Metadata = {
@@ -17,7 +19,7 @@ export const metadata: Metadata = {
 // 상단 네비게이션바: 로고 + 우측 GitHub 링크
 const navbar = (
   <Navbar
-    logo={<span style={{ fontWeight: 700 }}>⚡ Electronica</span>}
+    logo={<b>⚡ Electronica</b>}
     projectLink="https://github.com/tkp12345/Electronica"
   />
 )
@@ -37,13 +39,7 @@ export default async function RootLayout({
 
   return (
     <html lang="ko" dir="ltr" suppressHydrationWarning>
-      <Head
-        // 다크모드용 색상 — 시스템 테마 매칭
-        color={{
-          hue: { dark: 200, light: 215 },
-          saturation: { dark: 60, light: 50 },
-        }}
-      />
+      <Head />
       <body>
         <Layout
           navbar={navbar}

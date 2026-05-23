@@ -1,0 +1,14 @@
+/*
+ * Tailwind v4 — Nextra 테마와 충돌 방지를 위해 preflight(전역 reset)는 제외하고
+ * theme(디자인 토큰) + utilities(클래스) 만 가져온다.
+ * Nextra가 자체 기본 스타일(타이포/링크/코드블럭)을 갖고 있으므로 reset이 겹치면 깨짐.
+ *
+ * 필요 시 prose 영역 밖 커스텀 컴포넌트에서만 Tailwind 유틸리티를 사용한다.
+ */
+@layer theme, base, components, utilities;
+
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+/* 다크모드는 Nextra의 `html[class~="dark"]` 시그널을 따라간다 */
+@custom-variant dark (&:where(.dark, .dark *));
