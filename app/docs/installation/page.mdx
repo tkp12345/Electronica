@@ -1,0 +1,62 @@
+import { Callout, Tabs } from 'nextra/components'
+
+# 설치
+
+## 사전 요구사항
+
+- **Node.js** 20 이상 (LTS 권장)
+- **npm**, **pnpm**, **yarn** 중 택일
+
+## 패키지 매니저별 설치
+
+<Tabs items={['npm', 'pnpm', 'yarn']}>
+  <Tabs.Tab>
+    ```bash
+    npm install --save-dev electron
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ```bash
+    pnpm add -D electron
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ```bash
+    yarn add --dev electron
+    ```
+  </Tabs.Tab>
+</Tabs>
+
+## 첫 실행
+
+`package.json`에 `main`과 `scripts` 추가:
+
+```json filename="package.json"
+{
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  }
+}
+```
+
+가장 작은 `main.js`:
+
+```js filename="main.js"
+const { app, BrowserWindow } = require('electron')
+
+app.whenReady().then(() => {
+  const win = new BrowserWindow({ width: 800, height: 600 })
+  win.loadURL('https://electronjs.org')
+})
+```
+
+실행:
+
+```bash
+npm start
+```
+
+<Callout type="warning">
+  맥OS에서 코드 사이닝 없이 배포하면 Gatekeeper가 차단합니다. 배포 시 반드시 사이닝 + 공증(notarization).
+</Callout>

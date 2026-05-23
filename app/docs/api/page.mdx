@@ -1,0 +1,65 @@
+import { Callout } from 'nextra/components'
+
+# API 레퍼런스
+
+자주 쓰는 Electron 모듈을 빠르게 찾아볼 수 있도록 정리한 페이지입니다.
+
+<Callout>
+  공식 레퍼런스는 [electronjs.org/docs/latest/api](https://www.electronjs.org/docs/latest/api)
+  를 참고하세요. 이 페이지는 학습 시 자주 쓰는 것만 추렸습니다.
+</Callout>
+
+## Main 프로세스
+
+### `app`
+
+| 메서드/이벤트 | 설명 |
+|---|---|
+| `app.whenReady()` | 앱이 초기화되면 resolve되는 Promise |
+| `app.on('window-all-closed')` | 모든 윈도우가 닫혔을 때 (macOS는 dock 유지 관례) |
+| `app.quit()` | 앱 종료 |
+| `app.getPath(name)` | userData/downloads 등 표준 경로 조회 |
+
+### `BrowserWindow`
+
+```ts
+new BrowserWindow({
+  width: 1200,
+  height: 800,
+  webPreferences: {
+    preload: path.join(__dirname, 'preload.js'),
+    contextIsolation: true,   // 보안: 반드시 true
+    nodeIntegration: false,   // 보안: 렌더러에서 Node 직접 접근 금지
+  },
+})
+```
+
+## Renderer ↔ Main IPC
+
+### Main 측
+
+```ts
+ipcMain.handle('open-file', async () => {
+  const { canceled, filePaths } = await dialog.showOpenDialog({})
+  return canceled ? null : filePaths[0]
+})
+```
+
+### Preload (안전 노출)
+
+```ts
+contextBridge.exposeInMainWorld('api', {
+  openFile: () => ipcRenderer.invoke('open-file'),
+})
+```
+
+### Renderer
+
+```ts
+const filePath = await window.api.openFile()
+```
+
+## 패키징
+
+- [`electron-builder`](https://www.electron.build/) — 가장 보편적, 다양한 타깃 지원
+- [`@electron/forge`](https://www.electronforge.io/) — 공식 도구, 템플릿 제공
