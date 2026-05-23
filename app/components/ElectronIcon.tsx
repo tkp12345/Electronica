@@ -1,34 +1,32 @@
-// 빨간 Electron 원자 아이콘.
-// `currentColor` 기반이라 부모 요소의 색상(예: text-red-500)에 따라 색이 결정됨.
-// 네비바 로고와 페이지 일러스트에서 모두 재사용된다.
+// 빨간 원자 모양 아이콘 — 본 사이트용 오리지널 SVG.
+// 원자(궤도 3개 + 핵) 는 일반 과학 심볼이므로 라이센스 부담 없이 자체 디자인.
 import type { CSSProperties } from 'react'
 
 interface ElectronIconProps {
-  /** Tailwind 색상 클래스(`text-red-500` 등). 미지정 시 부모 색을 따른다. */
   className?: string
-  /** 정사각형 한 변 크기(px) */
   size?: number
-  /** 추가 인라인 스타일 */
   style?: CSSProperties
   'aria-label'?: string
 }
 
 /**
- * Electron 로고 스타일의 원자 아이콘.
- *  - 중앙의 작은 원 = 원자핵
- *  - 3개의 기울어진 타원형 = 전자 궤도
- *  - 모든 stroke 가 currentColor 이므로 Tailwind 텍스트 색으로 컨트롤
+ * 디자인 메모
+ *  - viewBox 64x64 — 정렬 편의
+ *  - 3개의 타원 궤도가 60° 간격으로 회전 → 정삼각 대칭
+ *  - stroke 가 currentColor → 부모의 text-red-500 가 색을 결정
+ *  - 핵(중앙 원)은 살짝 키워 무게 중심 부여
+ *  - strokeLinecap='round' 로 끝맺음 부드럽게
  */
 export function ElectronIcon({
   className,
   size = 24,
   style,
-  'aria-label': ariaLabel = 'Electron logo',
+  'aria-label': ariaLabel = 'Electron',
 }: ElectronIconProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 48 48"
+      viewBox="0 0 64 64"
       width={size}
       height={size}
       role="img"
@@ -37,27 +35,15 @@ export function ElectronIcon({
       style={style}
       fill="none"
       stroke="currentColor"
+      strokeLinecap="round"
     >
-      {/* 3개의 전자 궤도 — 60도씩 회전시켜 교차 */}
-      <ellipse cx="24" cy="24" rx="22" ry="9" strokeWidth="2.2" />
-      <ellipse
-        cx="24"
-        cy="24"
-        rx="22"
-        ry="9"
-        strokeWidth="2.2"
-        transform="rotate(60 24 24)"
-      />
-      <ellipse
-        cx="24"
-        cy="24"
-        rx="22"
-        ry="9"
-        strokeWidth="2.2"
-        transform="rotate(120 24 24)"
-      />
+      <g strokeWidth="2.4">
+        <ellipse cx="32" cy="32" rx="28" ry="10.5" />
+        <ellipse cx="32" cy="32" rx="28" ry="10.5" transform="rotate(60 32 32)" />
+        <ellipse cx="32" cy="32" rx="28" ry="10.5" transform="rotate(120 32 32)" />
+      </g>
       {/* 원자핵 */}
-      <circle cx="24" cy="24" r="3.4" fill="currentColor" stroke="none" />
+      <circle cx="32" cy="32" r="5.5" fill="currentColor" stroke="none" />
     </svg>
   )
 }
