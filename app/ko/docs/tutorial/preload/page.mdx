@@ -83,6 +83,14 @@ app.whenReady().then(() => {
 **예전 튜토리얼에서 `nodeIntegration: true` 를 본 적 있다면 잊으세요.** 그 옵션은 보안 사고의 첫 번째 원인입니다.
 </Callout>
 
+## 쉽게 풀어 설명
+
+학교 운동장 한가운데에 _보물 상자_ 가 있다고 상상해 보세요. 모든 학생이 자유롭게 손을 댈 수 있다면 곧장 누군가 가져가 버려요. 그래서 어른들은 보물 상자를 _철창 안_ 에 넣고, 그 옆에 _작은 우편함_ 만 두어서 "꺼내 줄 물건의 이름" 만 적어 내라고 합니다. 우편함을 통해서만 안의 물건을 받을 수 있어요.
+
+웹페이지(Renderer) 와 컴퓨터 깊은 곳의 기능들(Main) 사이도 같아요. 페이지가 `require('fs')` 같은 위험한 함수를 직접 부를 수 있다면, 나쁜 사이트 하나가 사용자 파일을 통째로 가져갈 수 있어요. 그래서 Electron 은 _기본_ 으로 둘을 격리해 두고, **preload 스크립트** 라는 작은 우편함만 뚫어 놓습니다.
+
+핵심 도구가 `contextBridge.exposeInMainWorld('api', { ... })` 예요. 이 한 줄이 _"이 함수들만 페이지가 쓸 수 있게 노출하라"_ 라는 뜻이에요. 우편함에 적힌 메뉴만 신청 가능한 거죠. 페이지가 아무리 해킹돼도, 우리가 적어 둔 함수 외엔 절대 호출할 수 없어요. 옛날 튜토리얼에서 `nodeIntegration: true` 를 보면 _철창 문을 통째로 여는 격_ 이니 절대 따라 하지 마세요.
+
 <Cards>
   <Cards.Card title="다음: 기능 추가" href="/ko/docs/tutorial/adding-features" arrow />
   <Cards.Card title="컨텍스트 격리 더 깊게" href="/ko/docs/processes/context-isolation" arrow />

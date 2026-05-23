@@ -112,6 +112,14 @@ npm start
 창이 안 뜨면: ① `electron .` 가 설치 폴더 안에서 실행됐는지, ② `main.js` 가 package.json 의 `main` 과 같은 이름인지 확인하세요.
 </Callout>
 
+## 쉽게 풀어 설명
+
+이번 튜토리얼은 _가장 작은 Electron 앱_ 한 채를 짓는 일이에요. 빈 폴더를 만들고, 그 안에 세 개의 파일만 두면 됩니다. `main.js` 는 _앱이 켜질 때 가장 먼저 읽히는 설계도_, `index.html` 은 _창 안에 보일 내용_, `package.json` 은 _어디서부터 시작할지 알려주는 명함_ 이라고 생각하면 돼요.
+
+코드의 핵심은 단 두 줄이에요. `app.whenReady().then(() => ...)` 가 "Electron 이 준비되면 안에 적은 일을 해라" 라는 뜻이고, 그 안의 `new BrowserWindow({...}).loadFile('index.html')` 이 "가로 800·세로 600 짜리 창을 만들고 우리 HTML 을 띄워라" 라는 뜻이에요. 나머지 코드는 _맥에선 dock 아이콘을 다시 누르면 창이 열리고, 윈도우/리눅스에선 마지막 창이 닫히면 앱이 종료된다_ 는 OS 별 관습을 맞춰주는 _작은 매너_ 일 뿐입니다.
+
+마지막에 `npm start` 한 줄로 실제 창이 뜨면, 사실상 _앱의 절반_ 은 다 만든 거예요. 다음 페이지부터는 이 작은 창에 _안전한 방식으로 기능_ 을 붙여 나가는 이야기로 들어갑니다.
+
 <Cards>
   <Cards.Card title="다음: Preload 스크립트" href="/ko/docs/tutorial/preload" arrow />
 </Cards>

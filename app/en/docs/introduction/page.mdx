@@ -61,6 +61,14 @@ That code is basically a one-line recipe: _"once the app is ready, open an 800×
 </html>
 ```
 
+## In plain words
+
+Picture the apps that live on your laptop — your messaging app, your note-taking app, your code editor, your music player. What they have in common is simple: a single window holding text, buttons, and images. The trick is that the screen _inside that window_ is usually built with the very same technologies you'd find on a regular web page (HTML, CSS, JavaScript). Electron is the wrapper that lets you take that web page and ship it as a standalone app, without a browser's address bar around it.
+
+Going one step deeper: a regular web page only lives inside a browser. Close the browser and it's gone, and it cannot really touch the files on your computer. An Electron app, on the other hand, carries _its own private copy of Chromium_ inside, so it can open offline, save files, and even update itself automatically. It's "the easy parts of the web" plus "the powers of a desktop app" rolled into one tool.
+
+The single thing that trips beginners up is that the app is actually two processes working together — **Main** and **Renderer** — like a film director and an actor. Different roles, same show. After this page, read ["Why Electron"](/en/docs/why-electron) and ["Process model"](/en/docs/processes); that split will start to feel completely natural.
+
 ## Where to go next
 
 <Cards>

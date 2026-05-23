@@ -73,6 +73,14 @@ Unsigned apps get an "unidentified developer" warning from macOS Gatekeeper and 
 - ✅ `update-electron-app` is called at least once in main.js?
 - ✅ One line in the release notes for the user to read?
 
+## In plain words
+
+Building an installer doesn't magically put it in your users' hands — you have to _host it somewhere_. The simplest place is **GitHub Releases** — free, and Forge uploads to it in one command. Companies often host on their own S3 / R2 / object storage too. Wherever it lives, what matters is a stable URL.
+
+The real magic is _auto-update_. Drop `update-electron-app` into main.js and on every launch the app quietly _asks the server for a newer version, downloads it in the background, and swaps it in the next time the user quits_. From the user's side, one day they just open the app and notice "huh, the design changed."
+
+There's a catch: without _code signing_, auto-update doesn't work. The new build must carry the _same signature_ as the running one for the OS to accept it as "the same app, just newer." Unsigned builds also scare your users with warnings. So [Code signing](/en/docs/distribution/code-signing) is effectively a required step in the timeline for any serious release.
+
 <Cards>
   <Cards.Card title="Back to the start — Introduction" href="/en/docs/introduction" arrow />
   <Cards.Card title="Next section: Process model" href="/en/docs/processes" arrow />

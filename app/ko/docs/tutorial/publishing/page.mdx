@@ -73,6 +73,14 @@ updateElectronApp() // 기본값으로 GitHub Releases 확인
 - ✅ `update-electron-app` 이 main.js 에 한 번이라도 호출되나요?
 - ✅ 릴리스 노트(CHANGELOG)에 사용자가 볼 변경점 한 줄이라도 적었나요?
 
+## 쉽게 풀어 설명
+
+설치 파일을 만들었다고 자동으로 사용자가 가져갈 수 있는 건 아니에요. 어딘가에 _올려 둬야_ 해요. 가장 간단한 곳이 **GitHub Releases** — 무료고, Forge 가 한 줄로 업로드해 줍니다. 회사라면 보통 자체 S3 / R2 같은 _자체 다운로드 서버_ 를 두기도 해요. 어디든 _주소_ 만 있으면 됩니다.
+
+진짜 마법은 _자동 업데이트_ 예요. `update-electron-app` 한 줄을 main.js 에 넣어 두면, 앱이 켜질 때마다 _서버에 새 버전 있는지 물어보고, 있으면 백그라운드로 받아 두고, 사용자가 다음에 켤 때 조용히 갈아 끼우는_ 일까지 자동으로 일어나요. 사용자는 어느 날 "어, 이거 디자인 바뀌었네?" 하고 알아챌 뿐이에요.
+
+다만 _코드 서명_ 이 없으면 자동 업데이트는 작동하지 않아요. 새 버전이 _이전 버전과 같은 서명_ 을 갖고 있어야 OS 가 "같은 앱의 새 버전이구나" 라고 받아들이거든요. 미서명 빌드는 사용자에게 위협처럼 보이고, 자동 업데이트도 멈춰요. 그래서 진지하게 배포할 거라면 [코드 서명](/ko/docs/distribution/code-signing) 페이지가 _필수 일정_ 이에요.
+
 <Cards>
   <Cards.Card title="처음으로 — Introduction" href="/ko/docs/introduction" arrow />
   <Cards.Card title="다음 섹션: 프로세스 모델" href="/ko/docs/processes" arrow />

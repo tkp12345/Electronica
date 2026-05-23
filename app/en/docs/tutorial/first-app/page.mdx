@@ -112,6 +112,14 @@ A small window opens with "Hello, Electron 👋" — that's your first Electron 
 No window? Check that ① you ran `electron .` from inside the project folder, and ② the `main` field in package.json matches your file name.
 </Callout>
 
+## In plain words
+
+This tutorial is about building the _smallest Electron app that can exist_. You make an empty folder and drop three files into it. `main.js` is the _blueprint that runs the moment the app boots_. `index.html` is _what shows up inside the window_. `package.json` is the _business card_ that tells Electron where to begin.
+
+The core of the code is two lines. `app.whenReady().then(() => ...)` means "once Electron is ready, do the thing inside." Inside that, `new BrowserWindow({...}).loadFile('index.html')` means "make an 800×600 window and load our HTML in it." Everything else is just _good manners_ for each OS — bring the window back when the dock icon is clicked on macOS, quit on Windows/Linux when the last window closes.
+
+When `npm start` finally pops a real window on screen, half the work of any Electron app is already done. The next pages are about how to _safely add features_ to this tiny window without breaking its security model.
+
 <Cards>
   <Cards.Card title="Next: Preload scripts" href="/en/docs/tutorial/preload" arrow />
 </Cards>

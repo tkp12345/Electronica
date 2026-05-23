@@ -82,6 +82,14 @@ app.whenReady().then(() => {
 })
 ```
 
+## In plain words
+
+Until now the app is just a window with "Hello World." The moment a user starts to feel "oh, this is a real app" is when it begins behaving like a desktop citizen. A File menu at the top with "New" inside, the ⌘N shortcut working, an Open button popping up the real OS file picker, a small notification when something finishes in the background.
+
+The five tools on this page (menu, global shortcut, dialog, notification, tray) are the basic building blocks of that desktop-ness. The surprising part is how short the code is. A menu is just an _array_, a shortcut is a _string_, a notification is one line. Electron absorbs the per-OS differences so you can write what you _want_, not what each OS wants you to type.
+
+You'll especially like the shortcut format. `'CmdOrCtrl+N'` is a single string that automatically becomes ⌘N on macOS and Ctrl+N on Windows and Linux. Next stop: [Packaging](/en/docs/tutorial/packaging) — that's where _your code_ becomes a real installer your friends can run.
+
 <Cards>
   <Cards.Card title="Next: Packaging" href="/en/docs/tutorial/packaging" arrow />
 </Cards>

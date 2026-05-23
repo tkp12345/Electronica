@@ -51,6 +51,14 @@ Think "one bicycle that can ride to three cities" rather than "three different d
 If "must be as lightweight as possible" is your number-one requirement, look at **Tauri** or native before reaching for Electron.
 </Callout>
 
+## In plain words
+
+Imagine you've built one game and now everyone's asking for it on their machine — your friend's Mac, your cousin's Windows laptop, your brother's Linux box. The old way would be to learn _three completely different languages_ (Swift, C#, GTK) and write the same game _three times_. Electron lets you skip all of that. One web codebase becomes one real app that runs on all three.
+
+There's a cost, though. Electron tucks an entire mini-browser (Chromium) inside every app, so the download is roughly 100MB heavier than a native build, and startup is a touch slower. If "must be feather-light and instant" is your highest priority (think a text editor where any flicker would feel wrong), it's worth peeking at lighter options like Tauri or going native first.
+
+The shortcut: _short on time, rich UI, must run on all three OSes_ → Electron is almost always the right call. _Smallest possible footprint above all_ → look at Tauri or native. Reread the table on this page and then jump to [Process model](/en/docs/processes); that's where the picture finishes filling in.
+
 <Cards>
   <Cards.Card title="Next: Process model" href="/en/docs/processes" arrow />
   <Cards.Card title="Start the tutorial" href="/en/docs/tutorial/prerequisites" arrow />

@@ -83,6 +83,14 @@ app.whenReady().then(() => {
 **If an old tutorial enables `nodeIntegration: true`, ignore it.** That single flag is the #1 cause of Electron security incidents.
 </Callout>
 
+## In plain words
+
+Imagine a _treasure chest_ in the middle of a schoolyard. If every kid could just walk up and grab whatever they wanted, you'd lose the contents in five minutes. So the grown-ups put the chest behind bars and add a tiny _mail slot_ next to it. You write down the name of the thing you want; an adult on the other side decides whether to hand it over.
+
+The web page (Renderer) and the deeper parts of the computer (Main) work the same way. If the page could call dangerous functions like `require('fs')` directly, one malicious site could read every file you own. By default Electron keeps the two sides separated and only opens a small mail slot called the **preload script** between them.
+
+The key tool is `contextBridge.exposeInMainWorld('api', { ... })`. That line means "expose only these functions to the page." The page can only order from the menu printed on the mail slot. Even if the page gets fully hacked, it can't call anything you didn't list. When an old tutorial tells you to set `nodeIntegration: true`, that's basically _leaving the door of the cage wide open_ — don't do it.
+
 <Cards>
   <Cards.Card title="Next: Adding features" href="/en/docs/tutorial/adding-features" arrow />
   <Cards.Card title="Deeper: context isolation" href="/en/docs/processes/context-isolation" arrow />

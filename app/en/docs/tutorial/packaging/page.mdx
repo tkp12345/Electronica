@@ -65,6 +65,14 @@ You'll find OS-native installers under `out/`.
 Cross-OS building (e.g. making a Windows `.exe` from macOS) _technically_ works but breaks code signing in practice. The real-world pattern is **one VM/runner per OS**.
 </Callout>
 
+## In plain words
+
+Up to now the app is a baby bird that only lives _inside your laptop_. To share it, you have to put it in a shape the OS recognizes — `.dmg` for macOS, `.exe` for Windows, `.deb` / `.rpm` / `.AppImage` for Linux. **Electron Forge** is the _automatic packing machine_ that wraps your code into all of these on demand.
+
+Two things surprise newcomers: you need _OS-specific icon files_ (.icns for macOS, .ico for Windows), and the _first build can take 5–10 minutes_. The slowness isn't your code — it's Forge downloading Chromium binaries, per-OS toolchains, and icon converters in the background. After the first run, the next ones finish in a minute or two.
+
+The biggest misconception is "can I build a Windows .exe from my Mac?" Technically yes, but code-signing breaks in cross-OS builds, so real teams don't do that. They build _on a VM or CI runner per OS_. The next page, [Publishing & updates](/en/docs/tutorial/publishing), explains how to actually hand this lunchbox to a friend.
+
 <Cards>
   <Cards.Card title="Next: Publishing & updating" href="/en/docs/tutorial/publishing" arrow />
 </Cards>
