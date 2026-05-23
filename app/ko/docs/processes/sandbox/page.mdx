@@ -1,0 +1,48 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { SandboxIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<SandboxIllustration />}
+  title="Sandbox"
+  subtitle="Renderer 의 행동을 OS 차원에서 제한하는 Chromium 보안 장치 — Electron 도 그대로 활용합니다."
+  badge="Processes · Sandbox"
+/>
+
+## 한마디로
+
+Sandbox 가 켜진 Renderer 는 _OS 의 가장 낮은 권한_ 으로 돌아갑니다. 파일 시스템·네트워크 같은 OS API 를 직접 못 부르고, 오직 IPC 로 Main 에 _부탁_ 만 할 수 있어요.
+
+<Callout type="info" emoji="🧒">
+"손님은 카운터 너머로 손을 못 뻗어요. 메뉴판 보고 종업원(IPC)에게 _시키기만_ 가능."
+</Callout>
+
+## 기본값은 ON
+
+Electron 20+ 부터 모든 BrowserWindow 의 `sandbox` 가 기본 true 입니다. 굳이 끄지 마세요.
+
+```js filename="main.js"
+new BrowserWindow({
+  webPreferences: {
+    sandbox: true, // 기본값 — 명시해도 좋다
+    contextIsolation: true,
+  },
+})
+```
+
+## 가끔 끄고 싶어지는 이유 (대부분 함정)
+
+- "preload 에서 Node API 쓰고 싶어서" → 잘못된 이유 (preload 는 sandbox 켜진 상태에서도 일부 Node 모듈을 쓸 수 있게 따로 설계됨)
+- "오래된 라이브러리가 require 호출함" → 그 라이브러리를 Main 쪽으로 옮기는 게 정답
+
+## 진짜 끌 만한 케이스
+
+- 디자인 데모처럼 인터넷 콘텐츠 없는 _100% 신뢰 가능한_ 로컬 페이지
+- 디버깅 목적의 임시 창
+
+그 외에는 켠 채로 두세요.
+
+<Cards>
+  <Cards.Card title="Context Isolation" href="/ko/docs/processes/context-isolation" arrow />
+  <Cards.Card title="Security Best Practices" href="/ko/docs/best-practices/security" arrow />
+</Cards>

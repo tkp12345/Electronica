@@ -1,0 +1,53 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { ProcessModelIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<ProcessModelIllustration />}
+  title="프로세스 모델 (개요)"
+  subtitle="Electron 의 가장 큰 개념적 장벽 — Main 과 Renderer 가 왜 둘인지 한 페이지로 정리."
+  badge="Processes"
+/>
+
+## 두 종류의 프로세스
+
+Electron 앱이 켜지면 OS 안에 _두 종류_ 의 프로세스가 생깁니다.
+
+| 이름 | 역할 | 환경 |
+|---|---|---|
+| **Main** | 앱의 두뇌 — 창 생성, 메뉴, 파일 입출력, 자동업데이트 | Node.js |
+| **Renderer** | 실제 화면을 그림 — HTML/CSS/JS | Chromium |
+
+<Callout type="info" emoji="🎬">
+**비유**: Main 은 _영화 감독_, Renderer 는 _배우_. 감독은 무대 뒤에서 카메라·조명을 컨트롤하고, 배우는 무대 위에서 연기를 합니다. 둘은 서로 다른 권한과 역할을 가져요.
+</Callout>
+
+## 왜 굳이 두 개?
+
+웹 페이지에 OS 의 모든 권한을 주면 _악성 사이트가 곧장 사용자 파일을 다 읽을 수 있어요_. Chromium 이 원래 갖고 있는 "탭 = 격리된 sandbox" 개념을 그대로 가져온 거예요. **Main 만 진짜 권한을 갖고, Renderer 는 격리** 됩니다.
+
+## 셋이 한 무대에서 만나는 그림
+
+```text
+┌────────────────────────────────────────────────────────┐
+│  Main process (Node.js)                                │
+│   ├─ app, BrowserWindow, ipcMain, Menu, Tray ...       │
+│   └─ ipcMain.handle('save', writeFile)                 │
+└──────────────────┬─────────────────────────────────────┘
+                   │  IPC (channel = 'save')
+                   ▼
+┌────────────────────────────────────────────────────────┐
+│  Renderer process (Chromium)                           │
+│   ├─ 우리 웹 페이지 (HTML/CSS/JS)                       │
+│   └─ window.api.save() ◀── preload 가 노출한 함수      │
+└────────────────────────────────────────────────────────┘
+```
+
+## 더 깊이 들어가기
+
+<Cards>
+  <Cards.Card title="Main 프로세스" href="/ko/docs/processes/main" arrow />
+  <Cards.Card title="Renderer 프로세스" href="/ko/docs/processes/renderer" arrow />
+  <Cards.Card title="Sandbox" href="/ko/docs/processes/sandbox" arrow />
+  <Cards.Card title="Context Isolation" href="/ko/docs/processes/context-isolation" arrow />
+</Cards>

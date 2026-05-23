@@ -1,0 +1,53 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { MainProcessIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<MainProcessIllustration />}
+  title="Main process"
+  subtitle="The single, always-alive process that boots first and plays the director role for the rest of the app."
+  badge="Processes · Main"
+/>
+
+## What it is
+
+Just a Node.js program. The `main` field in `package.json` points at the file Electron runs first.
+
+```js filename="main.js"
+const { app, BrowserWindow } = require('electron')
+
+app.whenReady().then(() => {
+  new BrowserWindow().loadURL('https://example.com')
+})
+```
+
+## What it can do
+
+- Create and destroy windows (`BrowserWindow`)
+- Menus, tray, dialogs, global shortcuts
+- The full Node stdlib (`fs`, `path`, `child_process`, `net`, ...)
+- Any npm package (`axios`, `better-sqlite3`, ...)
+- Register IPC handlers (`ipcMain.handle`)
+
+## What it _cannot_ do
+
+- Touch the DOM directly — Main has no `document`.
+- Draw pixels — that's the Renderer's job.
+
+<Callout type="info" emoji="🧒">
+Calling `document.getElementById(...)` from Main throws immediately. _The director can't perform on stage._
+</Callout>
+
+## Lifecycle events you'll use
+
+| Event | When |
+|---|---|
+| `ready` (via `app.whenReady()`) | All modules loaded, safe to create windows |
+| `window-all-closed` | Last window closed — usually call `app.quit()` here |
+| `activate` (macOS) | Dock icon clicked while the app is running |
+| `before-quit` | Just before quit — save pending data |
+| `will-quit` | Very last step — unregister shortcuts |
+
+<Cards>
+  <Cards.Card title="Renderer process" href="/en/docs/processes/renderer" arrow />
+</Cards>

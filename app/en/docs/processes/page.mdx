@@ -1,0 +1,53 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { ProcessModelIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<ProcessModelIllustration />}
+  title="Process model (overview)"
+  subtitle="The single biggest conceptual hill in Electron — why there are two processes and not one."
+  badge="Processes"
+/>
+
+## Two kinds of processes
+
+When an Electron app launches the OS sees _two kinds_ of processes:
+
+| Name | Job | Environment |
+|---|---|---|
+| **Main** | The brain — windows, menus, file I/O, auto-updates | Node.js |
+| **Renderer** | The face — actual pixels, HTML/CSS/JS | Chromium |
+
+<Callout type="info" emoji="🎬">
+**Analogy**: Main is the _director_; each Renderer is an _actor_. The director runs the camera, lights, and crew backstage; actors perform on stage. Different powers, different jobs.
+</Callout>
+
+## Why two and not one
+
+If your web page had every OS power, _one bad website could read every file you own_. Electron keeps Chromium's "tab = isolated sandbox" idea and goes further: **only Main has real privileges; every Renderer is fenced off.**
+
+## How they meet on stage
+
+```text
+┌────────────────────────────────────────────────────────┐
+│  Main process (Node.js)                                │
+│   ├─ app, BrowserWindow, ipcMain, Menu, Tray ...       │
+│   └─ ipcMain.handle('save', writeFile)                 │
+└──────────────────┬─────────────────────────────────────┘
+                   │  IPC (channel = 'save')
+                   ▼
+┌────────────────────────────────────────────────────────┐
+│  Renderer process (Chromium)                           │
+│   ├─ your web page (HTML/CSS/JS)                       │
+│   └─ window.api.save() ◀── exposed by preload          │
+└────────────────────────────────────────────────────────┘
+```
+
+## Go deeper
+
+<Cards>
+  <Cards.Card title="Main process" href="/en/docs/processes/main" arrow />
+  <Cards.Card title="Renderer process" href="/en/docs/processes/renderer" arrow />
+  <Cards.Card title="Sandbox" href="/en/docs/processes/sandbox" arrow />
+  <Cards.Card title="Context isolation" href="/en/docs/processes/context-isolation" arrow />
+</Cards>

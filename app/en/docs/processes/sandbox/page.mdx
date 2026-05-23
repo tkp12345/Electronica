@@ -1,0 +1,48 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { SandboxIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<SandboxIllustration />}
+  title="Sandbox"
+  subtitle="The Chromium OS-level security feature that keeps the Renderer underprivileged — Electron leans on it heavily."
+  badge="Processes · Sandbox"
+/>
+
+## In one breath
+
+A sandboxed Renderer runs at the _lowest privilege level_ the OS allows. It cannot call file-system or network APIs directly; it can only _ask_ the Main process via IPC.
+
+<Callout type="info" emoji="🧒">
+"The customer can't reach over the counter. They read the menu and _ask the waiter (IPC)_ for everything."
+</Callout>
+
+## The default is ON
+
+Since Electron 20+, `sandbox` is true on every BrowserWindow by default. Leave it that way.
+
+```js filename="main.js"
+new BrowserWindow({
+  webPreferences: {
+    sandbox: true, // default — fine to write it explicitly
+    contextIsolation: true,
+  },
+})
+```
+
+## Reasons people _think_ they need to turn it off (usually a trap)
+
+- "I want Node APIs in my preload" → wrong reason — preload still has access to a curated set of Node modules with sandbox on.
+- "An old library calls `require`" → move that library into the Main process instead.
+
+## Cases where turning it off is actually fine
+
+- A fully trusted, fully local design demo with no remote content.
+- A throwaway debug window.
+
+Outside of those, keep it on.
+
+<Cards>
+  <Cards.Card title="Context isolation" href="/en/docs/processes/context-isolation" arrow />
+  <Cards.Card title="Security best practices" href="/en/docs/best-practices/security" arrow />
+</Cards>

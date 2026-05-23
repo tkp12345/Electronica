@@ -1,0 +1,61 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { ContextIsolationIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<ContextIsolationIllustration />}
+  title="Context Isolation"
+  subtitle="웹 페이지와 preload 의 자바스크립트 컨텍스트를 분리해, 두 세계가 서로의 변수에 접근하지 못하게 막는 장치."
+  badge="Processes · Context Isolation"
+/>
+
+## 왜 필요한가
+
+만약 preload 와 웹 페이지가 _같은_ 자바스크립트 세상을 공유한다면, 웹 페이지의 악성 스크립트가 preload 내부 변수를 그대로 들여다보고 IPC 핸들을 훔칠 수 있어요. **컨텍스트 격리** 는 둘 사이에 _다른 차원의 벽_ 을 세웁니다.
+
+<Callout type="info" emoji="🧒">
+"같은 방에 둘이 있으면 책상도 같이 써요. 벽으로 막은 두 방으로 나누면 _배달구(contextBridge)_ 로만 물건이 오갈 수 있죠."
+</Callout>
+
+## 안전한 노출 방법: `contextBridge`
+
+```js filename="preload.js"
+const { contextBridge, ipcRenderer } = require('electron')
+
+contextBridge.exposeInMainWorld('api', {
+  // 함수만 노출 — 원본 객체 자체는 절대 노출하지 않는다
+  save: (data) => ipcRenderer.invoke('save', data),
+  onUpdate: (callback) => {
+    ipcRenderer.on('update', (_, payload) => callback(payload))
+  },
+})
+```
+
+<Callout type="warning">
+원본 ipcRenderer 객체나 fs 모듈 자체를 통째로 노출하면 안 됩니다. _필요한 함수만 따로 골라서_ 노출하세요.
+</Callout>
+
+## 자주 하는 실수
+
+```js
+// 🚫 잘못된 예: ipcRenderer 통째로 노출
+contextBridge.exposeInMainWorld('ipc', ipcRenderer)
+```
+
+위 코드는 사실상 보안 장치를 뚫어 놓는 것과 같아요. 공격자가 임의의 채널로 메시지를 보낼 수 있게 됩니다.
+
+```js
+// ✅ 올바른 예: 화이트리스트 패턴
+contextBridge.exposeInMainWorld('ipc', {
+  invoke: (channel, ...args) => {
+    const allow = ['save', 'load', 'export-csv']
+    if (!allow.includes(channel)) throw new Error('forbidden')
+    return ipcRenderer.invoke(channel, ...args)
+  },
+})
+```
+
+<Cards>
+  <Cards.Card title="Security Best Practices" href="/ko/docs/best-practices/security" arrow />
+  <Cards.Card title="Sandbox" href="/ko/docs/processes/sandbox" arrow />
+</Cards>

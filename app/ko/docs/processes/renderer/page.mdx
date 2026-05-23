@@ -1,0 +1,52 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { RendererProcessIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<RendererProcessIllustration />}
+  title="Renderer 프로세스"
+  subtitle="브라우저 탭 하나와 같은 격리된 공간에서 실제 화면을 그리는 프로세스."
+  badge="Processes · Renderer"
+/>
+
+## 정체
+
+`BrowserWindow` 를 하나 만들 때마다 새 Chromium 프로세스가 따로 떠요. 안에 있는 코드는 _완벽한 웹 페이지_ 입니다 — 그냥 평범한 HTML/CSS/JS.
+
+```html filename="index.html"
+<script>
+  // 여기는 Renderer — 우리가 만든 평범한 웹 페이지의 자바스크립트
+  document.body.style.background = 'tomato'
+</script>
+```
+
+## 갖고 있는 능력
+
+- 화면 DOM 조작 (당연)
+- 브라우저 API 모두 (`fetch`, `localStorage`, `Notification`, ...)
+- preload 가 노출한 `window.api.*` 함수
+- (기본 ON 인 sandbox 상황에서) Node 직접 호출 금지
+
+<Callout type="info" emoji="🧒">
+Renderer 는 _크롬 탭과 똑같다_ 고 생각하세요. 우리가 일반 웹사이트 만들 때처럼 코드를 쓰면 됩니다.
+</Callout>
+
+## Main 과 어떻게 대화?
+
+직접 못 합니다 — preload 를 통해서만.
+
+```js filename="renderer.js"
+// preload 가 노출해 둔 함수만 호출 가능
+const reply = await window.api.ping() // → 'pong'
+```
+
+내부 흐름은 `renderer.js` → preload(window.api) → ipcRenderer → ipcMain → main.js 의 핸들러. 5단계지만 한 번 익히면 패턴이 매우 명확해요.
+
+## 여러 Renderer 가 있을 때
+
+각 창은 _완전히 독립된 프로세스_ 입니다. 한 창이 죽어도 다른 창은 멀쩡해요. 대신 창끼리 데이터를 공유하려면 Main 을 경유해야 합니다.
+
+<Cards>
+  <Cards.Card title="Sandbox" href="/ko/docs/processes/sandbox" arrow />
+  <Cards.Card title="Context Isolation" href="/ko/docs/processes/context-isolation" arrow />
+</Cards>

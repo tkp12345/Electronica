@@ -1,0 +1,52 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { RendererProcessIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<RendererProcessIllustration />}
+  title="Renderer process"
+  subtitle="An isolated process — basically a Chromium tab — that draws the actual UI."
+  badge="Processes · Renderer"
+/>
+
+## What it is
+
+Each `BrowserWindow` spawns its own Chromium process. The code inside is just a regular web page.
+
+```html filename="index.html"
+<script>
+  // Renderer side — vanilla browser JS
+  document.body.style.background = 'tomato'
+</script>
+```
+
+## What it can do
+
+- Manipulate the DOM (of course)
+- Browser APIs (`fetch`, `localStorage`, `Notification`, ...)
+- Whatever `window.api.*` your preload exposed
+- (With sandbox ON, which is the default) it cannot directly use Node
+
+<Callout type="info" emoji="🧒">
+Treat the Renderer as _just a Chrome tab._ Write code the same way you would for any plain website.
+</Callout>
+
+## Talking to Main
+
+Not directly — only through the preload bridge.
+
+```js filename="renderer.js"
+// Only the functions the preload exposed are reachable
+const reply = await window.api.ping() // → 'pong'
+```
+
+The actual chain is `renderer.js` → preload (`window.api`) → ipcRenderer → ipcMain → handler in `main.js`. Five hops, but the pattern is rock-solid once you've seen it.
+
+## Multiple Renderers
+
+Each window is a fully independent process. If one window crashes, the others stay alive. The flip side: sharing state across windows must go through Main.
+
+<Cards>
+  <Cards.Card title="Sandbox" href="/en/docs/processes/sandbox" arrow />
+  <Cards.Card title="Context isolation" href="/en/docs/processes/context-isolation" arrow />
+</Cards>
