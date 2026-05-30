@@ -730,3 +730,107 @@ export function AppApiIllustration() {
     </HeroMotionSvg>
   )
 }
+
+// ── 범용 API 카테고리 일러스트 ───────────────────────────────
+// 모듈별 고유 일러스트는 비현실적이라, 카테고리 단위로 묶어 hero 에 매핑한다.
+// (워크플로우가 모듈→일러스트 매핑을 정해 import 한다)
+
+/** 40. Window 계열 — 타이틀바 창 + 안쪽에서 떠오르는 콘텐츠 */
+export function WindowApiIllustration() {
+  return (
+    <HeroMotionSvg>
+      <rect x="40" y="30" width="160" height="100" rx="14" {...muted} strokeWidth="2" {...softFill} />
+      <rect x="40" y="30" width="160" height="22" rx="14" {...mediumFill} stroke="none" />
+      <motion.circle cx="56" cy="41" r="3.5" fill={ACCENT} style={accentDot} variants={pulse(2.2)} />
+      <circle cx="68" cy="41" r="3.5" {...softFill} stroke="none" />
+      <circle cx="80" cy="41" r="3.5" {...softFill} stroke="none" />
+      {/* 본문 콘텐츠가 떠오름 */}
+      <motion.rect x="60" y="70" width="120" height="10" rx="3" {...mediumFill} stroke="none"
+        variants={loop({ width: [0, 120] }, 1.8, { repeatType: 'reverse' })} />
+      <motion.rect x="60" y="90" width="84" height="10" rx="3" {...softFill} stroke="none"
+        variants={loop({ width: [0, 84] }, 1.8, { repeatType: 'reverse', delay: 0.25 })} />
+    </HeroMotionSvg>
+  )
+}
+
+/** 41. IPC 계열 — 두 프로세스 사이를 왕복하는 메시지 패킷 */
+export function IpcApiIllustration() {
+  return (
+    <HeroMotionSvg>
+      <rect x="24" y="48" width="74" height="64" rx="12" {...muted} strokeWidth="2" {...softFill} />
+      <rect x="142" y="48" width="74" height="64" rx="12" {...muted} strokeWidth="2" {...softFill} />
+      {/* 통신 라인 */}
+      <line x1="98" y1="80" x2="142" y2="80" {...muted} strokeWidth="1.5" strokeDasharray="3 5" />
+      {/* 패킷 왕복 */}
+      <motion.circle cy="80" r="5" fill={ACCENT} style={GLOW}
+        variants={loop({ cx: [98, 142, 98] }, 2.2)} />
+    </HeroMotionSvg>
+  )
+}
+
+/** 42. Menu/UI 계열 — 메뉴 행 + 내려오는 하이라이트 */
+export function MenuApiIllustration() {
+  return (
+    <HeroMotionSvg>
+      <rect x="68" y="30" width="104" height="100" rx="12" {...muted} strokeWidth="2" {...softFill} />
+      {[48, 68, 88, 108].map((y) => (
+        <rect key={y} x="84" y={y} width="72" height="8" rx="3" {...mediumFill} stroke="none" />
+      ))}
+      {/* 선택 하이라이트가 항목 사이를 오르내림 */}
+      <motion.rect x="76" width="88" height="14" rx="4" fill={ACCENT} style={GLOW}
+        variants={loop({ y: [45, 65, 85, 105, 45] }, 3.2, { ease: 'easeInOut' })} />
+    </HeroMotionSvg>
+  )
+}
+
+/** 43. System/HW 계열 — 게이지 바늘이 흔들리는 계기 */
+export function SystemApiIllustration() {
+  return (
+    <HeroMotionSvg>
+      <path d="M52 122 A68 68 0 0 1 188 122" {...muted} strokeWidth="6" strokeLinecap="round" />
+      {[0, 45, 90, 135, 180].map((deg) => {
+        const rad = (Math.PI * (180 + deg)) / 180
+        return (
+          <line key={deg}
+            x1={120 + Math.cos(rad) * 60} y1={122 + Math.sin(rad) * 60}
+            x2={120 + Math.cos(rad) * 68} y2={122 + Math.sin(rad) * 68}
+            {...muted} strokeWidth="2" />
+        )
+      })}
+      {/* 바늘 — 좌우로 스윕 */}
+      <motion.g style={viewPivot(120, 122)} variants={loop({ rotate: [-60, 60, -60] }, 3, { ease: 'easeInOut' })}>
+        <line x1="120" y1="122" x2="120" y2="70" stroke={ACCENT} strokeWidth="3" strokeLinecap="round" style={GLOW} />
+      </motion.g>
+      <circle cx="120" cy="122" r="6" fill={ACCENT} />
+    </HeroMotionSvg>
+  )
+}
+
+/** 44. Network/Storage 계열 — 노드 사이로 흐르는 데이터 */
+export function NetworkApiIllustration() {
+  return (
+    <HeroMotionSvg>
+      <circle cx="48" cy="80" r="14" {...muted} strokeWidth="2" {...mediumFill} />
+      <circle cx="192" cy="80" r="14" {...muted} strokeWidth="2" {...mediumFill} />
+      <rect x="100" y="60" width="40" height="40" rx="10" {...muted} strokeWidth="2" {...softFill} />
+      <line x1="62" y1="80" x2="100" y2="80" {...muted} strokeWidth="1.6" />
+      <line x1="140" y1="80" x2="178" y2="80" {...muted} strokeWidth="1.6" />
+      {/* 데이터 패킷이 좌→우로 흐름 */}
+      <motion.circle cy="80" r="4.5" fill={ACCENT} style={GLOW}
+        variants={loop({ cx: [62, 178] }, 2.4, { repeatType: 'loop' })} />
+    </HeroMotionSvg>
+  )
+}
+
+/** 45. 범용 모듈 — 중앙 모듈 블록 + 박동하는 액센트 점(폴백) */
+export function GenericApiIllustration() {
+  return (
+    <HeroMotionSvg>
+      <rect x="84" y="44" width="72" height="72" rx="16" {...muted} strokeWidth="2" {...mediumFill} />
+      <rect x="100" y="60" width="40" height="6" rx="3" {...softFill} stroke="none" />
+      <rect x="100" y="74" width="32" height="6" rx="3" {...softFill} stroke="none" />
+      <rect x="100" y="88" width="24" height="6" rx="3" {...softFill} stroke="none" />
+      <motion.circle cx="120" cy="116" r="6" fill={ACCENT} style={accentDot} variants={pulse(2)} />
+    </HeroMotionSvg>
+  )
+}
