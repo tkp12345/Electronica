@@ -48,7 +48,7 @@ You'll find OS-native installers under `out/`.
     A `.app` bundle plus a `.dmg` disk image. Pair with an Apple Developer certificate for _code signing_ (→ [Code Signing](/en/docs/distribution/code-signing)).
   </Tabs.Tab>
   <Tabs.Tab>
-    A Squirrel-based `.exe` installer. Hooks straight into the auto-update channel.
+    A Squirrel-based `.exe` installer (NSIS is another common option). Hooks straight into the auto-update channel. Pair with an _Authenticode_ certificate via `signtool` for code signing (→ [Code Signing](/en/docs/distribution/code-signing)).
   </Tabs.Tab>
   <Tabs.Tab>
     `.deb` (Debian/Ubuntu), `.rpm` (Fedora), `.AppImage` (distro-independent).

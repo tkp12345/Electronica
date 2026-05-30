@@ -34,6 +34,10 @@ updateElectronApp({ repo: 'your-name/your-app' })
 
 새 버전이 _같은 서명_ 을 갖고 있어야 OS 가 받아들여요. 미서명 빌드는 자동 업데이트 자체가 작동하지 않습니다.
 
+<Callout type="info">
+플랫폼마다 동작이 조금 달라요. _(macOS)_ 새 `.app` 이 실행 중인 앱과 **같은 Team ID / Developer ID** 로 서명돼 있어야 합니다 — Squirrel.Mac 이 이를 검증하고, 서명이 다르면 교체를 거부해요. _(Windows)_ Squirrel.Windows 는 새 `.exe` 를 설치하면서 `%LOCALAPPDATA%\<App>` 아래 사용자별 폴더를 갱신합니다. `signtool` 을 통한 Authenticode 서명은 SmartScreen 경고를 막아 주지만, 교체 자체에 서명 일치가 엄격히 강제되지는 않아요.
+</Callout>
+
 ## 자체 서버를 쓰고 싶다면
 
 ```js

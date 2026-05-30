@@ -40,7 +40,23 @@ Notarization is _Apple's servers scanning the app and stamping it "safe"_. Signi
 
 ## Windows signing
 
-Use an EV certificate (file or USB token) with `signtool` against your `.exe` and installer. Provide `certificateFile` to Forge's maker-squirrel options.
+Use an EV certificate (file or USB token) with `signtool` against your `.exe` and installer. Provide `certificateFile` to Forge's `@electron-forge/maker-squirrel` options.
+
+```js filename="forge.config.js"
+module.exports = {
+  makers: [
+    {
+      name: '@electron-forge/maker-squirrel',
+      config: {
+        certificateFile: process.env.WINDOWS_CERT_FILE, // path to .pfx
+        certificatePassword: process.env.WINDOWS_CERT_PASSWORD,
+      },
+    },
+  ],
+}
+```
+
+Under the hood Squirrel.Windows runs `signtool` for you. The signed `.exe` installs per-user into `%LOCALAPPDATA%\<App>` — no admin prompt required.
 
 ## Keep it safe in CI
 

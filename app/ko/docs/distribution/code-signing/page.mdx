@@ -40,7 +40,23 @@ module.exports = {
 
 ## Windows 서명
 
-EV 인증서(파일 또는 USB 토큰)로 `signtool` 을 통해 `.exe` 와 인스톨러에 서명. Forge 의 maker-squirrel 옵션에 `certificateFile` 지정.
+EV 인증서(파일 또는 USB 토큰)로 `signtool` 을 통해 `.exe` 와 인스톨러에 서명해요. Forge 의 `@electron-forge/maker-squirrel` 옵션에 `certificateFile` 을 지정합니다.
+
+```js filename="forge.config.js"
+module.exports = {
+  makers: [
+    {
+      name: '@electron-forge/maker-squirrel',
+      config: {
+        certificateFile: process.env.WINDOWS_CERT_FILE, // .pfx 경로
+        certificatePassword: process.env.WINDOWS_CERT_PASSWORD,
+      },
+    },
+  ],
+}
+```
+
+내부적으로는 Squirrel.Windows 가 `signtool` 을 대신 실행해 줘요. 서명된 `.exe` 는 `%LOCALAPPDATA%\<App>` 에 사용자별로 설치되며 관리자 권한 프롬프트가 필요 없습니다.
 
 ## CI 에서 안전하게
 

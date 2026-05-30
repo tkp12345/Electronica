@@ -45,6 +45,11 @@ Going through the App Store also tightens the _sandbox_. Direct builds enjoy bro
 
 Payments are also constrained. In-app purchases must go through Apple's _StoreKit_ only; any other payment path (a Stripe link, for example) is rejected at review. If external payments are core to your business, you'll need to ship direct. Many teams run both models in parallel (direct as the default; MAS as a separate paid SKU for store-loyal users).
 
+<Callout type="info">
+The Mac App Store is macOS-only. For the equivalent "department store booth" on Windows — the Microsoft Store (MSIX packaging) — see [Windows Store](/en/docs/distribution/windows-store).
+</Callout>
+
 <Cards>
   <Cards.Card title="Code signing" href="/en/docs/distribution/code-signing" arrow />
+  <Cards.Card title="Windows Store" href="/en/docs/distribution/windows-store" arrow />
 </Cards>

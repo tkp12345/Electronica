@@ -34,6 +34,10 @@ The same way your browser quietly updates itself — the user never clicks a but
 
 The new version must carry the _same signature_ as the running app, or the OS rejects the swap. Unsigned builds can't auto-update at all.
 
+<Callout type="info">
+This works a little differently per platform. _(macOS)_ the new `.app` must be signed with the **same Team ID / Developer ID** as the running app — Squirrel.Mac verifies it and refuses to swap on mismatch. _(Windows)_ Squirrel.Windows installs the new `.exe` and updates the per-user folder under `%LOCALAPPDATA%\<App>`; Authenticode signing (via `signtool`) is what keeps SmartScreen quiet, but a matching signature isn't strictly enforced for the swap itself.
+</Callout>
+
 ## Roll your own server
 
 ```js
