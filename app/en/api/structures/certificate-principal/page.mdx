@@ -1,0 +1,49 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="CertificatePrincipal"
+  subtitle="The identity details of a party named in a TLS certificate"
+  badge="API · Structure"
+/>
+
+A `CertificatePrincipal` describes who a certificate is about. It appears as the `issuer` and `subject` fields of the [`Certificate`](/en/api/structures/certificate) object, which you receive in events like the `session` module's `certificate-error` and `select-client-certificate`.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `commonName` | `string` | Common Name (CN) of the principal, e.g. the domain or person being identified. |
+| `organizations` | `string[]` | Organization names (O) the principal belongs to. |
+| `organizationUnits` | `string[]` | Organization Unit names (OU) within the organization. |
+| `locality` | `string` | Locality, typically the city. |
+| `state` | `string` | State or province. |
+| `country` | `string` | Country or region. |
+
+```js
+const subject = {
+  commonName: 'example.com',
+  organizations: ['Example Inc.'],
+  organizationUnits: ['Engineering'],
+  locality: 'San Francisco',
+  state: 'California',
+  country: 'US',
+}
+```
+
+<EasyNote>
+Think of it as the "address block" on an ID card: it spells out exactly who the certificate belongs to and where they are.
+</EasyNote>
+
+## In plain words
+
+When your app inspects a website's TLS certificate, you often want to know who issued it and who it was issued to. `CertificatePrincipal` is that "who" answer, broken into clean fields like name, organization, and location. You'd read it to display certificate details or to decide whether to trust a connection.
+
+<Cards>
+  <Cards.Card title="Certificate" href="/en/api/structures/certificate" arrow />
+  <Cards.Card title="session" href="/en/api/session" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

@@ -1,0 +1,52 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="Cookie"
+  subtitle="모든 속성을 담은 하나의 HTTP 쿠키"
+  badge="API · Structure"
+/>
+
+`Cookie` 객체는 하나의 HTTP 쿠키를 나타냅니다. `session.cookies.get()`을 호출하면 `Cookie` 객체를 받게 되고, `session.cookies.set()`에는 쿠키 형태의 정보를 전달합니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `name` | `string` | 쿠키의 이름입니다. |
+| `value` | `string` | 쿠키의 값입니다. |
+| `domain` | `string` | _(선택)_ 쿠키가 유효한 도메인입니다. 서브도메인에서도 유효하도록 앞에 점(.)이 붙어 정규화됩니다. |
+| `hostOnly` | `boolean` | _(선택)_ 호스트 전용 쿠키인지 여부입니다. `domain`을 전달하지 않은 경우에만 `true`가 됩니다. |
+| `path` | `string` | _(선택)_ 쿠키가 유효한 경로입니다. |
+| `secure` | `boolean` | _(선택)_ 보안(HTTPS 전용) 쿠키로 표시되었는지 여부입니다. |
+| `httpOnly` | `boolean` | _(선택)_ HTTP 전용(JavaScript에서 접근 불가)으로 표시되었는지 여부입니다. |
+| `session` | `boolean` | _(선택)_ 세션 쿠키인지 여부입니다. (만료일이 있는 영속 쿠키와 구분됩니다.) |
+| `expirationDate` | `number` | _(선택)_ UNIX 에포크 이후 경과한 초 단위의 만료 시각입니다. 세션 쿠키에는 제공되지 않습니다. |
+| `sameSite` | `string` | `SameSite` 정책입니다. `unspecified`, `no_restriction`, `lax`, `strict` 중 하나입니다. |
+
+```js
+const cookie = {
+  url: 'https://www.example.com',
+  name: 'session_id',
+  value: 'abc123',
+  secure: true,
+  httpOnly: true,
+  sameSite: 'lax'
+}
+```
+
+<EasyNote>
+Cookie는 브라우저가 웹사이트를 위해 보관하는 이름표가 붙은 포스트잇과 같습니다. 이름과 값, 그리고 어디에 얼마나 오래 붙어 있을지에 대한 규칙을 가지고 있습니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+쿠키는 웹사이트가 브라우저에게 기억해 달라고 요청하는 작은 데이터입니다. 로그인 토큰이나 사용자 설정 같은 것이죠. `Cookie` 객체는 그 메모를 빠짐없이 적어 놓은 것입니다. 이름과 값은 물론, 어떤 사이트에 속하는지, HTTPS가 필요한지, 언제 만료되는지 같은 규칙까지 모두 담겨 있습니다. 세션을 통해 쿠키를 읽거나 쓸 때 이 객체를 사용하게 됩니다.
+
+<Cards>
+  <Cards.Card title="session" href="/ko/api/session" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

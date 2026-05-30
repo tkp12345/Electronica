@@ -1,0 +1,51 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ShortcutDetails"
+  subtitle="Describes a Windows shortcut (.lnk) file"
+  badge="API · Structure"
+/>
+
+`ShortcutDetails` describes the contents of a Windows shortcut file. It is used by `shell.readShortcutLink()` (which returns it) and `shell.writeShortcutLink()` (which accepts it) to read or create `.lnk` files. It is Windows-only.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `target` | `string` | The target to launch from this shortcut. |
+| `cwd` | `string` | _(optional)_ The working directory. Default is empty. |
+| `args` | `string` | _(optional)_ The arguments to be applied to `target` when launching from this shortcut. |
+| `description` | `string` | _(optional)_ The description of the shortcut. Default is empty. |
+| `icon` | `string` | _(optional)_ The path to the icon, can be a DLL or EXE. `icon` and `iconIndex` have to be set together. |
+| `iconIndex` | `number` | _(optional)_ The resource ID of icon when `icon` is a DLL or EXE. Default is 0. |
+| `appUserModelId` | `string` | _(optional)_ The Application User Model ID. Default is empty. |
+| `toastActivatorClsid` | `string` | _(optional)_ The Application Toast Activator CLSID. Needed for participating in Action Center. |
+
+```js
+const { shell } = require('electron')
+
+shell.writeShortcutLink('C:\\Users\\me\\Desktop\\MyApp.lnk', {
+  target: 'C:\\Program Files\\MyApp\\MyApp.exe',
+  args: '--start-minimized',
+  description: 'Launch MyApp',
+  icon: 'C:\\Program Files\\MyApp\\MyApp.exe',
+  iconIndex: 0
+})
+```
+
+<EasyNote>
+Think of it as the "Properties" panel of a Windows desktop shortcut, written out as a plain object.
+</EasyNote>
+
+## In plain words
+
+When you create a desktop shortcut on Windows, it stores a few details: what program it points to, what arguments to pass, which icon to show, and so on. `ShortcutDetails` is just that information as a JavaScript object. You'd use it to programmatically create a shortcut for your app, or to read an existing `.lnk` file and inspect where it points.
+
+<Cards>
+  <Cards.Card title="shell" href="/en/api/shell" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

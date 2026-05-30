@@ -1,0 +1,46 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="UploadFile"
+  subtitle="Describes a file to attach to a POST request body"
+  badge="API · Structure"
+/>
+
+`UploadFile` describes a single file that should be uploaded as part of a network request body. It is used in the `uploadData` field of the options you pass to `net.request` (and `ClientRequest`) when you want to stream a file from disk instead of building the body in memory.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `type` | `string` | The data type. Must be set to `'file'`. |
+| `filePath` | `string` | Path of the file to be uploaded. |
+| `offset` | `Integer` | _(optional)_ Byte offset to start reading from. Defaults to `0`. |
+| `length` | `Integer` | _(optional)_ Number of bytes to read from `offset`. Defaults to `0` (the whole file). |
+| `modificationTime` | `Double` | _(optional)_ Last modification time in seconds since the UNIX epoch. Defaults to `0`. |
+
+```js
+const uploadFile = {
+  type: 'file',
+  filePath: '/Users/me/photo.png',
+  offset: 0,
+  length: 0,
+  modificationTime: Date.now() / 1000
+}
+```
+
+<EasyNote>
+It's like a shipping label taped to a file: it tells the request "send this file from here, starting at this spot."
+</EasyNote>
+
+## In plain words
+
+When you need to upload a file over the network, you don't want to load the entire thing into memory first. `UploadFile` lets you point at a file on disk by its path, and Electron streams it for you. You can even upload just a slice of the file using `offset` and `length` if you only need part of it.
+
+<Cards>
+  <Cards.Card title="net" href="/en/api/net" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

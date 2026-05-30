@@ -1,0 +1,50 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ProcessMetric"
+  subtitle="Electron 프로세스 하나의 리소스 사용량 통계"
+  badge="API · Structure"
+/>
+
+`ProcessMetric`은 Electron 앱 안에서 실행 중인 프로세스 하나와, 그 프로세스가 사용 중인 CPU·메모리 정보를 담은 일반 객체입니다. `app.getAppMetrics()`를 호출하면 이 객체들의 배열을 받을 수 있습니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `pid` | `Integer` | 프로세스의 ID입니다. |
+| `type` | `string` | 프로세스 종류입니다. `Browser`, `Tab`, `Utility`, `Zygote`, `Sandbox helper`, `GPU`, `Pepper Plugin`, `Pepper Plugin Broker`, `Unknown` 중 하나입니다. |
+| `serviceName` | `string` | _(선택)_ 프로세스의 비현지화(non-localized) 이름입니다. |
+| `name` | `string` | _(선택)_ 프로세스의 이름입니다. `Utility`의 예로는 `Audio Service`, `Content Decryption Module Service` 등이 있습니다. |
+| `cpu` | `CPUUsage` | 프로세스의 CPU 사용량입니다. `percentCPUUsage`(number), `cumulativeCPUUsage`(number, _선택_), `idleWakeupsPerSecond`(number)를 가진 중첩 객체입니다. |
+| `creationTime` | `number` | 이 프로세스의 생성 시각으로, epoch 이후 경과한 밀리초입니다. pid는 재사용될 수 있으므로, 시간이 지나도 프로세스를 고유하게 식별하는 데 도움이 됩니다. |
+| `memory` | `MemoryInfo` | 프로세스의 메모리 정보입니다(킬로바이트 단위). `workingSetSize`(Integer), `peakWorkingSetSize`(Integer), `privateBytes`(Integer, _선택_, _Windows_)를 가진 중첩 객체입니다. |
+| `sandboxed` | `boolean` | _(선택)_ _(macOS, Windows)_ 프로세스가 OS 수준에서 샌드박스 처리되었는지 여부입니다. |
+| `integrityLevel` | `string` | _(선택)_ _(Windows)_ 프로세스의 무결성 수준입니다. `untrusted`, `low`, `medium`, `high`, `unknown` 중 하나입니다. |
+
+```js
+const { app } = require('electron')
+
+// 모든 프로세스와 각 프로세스의 CPU 사용량을 나열합니다
+for (const metric of app.getAppMetrics()) {
+  // { pid: 1234, type: 'GPU', cpu: { percentCPUUsage: 1.2, ... }, ... }
+  console.error(metric.pid, metric.type, metric.cpu.percentCPUUsage)
+}
+```
+
+<EasyNote>
+컴퓨터 작업 관리자(Task Manager)의 한 줄이라고 생각하면 쉽습니다. 프로세스 하나의 이름, CPU 수치, 메모리 수치가 모두 한곳에 모여 있는 셈입니다.
+</EasyNote>
+
+## 쉽게 말하면
+
+앱이 내부에서 실제로 무슨 일을 하는지 들여다보고 싶을 때 `ProcessMetric`을 사용합니다. Electron 앱은 하나의 프로세스가 아니라 여러 프로세스(메인 브라우저 프로세스, GPU 프로세스, 각 탭, 보조 유틸리티 등)로 이루어져 있습니다. `app.getAppMetrics()`는 그 각각에 대해 `ProcessMetric` 하나씩을 돌려줍니다. 이를 시간에 따라 기록해 두면 어떤 프로세스가 CPU를 많이 잡아먹거나 메모리를 누수하는지 찾아낼 수 있습니다.
+
+<Cards>
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+  <Cards.Card title="cpu-usage" href="/ko/api/structures/cpu-usage" arrow />
+</Cards>

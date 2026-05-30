@@ -1,0 +1,44 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="RenderProcessGoneDetails"
+  subtitle="렌더 프로세스가 왜 사라졌고, 어떻게 종료되었는지"
+  badge="API · Structure"
+/>
+
+`RenderProcessGoneDetails`는 렌더러 프로세스가 예기치 않게 사라졌을 때 무슨 일이 있었는지를 설명합니다. Electron은 `WebContents`의 `render-process-gone` 이벤트(그리고 `app` 모듈의 `render-process-gone` 이벤트)에서 이 객체를 전달해 주며, 이를 통해 크래시에 대응하고 다시 불러올지 여부를 결정할 수 있습니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `reason` | `string` | 렌더 프로세스가 사라진 이유입니다. 다음 중 하나입니다: `clean-exit`, `abnormal-exit`, `killed`, `crashed`, `oom`, `launch-failed`, `integrity-failure`, `memory-eviction`. |
+| `exitCode` | `Integer` | 프로세스의 종료 코드입니다. `reason`이 `launch-failed`인 경우에는 플랫폼별 실행 실패 오류 코드가 들어갑니다. |
+
+```js
+const { app } = require('electron')
+
+app.on('render-process-gone', (event, webContents, details) => {
+  console.log(details.reason, details.exitCode)
+  if (details.reason === 'crashed' || details.reason === 'oom') {
+    webContents.reload()
+  }
+})
+```
+
+<EasyNote>
+어떤 직원이 갑자기 자리를 비운 이유를 적은 의사 소견서라고 생각해 보세요. 그 원인(아파서, 집에 보내져서, 기력이 다해서)과 자세한 내용을 가리키는 코드 번호가 적혀 있는 셈입니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+가끔은 화면을 그리는 앱의 한 부분이 그냥 죽어 버리기도 합니다. 크래시가 나거나, 메모리가 부족하거나, 시스템에 의해 강제 종료되는 경우죠. `RenderProcessGoneDetails`는 그 이유를 알려 주는 짧은 보고서입니다. 이 정보를 활용해 문제를 기록하거나, 사용자에게 친절한 "문제가 발생했어요" 화면을 보여 주거나, 페이지를 자동으로 다시 불러와 사용자가 계속 작업할 수 있도록 할 수 있습니다.
+
+<Cards>
+  <Cards.Card title="WebContents" href="/ko/api/web-contents" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

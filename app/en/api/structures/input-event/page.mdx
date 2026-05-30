@@ -1,0 +1,40 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="InputEvent"
+  subtitle="The base shape shared by every keyboard, mouse, and touch event Electron sends you."
+  badge="API · Structure"
+/>
+
+`InputEvent` is the common base object behind Electron's lower-level input events. You'll see it when you send synthetic input with `webContents.sendInputEvent()` and as the foundation that more specific events (like `MouseInputEvent` or `KeyboardInputEvent`) extend.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `type` | `string` | The event category, such as `mouseDown`, `mouseUp`, `mouseMove`, `mouseEnter`, `mouseLeave`, `contextMenu`, `mouseWheel`, `rawKeyDown`, `keyDown`, `keyUp`, `char`, gesture types (`gestureScrollBegin`, `gesturePinchUpdate`, ...), touch events (`touchStart`, `touchMove`, ...), and pointer events (`pointerDown`, `pointerUp`, ...). |
+| `modifiers` | `string[]` | _(optional)_ Which modifier keys/buttons were held during the event. Values include `shift`, `control`, `ctrl`, `alt`, `meta`, `command`, `cmd`, `iskeypad`, `isautorepeat`, `leftbuttondown`, `middlebuttondown`, `rightbuttondown`, `capslock`, `numlock`, `left`, and `right`. |
+
+```js
+const inputEvent = {
+  type: 'keyDown',
+  modifiers: ['shift', 'ctrl'],
+}
+```
+
+<EasyNote>
+Think of `InputEvent` as the envelope every input message arrives in: it always says what kind of event it is, and optionally notes which keys were being held at the time.
+</EasyNote>
+
+## In plain words
+
+Most of the time you won't build an `InputEvent` by hand. Instead, the keyboard/mouse/touch events Electron hands you all start from this shape, so they always carry a `type` and may carry a `modifiers` list. When you do want to simulate input yourself, you fill in these fields and pass the object to `webContents.sendInputEvent()` to make the page behave as if a real key was pressed or a real click happened.
+
+<Cards>
+  <Cards.Card title="web-contents" href="/en/api/web-contents" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

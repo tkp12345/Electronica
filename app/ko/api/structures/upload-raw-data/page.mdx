@@ -1,0 +1,40 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="UploadRawData"
+  subtitle="요청 본문으로 보낼 메모리상의 원시 바이트 묶음"
+  badge="API · Structure"
+/>
+
+`UploadRawData` 객체는 업로드할 원시 바이너리 데이터 한 조각을 나타냅니다. 요청의 `uploadData` 배열에 들어가는 항목 중 하나로 사용되며, 예를 들어 `protocol` 핸들러에서 직접 만드는 `request` 객체나 가로챈 요청에서 읽어 오는 데이터에 등장합니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `type` | `string` | 항상 리터럴 값 `'rawData'`입니다. 이 항목이 (파일이나 blob이 아닌) 원시 바이트임을 나타냅니다. |
+| `bytes` | `Buffer` | 업로드할 원시 바이너리 데이터입니다. |
+
+```js
+const uploadData = {
+  type: 'rawData',
+  bytes: Buffer.from('hello world')
+}
+```
+
+<EasyNote>
+UploadRawData는 실제 바이트가 담긴 봉투와 같습니다. "이건 원시 데이터예요"라고 표시하고 그 내용물을 그대로 전달할 뿐입니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+서버로 데이터를 보낼 때, 본문은 파일에서 올 수도, blob에서 올 수도, 아니면 이미 메모리에 가지고 있는 바이트에서 올 수도 있습니다. `UploadRawData`는 바로 그 마지막 경우입니다. 자신이 원시 데이터임을 표시하고 실제 바이트 `Buffer`를 담아 두는 작은 객체이지요. `protocol` 모듈을 통해 요청 본문을 살펴보거나 만들 때 마주치게 됩니다.
+
+<Cards>
+  <Cards.Card title="protocol" href="/ko/api/protocol" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

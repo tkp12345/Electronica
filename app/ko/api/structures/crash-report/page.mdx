@@ -1,0 +1,42 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="CrashReport"
+  subtitle="크래시 서버에 업로드된 하나의 크래시 기록"
+  badge="API · Structure"
+/>
+
+`CrashReport`는 `crashReporter` 모듈이 수집한 하나의 크래시를 나타냅니다. 이 객체는 `crashReporter.getLastCrashReport()`와 `crashReporter.getUploadedReports()`에서 받을 수 있습니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `date` | `Date` | 크래시가 발생한 시각입니다. |
+| `id` | `string` | 이 크래시 리포트의 고유 식별자입니다. |
+
+```js
+const { crashReporter } = require('electron')
+
+const last = crashReporter.getLastCrashReport()
+if (last) {
+  console.log(last.id, last.date)
+}
+```
+
+<EasyNote>
+사고 기록 장부의 한 줄이라고 생각하면 됩니다. 각 줄에는 언제 문제가 생겼는지와, 나중에 찾아볼 수 있는 사건 번호만 적혀 있는 셈입니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+앱이 크래시되고 리포트가 전송되면, Electron은 그에 대한 작은 영수증을 남겨 둡니다. `CrashReport`가 바로 그 영수증으로, 크래시가 일어난 시각과 고유 ID를 알려 줍니다. 사용자에게 크래시 이력을 보여 주거나, 로컬에 남은 크래시를 크래시 서버에 있는 전체 리포트와 연결할 때 사용할 수 있습니다.
+
+<Cards>
+  <Cards.Card title="crashReporter" href="/ko/api/crash-reporter" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

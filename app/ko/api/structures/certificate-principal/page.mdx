@@ -1,0 +1,49 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="CertificatePrincipal"
+  subtitle="TLS 인증서에 명시된 당사자의 신원 정보"
+  badge="API · Structure"
+/>
+
+`CertificatePrincipal`은 인증서가 누구에 관한 것인지를 설명합니다. [`Certificate`](/ko/api/structures/certificate) 객체의 `issuer`(발급자)와 `subject`(대상) 필드로 나타나며, 이 객체는 `session` 모듈의 `certificate-error`, `select-client-certificate` 같은 이벤트에서 전달받습니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `commonName` | `string` | 주체의 일반 이름(CN)입니다. 예를 들어 식별되는 도메인이나 사람을 가리킵니다. |
+| `organizations` | `string[]` | 주체가 속한 조직 이름(O) 목록입니다. |
+| `organizationUnits` | `string[]` | 조직 내 부서 이름(OU) 목록입니다. |
+| `locality` | `string` | 지역으로, 보통 도시를 나타냅니다. |
+| `state` | `string` | 주 또는 도(province)입니다. |
+| `country` | `string` | 국가 또는 지역입니다. |
+
+```js
+const subject = {
+  commonName: 'example.com',
+  organizations: ['Example Inc.'],
+  organizationUnits: ['Engineering'],
+  locality: 'San Francisco',
+  state: 'California',
+  country: 'US',
+}
+```
+
+<EasyNote>
+신분증에 적힌 "인적사항 칸"이라고 생각하면 됩니다. 이 인증서가 정확히 누구의 것이고 어디에 있는지를 항목별로 적어 둔 것이죠.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+앱이 웹사이트의 TLS 인증서를 살펴볼 때, 그 인증서를 누가 발급했고 누구에게 발급했는지 알고 싶을 때가 많습니다. `CertificatePrincipal`은 바로 그 "누구"에 대한 답으로, 이름·조직·위치 같은 깔끔한 필드로 나뉘어 있습니다. 인증서 상세 정보를 표시하거나 연결을 신뢰할지 판단할 때 이 값을 읽게 됩니다.
+
+<Cards>
+  <Cards.Card title="Certificate" href="/ko/api/structures/certificate" arrow />
+  <Cards.Card title="session" href="/ko/api/session" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

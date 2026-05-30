@@ -1,0 +1,47 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="Certificate"
+  subtitle="Describes an X.509 security certificate"
+  badge="API · Structure"
+/>
+
+The `Certificate` object describes an X.509 security certificate. It is passed to handlers such as the `app` `certificate-error` event and `session.setCertificateVerifyProc`, and is returned when you need to inspect the identity behind a secure (HTTPS) connection.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `data` | `string` | PEM encoded data. |
+| `issuer` | `CertificatePrincipal` | The entity that issued the certificate (object with `commonName`, `organizations`, `organizationUnits`, `locality`, `state`, `country`). |
+| `issuerName` | `string` | Issuer's Common Name. |
+| `issuerCert` | `Certificate` | _(optional)_ Issuer certificate (if not self-signed). |
+| `subject` | `CertificatePrincipal` | The entity to which the certificate is issued (same shape as `issuer`). |
+| `subjectName` | `string` | Subject's Common Name. |
+| `serialNumber` | `string` | Hex value represented string. |
+| `validStart` | `number` | Start date of the certificate being valid in seconds. |
+| `validExpiry` | `number` | End date of the certificate being valid in seconds. |
+| `fingerprint` | `string` | Fingerprint of the certificate. |
+
+```js
+app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
+  console.error(`Certificate for ${certificate.subjectName} from ${certificate.issuerName} failed: ${error}`)
+})
+```
+
+<EasyNote>
+Think of it like the ID card a website hands over to prove it really is who it claims to be — including who issued the card and when it expires.
+</EasyNote>
+
+## In plain words
+
+Every time your app talks to a secure website, that site presents a certificate to prove its identity. The `Certificate` object is Electron's read-only snapshot of that ID card: you'd use it to check who a site is, who vouched for it, and whether the certificate is still valid — most often inside a `certificate-error` handler when something looks off.
+
+<Cards>
+  <Cards.Card title="session" href="/en/api/session" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

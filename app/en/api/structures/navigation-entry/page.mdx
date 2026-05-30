@@ -1,0 +1,43 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="NavigationEntry"
+  subtitle="A single saved spot in a web page's navigation history"
+  badge="API · Structure"
+/>
+
+A `NavigationEntry` describes one entry in a `WebContents`'s navigation history — basically one page you visited. You get these objects back from history methods like `webContents.navigationHistory.getEntryAtIndex()` and `getAllEntries()`.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `url` | `string` | The URL of the page for this history entry. |
+| `title` | `string` | The page title that was shown for this entry. |
+| `pageState` | `string` | _(optional)_ A base64-encoded string holding Chromium page state such as the current scroll position or form values. Chromium commits it before a navigation event and on a regular interval. |
+
+```js
+// A NavigationEntry typically looks like:
+const entry = {
+  url: 'https://example.com/page',
+  title: 'Example Page',
+  pageState: 'AAAAAA...' // base64 string, optional
+}
+```
+
+<EasyNote>
+Think of a NavigationEntry as one bookmark in your browser's "back/forward" history — it remembers where you were and even how far you'd scrolled.
+</EasyNote>
+
+## In plain words
+
+When you want to read or restore a window's browsing history — like building custom back/forward buttons or saving a session to reopen later — each visited page comes to you as a `NavigationEntry`. The `url` and `title` tell you what the page was, and `pageState` quietly preserves little details like scroll position so a restored page feels exactly where you left it.
+
+<Cards>
+  <Cards.Card title="web-contents" href="/en/api/web-contents" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

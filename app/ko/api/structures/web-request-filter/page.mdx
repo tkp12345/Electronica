@@ -1,0 +1,45 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="WebRequestFilter"
+  subtitle="어떤 네트워크 요청을 감지할지 정하는 URL과 타입 패턴 모음"
+  badge="API · Structure"
+/>
+
+`WebRequestFilter` 객체는 요청 가로채기(interceptor)가 어떤 웹 요청에 반응할지를 설명합니다. `session`의 `webRequest` 리스너 메서드(예: `webRequest.onBeforeRequest`)의 첫 번째 인자로 전달하면, 콜백이 원하는 요청에 대해서만 실행됩니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `urls` | `string[]` | 매칭할 요청을 포함시키는 데 사용되는 URL 패턴 배열입니다. 모든 URL을 매칭하려면 `<all_urls>` 패턴을 사용하세요. |
+| `excludeUrls` | `string[]` | _(선택)_ 매칭되는 요청을 제외시키는 데 사용되는 URL 패턴 배열입니다. |
+| `types` | `string[]` | _(선택)_ 요청을 걸러내는 데 사용되는 타입 배열입니다. 각 항목은 `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` 중 하나입니다. 생략하면 모든 요청 타입이 매칭됩니다. |
+
+```js
+const filter = {
+  urls: ['https://*.github.com/*', '*://electron.github.io/*'],
+  types: ['image', 'script']
+}
+
+session.defaultSession.webRequest.onBeforeRequest(filter, (details, callback) => {
+  callback({ cancel: false })
+})
+```
+
+<EasyNote>
+WebRequestFilter는 출입문 앞의 방문자 명단과 같습니다. 적어 둔 주소(그리고 트래픽 종류)만 여러분의 관심을 받고, 나머지는 조용히 지나갑니다.
+</EasyNote>
+
+## 쉽게 말하면
+
+네트워크 트래픽을 관찰하거나 수정하고 싶을 때, 모든 요청을 다 듣는 것은 시끄럽고 느립니다. `WebRequestFilter`를 쓰면 범위를 좁힐 수 있습니다. `urls`는 포함할 주소를, `excludeUrls`는 예외로 뺄 주소를, `types`는 특정 종류의 리소스(이미지만, 스크립트만 등)로 제한합니다. 그러면 `webRequest` 콜백은 조건에 맞는 요청에 대해서만 실행됩니다.
+
+<Cards>
+  <Cards.Card title="session" href="/ko/api/session" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

@@ -1,0 +1,62 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="OffscreenSharedTexture"
+  subtitle="A GPU texture handed to you during accelerated offscreen rendering"
+  badge="API · Structure"
+/>
+
+The `OffscreenSharedTexture` object carries the GPU texture and its metadata for a single offscreen-rendered frame. It is passed to the [`webContents`](/en/api/web-contents) `'paint'` event when offscreen rendering is enabled with shared texture mode (`useSharedTexture: true`).
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `textureInfo` | `Object` | Container for the frame's texture metadata. |
+| `textureInfo.widgetType` | `string` | Widget classification. Can be `popup` or `frame`. |
+| `textureInfo.pixelFormat` | `string` | Pixel format of the texture. Can be `rgba`, `bgra`, or `rgbaf16`. |
+| `textureInfo.codedSize` | `Size` | The full dimensions of the video frame (`width`, `height`). |
+| `textureInfo.colorSpace` | `ColorSpace` | The color space of the video frame. |
+| `textureInfo.visibleRect` | `Rectangle` | The subsection of the coded size that should be displayed (`x`, `y`, `width`, `height`). |
+| `textureInfo.contentRect` | `Rectangle` | The region the capturer populated; matches the dirty area in offscreen rendering. |
+| `textureInfo.metadata` | `Object` | Additional per-frame metadata. |
+| `textureInfo.metadata.captureUpdateRect` | `Rectangle` | _(optional)_ The updated (dirty) area of the frame. |
+| `textureInfo.metadata.regionCaptureRect` | `Rectangle` | _(optional)_ The frame content's origin when region capture is active. |
+| `textureInfo.metadata.sourceSize` | `Rectangle` | _(optional)_ The full dimensions of the source frame. |
+| `textureInfo.metadata.frameCount` | `number` | _(optional)_ An incrementing frame counter; may have gaps from dropped frames. |
+| `textureInfo.timestamp` | `number` | Elapsed microseconds since capture started. |
+| `textureInfo.handle` | `SharedTextureHandle` | The platform handle to the shared texture data. |
+| `release` | `Function` | Releases the texture and frees its resources. You **must** call this, because only a limited number of textures can exist at once. |
+
+```js
+const { BrowserWindow } = require('electron')
+
+const win = new BrowserWindow({
+  webPreferences: { offscreen: { useSharedTexture: true } }
+})
+
+win.webContents.on('paint', (event, dirty, image) => {
+  const tex = event.texture
+  if (tex) {
+    // Hand tex.textureInfo.handle to your GPU pipeline, then release it.
+    tex.release()
+  }
+})
+```
+
+<EasyNote>
+Think of it as a borrowed canvas straight from the graphics card: you can paint with it, but you have to hand it back the moment you're done.
+</EasyNote>
+
+## In plain words
+
+When you render a window offscreen with the GPU (instead of copying pixels into memory), Electron gives you this object on every frame. Inside is a handle to the actual GPU texture plus details about its size, format, and color. You'd use it to feed Electron's output directly into another GPU system, like a game engine or video pipeline, without a slow copy. The one rule: always call `release()` when finished, or you'll quickly run out of textures.
+
+<Cards>
+  <Cards.Card title="webContents" href="/en/api/web-contents" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

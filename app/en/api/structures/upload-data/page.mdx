@@ -1,0 +1,48 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="UploadData"
+  subtitle="One chunk of data uploaded as part of an intercepted request"
+  badge="API · Structure"
+/>
+
+The `UploadData` object describes a single piece of data being uploaded with a request. You receive it inside the `uploadData` array of a request when you intercept or register a protocol handler with the `protocol` module (for example in `protocol.handle()` or `protocol.registerStreamProtocol()`).
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `bytes` | `Buffer` | The content being sent. |
+| `file` | `string` | _(optional)_ Path of the file being uploaded. |
+| `blobUUID` | `string` | _(optional)_ UUID of blob data. Use the `ses.getBlobData()` method to retrieve the data. |
+
+```js
+const { protocol } = require('electron')
+
+protocol.handle('my-scheme', (request) => {
+  const upload = request.uploadData // UploadData[] | undefined
+  if (upload) {
+    for (const part of upload) {
+      console.log(part.bytes.toString())
+    }
+  }
+  return new Response('ok')
+})
+```
+
+<EasyNote>
+An `UploadData` is like one item placed on a delivery conveyor belt: it's either the actual parcel of bytes, a note pointing to a file on disk, or a ticket (a blob UUID) you redeem later to fetch the real contents.
+</EasyNote>
+
+## In plain words
+
+When your app intercepts a request that is uploading something — say a form submission or a file POST — Electron hands you the upload split into pieces, and each piece is an `UploadData`. Most of the time you'll just read its `bytes`. If the data is a file or a blob, you'll see a `file` path or a `blobUUID` instead, and you can fetch the real bytes from there. You'd use this whenever you build a custom protocol and need to see what the page is sending.
+
+<Cards>
+  <Cards.Card title="protocol" href="/en/api/protocol" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

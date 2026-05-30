@@ -1,0 +1,60 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="MouseWheelInputEvent"
+  subtitle="Describes a synthetic mouse wheel (scroll) event you can send into a page"
+  badge="API · Structure"
+/>
+
+`MouseWheelInputEvent` is the object you pass to `webContents.sendInputEvent()` when you want to simulate scrolling inside a page. It extends `MouseInputEvent` (which extends `InputEvent`), so it carries pointer position and modifier fields plus the wheel-specific deltas.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `type` | `string` | The type of the event, must be `mouseWheel` for a wheel event. |
+| `modifiers` | `string[]` | _(optional)_ Event modifiers held during the event, e.g. `shift`, `control`, `alt`, `meta`, `command`, plus hardware/state flags. |
+| `x` | `Integer` | The horizontal coordinate of the pointer, in the window's content area. |
+| `y` | `Integer` | The vertical coordinate of the pointer, in the window's content area. |
+| `button` | `string` | _(optional)_ The pressed button, can be `left`, `middle`, or `right`. |
+| `globalX` | `Integer` | _(optional)_ The global (screen) horizontal coordinate. |
+| `globalY` | `Integer` | _(optional)_ The global (screen) vertical coordinate. |
+| `movementX` | `Integer` | _(optional)_ Horizontal displacement since the last mouse event. |
+| `movementY` | `Integer` | _(optional)_ Vertical displacement since the last mouse event. |
+| `clickCount` | `Integer` | _(optional)_ Number of consecutive clicks for this event. |
+| `deltaX` | `Integer` | _(optional)_ The amount scrolled horizontally. |
+| `deltaY` | `Integer` | _(optional)_ The amount scrolled vertically. |
+| `wheelTicksX` | `Integer` | _(optional)_ The number of horizontal wheel ticks. |
+| `wheelTicksY` | `Integer` | _(optional)_ The number of vertical wheel ticks. |
+| `accelerationRatioX` | `Integer` | _(optional)_ The horizontal scroll acceleration ratio. |
+| `accelerationRatioY` | `Integer` | _(optional)_ The vertical scroll acceleration ratio. |
+| `hasPreciseScrollingDeltas` | `boolean` | _(optional)_ Whether the deltas come from a precise input device (e.g. a trackpad). |
+| `canScroll` | `boolean` | _(optional)_ Whether the event can trigger scrolling. |
+
+```js
+// Scroll the page down by ~120px at point (200, 200)
+webContents.sendInputEvent({
+  type: 'mouseWheel',
+  x: 200,
+  y: 200,
+  deltaY: -120,
+  canScroll: true,
+})
+```
+
+<EasyNote>
+Think of it as a note that says "pretend the user spun the scroll wheel right here, by this much" — and hands it to the page.
+</EasyNote>
+
+## In plain words
+
+You'd use this object when you want your app to scroll a page on its own, without a real mouse — for automated tests, kiosk demos, or accessibility helpers. You tell Electron where the pointer is (`x`, `y`) and how far to scroll (`deltaY` for up/down, `deltaX` for sideways), then send it through `webContents.sendInputEvent()`. The extra fields let you fine-tune the feel, like mimicking a trackpad's smooth, precise scrolling.
+
+<Cards>
+  <Cards.Card title="webContents" href="/en/api/web-contents" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

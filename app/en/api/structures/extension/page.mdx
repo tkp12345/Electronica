@@ -1,0 +1,47 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="Extension"
+  subtitle="Describes a loaded Chrome extension and its metadata"
+  badge="API · Structure"
+/>
+
+The `Extension` object represents an extension that has been loaded into a `session`. It is returned by methods such as `ses.loadExtension()`, `ses.getExtension()`, and `ses.getAllExtensions()`.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `string` | The unique identifier for the extension. |
+| `manifest` | `unknown` | A copy of the extension's parsed `manifest.json` data (a Chrome extension manifest object). |
+| `name` | `string` | The display name of the extension. |
+| `path` | `string` | The extension's base file path on disk. |
+| `version` | `string` | The version number of the extension. |
+| `url` | `string` | The extension's `chrome-extension://` base URL. |
+
+```js
+const { session } = require('electron')
+
+const ext = await session.defaultSession.loadExtension('/path/to/extension')
+console.info(ext.id)       // e.g. "ablahblahblahblahblahblahblahbla"
+console.info(ext.name)     // e.g. "My Extension"
+console.info(ext.version)  // e.g. "1.0.0"
+console.info(ext.url)      // e.g. "chrome-extension://ablah.../"
+```
+
+<EasyNote>
+Think of it as the ID badge for an installed browser extension: it tells you the extension's name, version, where it lives, and how to reach its pages.
+</EasyNote>
+
+## In plain words
+
+When you load a Chrome-style extension into Electron, you get back this little record describing it. You'd use it to remember the extension's `id` (so you can remove it later), to read its `manifest` for capabilities, or to build a `chrome-extension://` URL pointing at one of its pages. It's read-only information about something already loaded.
+
+<Cards>
+  <Cards.Card title="session" href="/en/api/session" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

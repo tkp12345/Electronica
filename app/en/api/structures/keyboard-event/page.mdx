@@ -1,0 +1,47 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="KeyboardEvent"
+  subtitle="A small object describing which modifier keys were held when an accelerator fired."
+  badge="API · Structure"
+/>
+
+`KeyboardEvent` is the second argument Electron passes to a `MenuItem`'s `click` callback, and it's also handed to `globalShortcut` handlers. It tells you whether the action was triggered by a keyboard accelerator and which modifier keys were down at that moment.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `ctrlKey` | `boolean` | _(optional)_ Whether the Control key was used in an accelerator to trigger the event. |
+| `metaKey` | `boolean` | _(optional)_ Whether a meta key (Command on macOS, Windows key on Windows) was used in an accelerator to trigger the event. |
+| `shiftKey` | `boolean` | _(optional)_ Whether a Shift key was used in an accelerator to trigger the event. |
+| `altKey` | `boolean` | _(optional)_ Whether an Alt key was used in an accelerator to trigger the event. |
+| `triggeredByAccelerator` | `boolean` | _(optional)_ Whether an accelerator was used to trigger the event, as opposed to another user gesture like a mouse click. |
+
+```js
+const menuItem = {
+  label: 'Reload',
+  click: (item, window, event) => {
+    if (event.shiftKey) {
+      // Hard reload when Shift was held
+    }
+  },
+}
+```
+
+<EasyNote>
+Think of `KeyboardEvent` as a sticky note attached to a click that says "by the way, these keys were being held down."
+</EasyNote>
+
+## In plain words
+
+When a user activates a menu item or a global shortcut, you sometimes want to behave differently depending on which keys they were holding, like Shift to "force" an action. `KeyboardEvent` gives you exactly that: a few true/false flags for the modifier keys, plus a flag telling you whether a keyboard shortcut (rather than a mouse) caused it. You never create this object yourself; you just read it inside your callbacks.
+
+<Cards>
+  <Cards.Card title="menu-item" href="/en/api/menu-item" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

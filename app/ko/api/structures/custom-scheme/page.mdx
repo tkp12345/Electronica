@@ -1,0 +1,53 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="CustomScheme"
+  subtitle="커스텀 URL 스킴과 그 스킴에 부여할 권한을 정의합니다"
+  badge="API · Structure"
+/>
+
+`CustomScheme`은 하나의 커스텀 URL 스킴(예: `myapp://`)과 그 스킴에 허용할 특별한 권한을 함께 정의합니다. 이 객체들의 배열을 `protocol.registerSchemesAsPrivileged()`에 전달해서 사용합니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `scheme` | `string` | 등록할 커스텀 스킴입니다. 예: `"myapp"`. |
+| `privileges` | `Object` | _(선택)_ 스킴에 특별한 권한을 부여하는 플래그 모음입니다. |
+| `privileges.standard` | `boolean` | _(선택)_ 스킴을 표준 스킴(`http`처럼)으로 취급합니다. 상대 경로, 출처(origin) 등이 활성화됩니다. 기본값 `false`. |
+| `privileges.secure` | `boolean` | _(선택)_ 스킴을 보안 스킴(HTTPS처럼)으로 표시합니다. 기본값 `false`. |
+| `privileges.bypassCSP` | `boolean` | _(선택)_ 스킴이 콘텐츠 보안 정책(CSP)을 우회하도록 허용합니다. 기본값 `false`. |
+| `privileges.allowServiceWorkers` | `boolean` | _(선택)_ 이 스킴에서 서비스 워커 등록을 허용합니다. 기본값 `false`. |
+| `privileges.supportFetchAPI` | `boolean` | _(선택)_ 이 스킴에서 Fetch API를 활성화합니다. 기본값 `false`. |
+| `privileges.corsEnabled` | `boolean` | _(선택)_ 이 스킴에서 CORS를 활성화합니다. 기본값 `false`. |
+| `privileges.stream` | `boolean` | _(선택)_ 응답 스트리밍을 허용합니다(예: 미디어 재생). 기본값 `false`. |
+| `privileges.codeCache` | `boolean` | _(선택)_ 스킴에 대해 V8 코드 캐시를 활성화합니다. `standard`가 `true`일 때만 동작합니다. 기본값 `false`. |
+| `privileges.allowExtensions` | `boolean` | _(선택)_ 이 스킴으로 제공되는 페이지에서 크롬 확장 프로그램이 동작하도록 허용합니다. 기본값 `false`. |
+
+```js
+const { protocol } = require('electron')
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'myapp',
+    privileges: { standard: true, secure: true, supportFetchAPI: true }
+  }
+])
+```
+
+<EasyNote>
+내 전용 URL 스킴에 발급하는 VIP 출입증이라고 생각하시면 됩니다. 스킴 이름을 적고, 어떤 권한을 허용할지 체크박스에 표시하는 것이죠.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+앱이 `myapp://` 같은 커스텀 주소로 콘텐츠를 제공하면, 브라우저 엔진은 기본적으로 이를 신뢰하지 않는 것으로 취급합니다. `CustomScheme`을 사용하면 Electron에게 "이 스킴은 내 것이고 안전하다"고 알려줄 수 있어서, `fetch`, 서비스 워커, 보안 컨텍스트 API, CORS 같은 기능이 일반 `https://` 사이트에서처럼 동작하게 됩니다. 웹이 아니라 커스텀 프로토콜로 UI나 데이터를 불러오는 앱을 만들 때 사용하시면 됩니다.
+
+<Cards>
+  <Cards.Card title="protocol" href="/ko/api/protocol" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

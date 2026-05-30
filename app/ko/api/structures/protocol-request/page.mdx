@@ -1,0 +1,46 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ProtocolRequest"
+  subtitle="커스텀 프로토콜 핸들러에 전달되는 하나의 네트워크 요청"
+  badge="API · Structure"
+/>
+
+`ProtocolRequest` 객체는 커스텀 프로토콜 핸들러가 처리해야 할 하나의 들어온 요청을 설명합니다. Electron은 `protocol.handle()`(그리고 이전 방식인 `protocol.registerXxxProtocol` / `interceptXxxProtocol`)로 등록한 콜백의 첫 번째 인자로 이 객체를 전달합니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `url` | `string` | 요청의 대상 주소입니다. |
+| `referrer` | `string` | 이 요청을 발생시킨 페이지의 URL입니다. |
+| `method` | `string` | HTTP 메서드입니다. 예: `GET`, `POST`. |
+| `uploadData` | `UploadData[]` | _(선택)_ 요청 본문으로, `POST`처럼 본문을 담는 메서드에서 존재합니다. 각 항목은 `UploadData` 객체입니다. |
+| `headers` | `Record<string, string>` | 요청의 HTTP 헤더로, 키-값 쌍으로 표현됩니다. |
+
+```js
+const { protocol, net } = require('electron')
+
+protocol.handle('app', (request) => {
+  // request 는 ProtocolRequest 형태의 객체입니다
+  const { url, method, headers } = request
+  return net.fetch('file:///path/to/app' + new URL(url).pathname)
+})
+```
+
+<EasyNote>
+ProtocolRequest는 카운터에서 받는 주문서와 같습니다. 무엇을 요청했는지(`url`), 누가 보냈는지(`referrer`), 어떻게(`method`), 함께 첨부된 내용(`uploadData`), 그리고 추가 지시 사항(`headers`)이 적혀 있습니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+`app://`나 `myapp://`처럼 자신만의 URL 스킴을 만들면, Electron은 그 URL에 어떻게 응답할지 알아야 합니다. 누군가 그런 URL을 요청할 때마다 Electron은 무엇이 요청되었는지 정확히 담은 `ProtocolRequest`를 핸들러에 건네줍니다. 여러분은 그 안의 `url`, `method`, `headers`, 그리고 `uploadData`를 읽고, 돌려줄 콘텐츠를 반환하면 됩니다.
+
+<Cards>
+  <Cards.Card title="protocol" href="/ko/api/protocol" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

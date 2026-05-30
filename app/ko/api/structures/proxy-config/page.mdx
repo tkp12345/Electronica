@@ -1,0 +1,49 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ProxyConfig"
+  subtitle="세션이 네트워크 트래픽을 프록시를 통해 어떻게 라우팅할지 설명하는 객체입니다"
+  badge="API · Structure"
+/>
+
+`ProxyConfig`는 `Session`이 프록시를 통해 네트워크에 연결하는 방법을 알려주는 일반 객체입니다. `session.setProxy(config)`에 전달하여 요청을 직접 내보낼지, 프록시를 자동 감지할지, PAC 스크립트를 사용할지, 고정된 프록시 서버를 사용할지를 제어합니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `mode` | `string` | _(선택)_ `direct`, `auto_detect`, `pac_script`, `fixed_servers`, `system` 중 하나입니다. 프록시를 어떻게 선택할지 결정합니다. |
+| `pacScript` | `string` | _(선택)_ PAC(Proxy Auto-Config) 파일과 연결된 URL입니다. |
+| `proxyRules` | `string` | _(선택)_ 어떤 프록시를 사용할지를 나타내는 규칙입니다. |
+| `proxyBypassRules` | `string` | _(선택)_ 어떤 URL이 프록시 설정을 우회해야 하는지를 나타내는 규칙입니다. |
+
+```js
+const { session } = require('electron')
+
+session.defaultSession.setProxy({
+  mode: 'fixed_servers',
+  proxyRules: 'https=foopy:80;ftp=foopy2',
+  proxyBypassRules: '<local>'
+})
+```
+
+<Callout type="info">
+  `pacScript`와 `proxyRules`를 모두 제공하면서 `mode`를 지정하지 않으면, `pacScript` 설정이 적용되고 `proxyRules`는 무시됩니다.
+</Callout>
+
+<EasyNote>
+택배 기사에게 건네는 주소 쪽지라고 생각해 보세요. 소포를 곧장 배달할지, 아니면 특정 중개인을 거쳐서 보낼지를 알려 주는 역할을 합니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+앱이 네트워크 요청을 보낼 때, 회사 네트워크 환경이나 테스트 목적 등으로 요청을 프록시 서버를 통해 보내고 싶을 때가 있습니다. `ProxyConfig`는 그 동작 방식을 정확히 지정하기 위해 세션에 건네는 작은 설정 객체입니다. 프록시를 완전히 건너뛸지, 시스템이 알아서 판단하게 할지, PAC 스크립트를 따를지, 특정 서버를 지정할지를 정할 수 있습니다. 주로 `session.setProxy()`와 함께 사용하게 됩니다.
+
+<Cards>
+  <Cards.Card title="session" href="/ko/api/session" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

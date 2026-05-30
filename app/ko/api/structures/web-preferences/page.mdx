@@ -1,0 +1,87 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="WebPreferences"
+  subtitle="창 안에서 실행되는 웹 페이지를 제어하는 설정"
+  badge="API · Structure"
+/>
+
+`WebPreferences` 객체는 렌더러의 웹 페이지가 어떻게 동작할지를 설정합니다. 보안 모델, Node.js 접근 권한, 폰트, 미디어 등을 지정할 수 있습니다. `BrowserWindow`(또는 `<webview>` / `BrowserView`)를 만들 때 `webPreferences` 옵션으로 전달합니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `devTools` | `boolean` | _(선택)_ DevTools 활성화 여부입니다. 기본값: `true`. |
+| `nodeIntegration` | `boolean` | _(선택)_ Node.js 통합 활성화 여부입니다. 기본값: `false`. |
+| `nodeIntegrationInWorker` | `boolean` | _(선택)_ 웹 워커에서 Node.js 통합을 활성화할지 여부입니다. 기본값: `false`. |
+| `nodeIntegrationInSubFrames` | `boolean` | _(선택)_ _(실험적)_ iframe이나 자식 창 같은 하위 프레임에서 Node.js를 지원합니다. |
+| `preload` | `string` | _(선택)_ 페이지의 다른 스크립트보다 먼저 실행되는 스크립트의 경로입니다. |
+| `sandbox` | `boolean` | _(선택)_ OS 수준 샌드박스로 렌더러를 격리합니다. 기본값: `true`. |
+| `session` | `Session` | _(선택)_ 페이지가 사용할 세션 인스턴스입니다. |
+| `partition` | `string` | _(선택)_ 페이지의 저장소를 격리하는 세션 파티션 문자열입니다. |
+| `zoomFactor` | `number` | _(선택)_ 페이지의 기본 확대 배율입니다. 기본값: `1.0`. |
+| `javascript` | `boolean` | _(선택)_ JavaScript 실행을 허용합니다. 기본값: `true`. |
+| `webSecurity` | `boolean` | _(선택)_ 동일 출처 정책을 적용합니다. 기본값: `true`. |
+| `allowRunningInsecureContent` | `boolean` | _(선택)_ HTTPS 페이지에서 HTTP 리소스를 허용합니다. 기본값: `false`. |
+| `images` | `boolean` | _(선택)_ 이미지 지원을 활성화합니다. 기본값: `true`. |
+| `imageAnimationPolicy` | `string` | _(선택)_ 움직이는 이미지의 재생 방식을 제어합니다(`animate`, `animateOnce`, `noAnimation`). 기본값: `animate`. |
+| `textAreasAreResizable` | `boolean` | _(선택)_ TextArea 요소의 크기 조절을 허용합니다. 기본값: `true`. |
+| `webgl` | `boolean` | _(선택)_ WebGL 지원을 활성화합니다. 기본값: `true`. |
+| `plugins` | `boolean` | _(선택)_ 플러그인을 활성화할지 여부입니다. 기본값: `false`. |
+| `experimentalFeatures` | `boolean` | _(선택)_ Chromium의 실험적 기능을 활성화합니다. 기본값: `false`. |
+| `scrollBounce` | `boolean` | _(선택)_ _(macOS)_ 고무줄 같은 스크롤 바운스 효과를 활성화합니다. |
+| `enableBlinkFeatures` | `string` | _(선택)_ 활성화할 Blink 기능 목록을 쉼표로 구분해 지정합니다. |
+| `disableBlinkFeatures` | `string` | _(선택)_ 비활성화할 Blink 기능 목록을 쉼표로 구분해 지정합니다. |
+| `defaultFontFamily` | `Object` | _(선택)_ 글꼴 종류별 기본 폰트입니다. 하위 필드: `standard`, `serif`, `sansSerif`, `monospace`, `cursive`, `fantasy`, `math` (모두 `string`, 선택). |
+| `defaultFontSize` | `Integer` | _(선택)_ 기본 글꼴 크기입니다. 기본값: `16`. |
+| `defaultMonospaceFontSize` | `Integer` | _(선택)_ 기본 고정폭 글꼴 크기입니다. 기본값: `13`. |
+| `minimumFontSize` | `Integer` | _(선택)_ 허용되는 최소 글꼴 크기입니다. 기본값: `0`. |
+| `defaultEncoding` | `string` | _(선택)_ 기본 문자 인코딩입니다. 기본값: `ISO-8859-1`. |
+| `backgroundThrottling` | `boolean` | _(선택)_ 페이지가 백그라운드일 때 애니메이션과 타이머를 제한합니다. 기본값: `true`. |
+| `offscreen` | `Object \| boolean` | _(선택)_ 오프스크린 렌더링을 활성화합니다. 하위 필드(모두 _실험적_): `useSharedTexture`(`boolean`, 기본값 `false`), `sharedTexturePixelFormat`(`string`, 기본값 `argb`), `deviceScaleFactor`(`number`, 기본값 `1`). |
+| `contextIsolation` | `boolean` | _(선택)_ Electron API와 preload를 별도의 JavaScript 컨텍스트에서 실행합니다. 기본값: `true`. |
+| `webviewTag` | `boolean` | _(선택)_ `<webview>` 태그를 활성화합니다. 기본값: `false`. |
+| `additionalArguments` | `string[]` | _(선택)_ 렌더러의 `process.argv`에 추가로 덧붙일 인자입니다. |
+| `safeDialogs` | `boolean` | _(선택)_ 연속적인 다이얼로그 남용에 대한 보호를 활성화합니다. 기본값: `false`. |
+| `safeDialogsMessage` | `string` | _(선택)_ 다이얼로그 보호가 작동할 때 표시할 사용자 정의 메시지입니다. |
+| `disableDialogs` | `boolean` | _(선택)_ 모든 다이얼로그를 완전히 비활성화합니다. 기본값: `false`. |
+| `navigateOnDragDrop` | `boolean` | _(선택)_ 파일이나 링크를 페이지에 드롭하면 해당 위치로 이동합니다. 기본값: `false`. |
+| `autoplayPolicy` | `string` | _(선택)_ 미디어 자동 재생 정책입니다. 기본값: `no-user-gesture-required`. |
+| `disableHtmlFullscreenWindowResize` | `boolean` | _(선택)_ HTML 전체 화면 시 창 크기 조절을 막습니다. 기본값: `false`. |
+| `accessibleTitle` | `string` | _(선택)_ 스크린 리더에 제공되는 대체 제목입니다. |
+| `spellcheck` | `boolean` | _(선택)_ 내장 맞춤법 검사기를 활성화합니다. 기본값: `true`. |
+| `enableWebSQL` | `boolean` | _(선택)_ WebSQL API를 활성화합니다. 기본값: `true`. |
+| `v8CacheOptions` | `string` | _(선택)_ V8이 사용하는 코드 캐싱 정책입니다. 기본값: `code`. |
+| `enablePreferredSizeMode` | `boolean` | _(선택)_ 문서를 배치하는 데 필요한 최소 크기를 계산합니다. 기본값: `false`. |
+| `transparent` | `boolean` | _(선택)_ 페이지 배경을 투명하게 만들 수 있도록 허용합니다. 기본값: `true`. |
+| `enableDeprecatedPaste` | `boolean` | _(선택)_ _(지원 중단)_ 레거시 `paste` execCommand를 활성화합니다. 기본값: `false`. |
+| `focusOnNavigation` | `boolean` | _(선택)_ 페이지 이동 시 WebContents에 포커스를 줍니다. 기본값: `true`. |
+
+```js
+const win = new BrowserWindow({
+  webPreferences: {
+    preload: path.join(__dirname, 'preload.js'),
+    contextIsolation: true,
+    nodeIntegration: false,
+    sandbox: true
+  }
+})
+```
+
+<EasyNote>
+WebPreferences는 하나의 브라우저 탭에 대한 설정 화면과 같습니다. 그 페이지가 무엇을 할 수 있는지, 얼마나 잠겨 있는지, 어떻게 보일지를 결정합니다.
+</EasyNote>
+
+## 쉽게 말하면
+
+창을 연다는 것은 사실 그 안에 작은 웹 브라우저를 하나 띄우는 것입니다. `WebPreferences`는 그 브라우저를 조율하는 곳입니다. 얼마나 안전하게 만들지, Node.js를 쓸 수 있게 할지, 어떤 preload 스크립트를 먼저 실행할지, 어떤 폰트를 쓸지, 그리고 수십 가지 자잘한 동작을 정합니다. 가장 중요한 것은 보안 필드입니다. `contextIsolation`을 켜고 `nodeIntegration`을 끈 상태로 `preload` 스크립트를 사용하는 것이 거의 모든 앱에서 안전한 기본값입니다.
+
+<Cards>
+  <Cards.Card title="BrowserWindow" href="/ko/api/browser-window" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

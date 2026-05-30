@@ -1,0 +1,44 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="SharingItem"
+  subtitle="운영체제의 기본 공유 메뉴에 전달하는 공유 콘텐츠 묶음"
+  badge="API · Structure"
+/>
+
+`SharingItem` 객체는 운영체제의 기본 공유 대화상자를 통해 공유하려는 콘텐츠를 설명합니다. macOS 공유 메뉴(예: `Menu` 팝업의 `sharingItem` 옵션)에 전달하면, 사용자가 메시지, 메일, AirDrop 등 시스템 서비스로 콘텐츠를 보낼 수 있습니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `texts` | `string[]` | _(선택)_ 공유할 텍스트들의 배열입니다. |
+| `filePaths` | `string[]` | _(선택)_ 공유할 파일 경로들의 배열입니다. |
+| `urls` | `string[]` | _(선택)_ 공유할 URL들의 배열입니다. |
+
+세 필드 모두 선택 사항이므로, 일반 텍스트, 파일, 웹 링크를 원하는 대로 조합하여 공유할 수 있습니다.
+
+```js
+const item = {
+  texts: ['이것 좀 보세요!'],
+  urls: ['https://www.electronjs.org'],
+  filePaths: ['/Users/me/Pictures/photo.png']
+}
+```
+
+<EasyNote>
+"공유" 버튼 위에 올려놓는 물건 더미와 비슷합니다. 약간의 텍스트, 링크 몇 개, 그리고 파일 한두 개를 담는 셈이죠.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+사용자가 여러분의 앱에서 다른 앱으로 무언가를 보내고 싶을 때, 운영체제에는 이미 잘 만들어진 공유 시트가 내장되어 있습니다. `SharingItem`은 단지 무엇을 공유할지 담은 꾸러미입니다. 세 가지 목록(텍스트, 파일, URL) 중 원하는 것을 채워 넣으면, 시스템이 그에 알맞은 공유 대상을 보여줍니다.
+
+<Cards>
+  <Cards.Card title="menu" href="/ko/api/menu" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

@@ -1,0 +1,50 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ProductDiscount"
+  subtitle="인앱 구매 상품에 적용되는 할인 프로모션 정보"
+  badge="API · Structure"
+/>
+
+`ProductDiscount` 객체는 macOS App Store 상품의 할인 혜택을 설명합니다. `inAppPurchase` 모듈의 `getProducts()` 메서드가 반환하는 `Product`의 `discounts` 배열에 들어 있습니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `identifier` | `string` | 상품 할인 혜택을 고유하게 식별하는 문자열입니다. |
+| `type` | `number` | 할인 혜택의 유형입니다. |
+| `price` | `number` | 현지 통화로 표시한 상품의 할인 가격입니다. |
+| `priceLocale` | `string` | 할인 가격을 표시할 때 사용하는 로케일입니다. |
+| `paymentMode` | `string` | 할인 결제 방식입니다: `payAsYouGo`, `payUpFront`, `freeTrial`. |
+| `numberOfPeriods` | `number` | 상품 할인이 적용되는 기간(period)의 개수를 나타내는 정수입니다. |
+| `subscriptionPeriod` | `ProductSubscriptionPeriod` | _(선택)_ 상품 할인의 기간을 정의하는 객체입니다. 내부 필드로 `numberOfUnits`(`number`)와 `unit`(`string`)을 가집니다. |
+
+```js
+const discount = {
+  identifier: 'WINTER_SALE',
+  type: 0,
+  price: 1.99,
+  priceLocale: 'en_US',
+  paymentMode: 'payAsYouGo',
+  numberOfPeriods: 3,
+  subscriptionPeriod: { numberOfUnits: 1, unit: 'month' }
+}
+```
+
+<EasyNote>
+ProductDiscount는 App Store 상품에 붙은 쿠폰과 같습니다. 특별 가격이 얼마인지, 그리고 그 혜택이 얼마나 오래 지속되는지를 적어 둔 것입니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+macOS 앱 안에서 무언가를 판매할 때, App Store는 그것을 프로모션 가격으로 제공할 수 있습니다. 무료 체험이나 처음 몇 달간 저렴한 가격 같은 것들이죠. `ProductDiscount`는 그런 혜택 하나를 App Store가 설명한 정보입니다. 가격이 얼마인지, 어떤 통화인지, 어떻게 결제되는지, 얼마나 오래 지속되는지를 담고 있습니다. 이 정보를 상품에서 읽어 사용자에게 알맞은 프로모션 가격을 보여 줄 때 사용합니다.
+
+<Cards>
+  <Cards.Card title="inAppPurchase" href="/ko/api/in-app-purchase" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

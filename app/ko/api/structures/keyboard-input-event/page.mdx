@@ -1,0 +1,43 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="KeyboardInputEvent"
+  subtitle="페이지에 보낼 수 있는 가상 키보드 이벤트"
+  badge="API · Structure"
+/>
+
+`KeyboardInputEvent` 객체는 실제 사용자가 입력한 것처럼 웹 페이지에 전달하고 싶은 가짜 키보드 이벤트(키 누름, 키 뗌, 문자 입력)를 설명합니다. 이 객체를 `webContents.sendInputEvent`에 넘기면 키보드 입력을 흉내 낼 수 있습니다. 기본 구조인 `InputEvent`를 확장하므로 공통 필드인 `modifiers`도 함께 가집니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `type` | `string` | 이벤트의 종류입니다. `rawKeyDown`, `keyDown`, `keyUp`, `char` 중 하나입니다. |
+| `keyCode` | `string` | 보낼 문자 또는 키입니다. 유효한 [Accelerator](/ko/api/accelerator) 키 코드여야 합니다(예: `A`, `Enter`, `Backspace`). |
+| `modifiers` | `string[]` | _(선택)_ `InputEvent`에서 상속됩니다. 이벤트가 일어나는 동안 함께 눌린 보조 키로, `shift`, `control`, `alt`, `meta`, `capsLock`, `numLock` 등이 있습니다. |
+
+```js
+// Shift를 누른 채로 "A"를 입력하는 것을 흉내 냅니다
+webContents.sendInputEvent({
+  type: 'keyDown',
+  keyCode: 'A',
+  modifiers: ['shift']
+})
+```
+
+<EasyNote>
+로봇 손가락이 대신 키보드의 키를 눌러 주는 것이라고 생각하면 됩니다. `type`은 키를 누르는지, 떼는지, 아니면 그냥 문자를 입력하는지이고, `keyCode`는 어떤 키인지, `modifiers`는 동시에 함께 누르고 있는 키입니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+실제 사람이 키보드 앞에 없는 상태에서 페이지를 자동화하거나 테스트해야 할 때 — 예를 들어 로그인 폼을 스크립트로 채우거나 키오스크를 조작할 때 — `KeyboardInputEvent`를 Electron에 건네주면 사용자가 그 키를 누른 것처럼 처리해 줍니다. 무슨 일이 일어났는지(`type`), 어떤 키인지(`keyCode`), 함께 누른 조합 키(`modifiers`)를 설명한 다음 `webContents.sendInputEvent`로 보내면 됩니다.
+
+<Cards>
+  <Cards.Card title="web-contents" href="/ko/api/web-contents" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

@@ -1,0 +1,48 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="MediaAccessPermissionRequest"
+  subtitle="카메라나 마이크 사용을 요청하는 정보가 담긴 객체"
+  badge="API · Structure"
+/>
+
+`MediaAccessPermissionRequest`는 웹 페이지가 미디어(카메라/마이크) 접근을 요청할 때 Electron이 전달해 주는 객체입니다. `session`의 `setPermissionRequestHandler`와 `setPermissionCheckHandler`에 등록한 핸들러로 전달되며, 이를 통해 요청을 허용할지 거부할지 결정할 수 있습니다. 기본 `PermissionRequest` 구조를 확장하므로, 표준 요청 필드도 함께 담고 있습니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `securityOrigin` | `string` | _(선택)_ 미디어 접근 요청이 발생한 보안 출처(origin)입니다. |
+| `mediaTypes` | `string[]` | _(선택)_ 요청된 미디어 접근 유형입니다. 요소는 `video` 또는 `audio`가 될 수 있습니다. |
+| `requestingUrl` | `string` | 요청을 보낸 프레임이 마지막으로 로드한 URL입니다 (`PermissionRequest`에서 상속). |
+| `isMainFrame` | `boolean` | 요청을 보낸 프레임이 메인 프레임인지 여부입니다 (`PermissionRequest`에서 상속). |
+
+```js
+const { session } = require('electron')
+
+session.defaultSession.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
+  if (permission === 'media') {
+    // details는 MediaAccessPermissionRequest 입니다
+    const wantsCamera = details.mediaTypes?.includes('video')
+    return !wantsCamera // 예: 마이크는 허용하고 카메라는 차단
+  }
+  return true
+})
+```
+
+<EasyNote>
+웹사이트가 "안녕하세요, 카메라랑 마이크를 좀 쓰고 싶어요"라고 내미는 신청서라고 생각하면 됩니다. 누가 요청하는지, 무엇을 원하는지가 적혀 있습니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+페이지가 웹캠이나 마이크를 켜려고 할 때마다, 여러분의 앱이 문지기 역할을 하게 됩니다. 이 객체는 바로 그 신청서입니다. 어느 사이트가 요청하는지(`securityOrigin` / `requestingUrl`), 메인 페이지인지 아니면 내장된 프레임인지, 그리고 정확히 무엇을 원하는지(`video`, `audio` 또는 둘 다)를 알려줍니다. 이 필드들을 읽고 허용 또는 거부를 결정하면 됩니다. 모든 사이트를 무조건 믿는 대신, 직접 프라이버시 확인 창을 만들고 싶을 때 유용합니다.
+
+<Cards>
+  <Cards.Card title="session" href="/ko/api/session" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

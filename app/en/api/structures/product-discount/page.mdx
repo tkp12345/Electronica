@@ -1,0 +1,50 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ProductDiscount"
+  subtitle="A promotional price offer attached to an in-app purchase product"
+  badge="API · Structure"
+/>
+
+The `ProductDiscount` object describes a discounted offer for a macOS App Store product. It appears on the `discounts` array of a `Product` returned by the `inAppPurchase` module's `getProducts()` method.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `identifier` | `string` | A string used to uniquely identify a discount offer for a product. |
+| `type` | `number` | The type of discount offer. |
+| `price` | `number` | The discount price of the product in the local currency. |
+| `priceLocale` | `string` | The locale used to format the discount price of the product. |
+| `paymentMode` | `string` | The payment mode for the discount: `payAsYouGo`, `payUpFront`, or `freeTrial`. |
+| `numberOfPeriods` | `number` | An integer that indicates the number of periods the product discount is available. |
+| `subscriptionPeriod` | `ProductSubscriptionPeriod` | _(optional)_ An object that defines the period for the product discount. Its nested fields are `numberOfUnits` (`number`) and `unit` (`string`). |
+
+```js
+const discount = {
+  identifier: 'WINTER_SALE',
+  type: 0,
+  price: 1.99,
+  priceLocale: 'en_US',
+  paymentMode: 'payAsYouGo',
+  numberOfPeriods: 3,
+  subscriptionPeriod: { numberOfUnits: 1, unit: 'month' }
+}
+```
+
+<EasyNote>
+A ProductDiscount is like a coupon stapled to a product in the App Store — it spells out the special price and how long the deal lasts.
+</EasyNote>
+
+## In plain words
+
+When you sell something inside a macOS app, the App Store can offer it at a promotional price — a free trial, a few cheap months up front, and so on. A `ProductDiscount` is the App Store's description of one of those deals: how much it costs, in what currency, how it's paid, and how long it runs. You read these off a product to show the right promo price to your users.
+
+<Cards>
+  <Cards.Card title="inAppPurchase" href="/en/api/in-app-purchase" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

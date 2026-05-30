@@ -1,0 +1,40 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ProcessMemoryInfo"
+  subtitle="A snapshot of how much memory a single process is using"
+  badge="API · Structure"
+/>
+
+`ProcessMemoryInfo` describes the memory usage of one process, with all values reported in kilobytes. It is the object returned by `process.getProcessMemoryInfo()`.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `residentSet` | `Integer` | _(Linux)_ _(Windows)_ The amount of memory currently pinned to actual physical RAM, in kilobytes. |
+| `private` | `Integer` | The amount of memory not shared by other processes, such as the JS heap or HTML content, in kilobytes. |
+| `shared` | `Integer` | The amount of memory shared between processes, typically memory consumed by the Electron code itself, in kilobytes. |
+
+```js
+// process.getProcessMemoryInfo() returns a Promise<ProcessMemoryInfo>
+const memoryInfo = await process.getProcessMemoryInfo()
+// => { residentSet: 12345, private: 6789, shared: 2345 }
+```
+
+<EasyNote>
+Think of it as a receipt that itemizes the memory bill for one process: what's pinned in real RAM, what's private to this process, and what it shares with others.
+</EasyNote>
+
+## In plain words
+
+When you want to know whether your app is using too much memory, you ask a process for its memory info. This object breaks that usage into three buckets so you can tell apart memory that's truly private to your process from memory it shares with the rest of Electron. It's mostly useful for diagnostics, performance monitoring, and catching memory leaks.
+
+<Cards>
+  <Cards.Card title="process" href="/en/api/process" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

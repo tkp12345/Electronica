@@ -1,0 +1,99 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="BrowserWindowOptions"
+  subtitle="Every setting you can pass when creating a window"
+  badge="API · Structure"
+/>
+
+`BrowserWindowOptions` is the options object you pass to `new BrowserWindow({ ... })`. It controls the window's size, position, appearance, behavior, and (through `webPreferences`) how the web page inside it is allowed to run. It includes all of the base window options below plus a couple of `BrowserWindow`-specific fields.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `width` | `Integer` | _(optional)_ Window width in pixels. Defaults to `800`. |
+| `height` | `Integer` | _(optional)_ Window height in pixels. Defaults to `600`. |
+| `x` | `Integer` | _(optional)_ Window's left offset from screen. Required if `y` is used. |
+| `y` | `Integer` | _(optional)_ Window's top offset from screen. Required if `x` is used. |
+| `useContentSize` | `boolean` | _(optional)_ Treat `width`/`height` as the web page size rather than the window size. |
+| `center` | `boolean` | _(optional)_ Show the window centered on screen. |
+| `minWidth` | `Integer` | _(optional)_ Minimum window width. Defaults to `0`. |
+| `minHeight` | `Integer` | _(optional)_ Minimum window height. Defaults to `0`. |
+| `maxWidth` | `Integer` | _(optional)_ Maximum window width. No limit by default. |
+| `maxHeight` | `Integer` | _(optional)_ Maximum window height. No limit by default. |
+| `resizable` | `boolean` | _(optional)_ Whether the window can be resized. |
+| `movable` | `boolean` | _(optional)_ _(macOS, Windows)_ Whether the window can be moved. |
+| `minimizable` | `boolean` | _(optional)_ _(macOS, Windows)_ Whether the window can be minimized. |
+| `maximizable` | `boolean` | _(optional)_ _(macOS, Windows)_ Whether the window can be maximized. |
+| `closable` | `boolean` | _(optional)_ _(macOS, Windows)_ Whether the window can be closed. |
+| `focusable` | `boolean` | _(optional)_ Whether the window can receive focus. |
+| `alwaysOnTop` | `boolean` | _(optional)_ Keep the window above all other windows. |
+| `fullscreen` | `boolean` | _(optional)_ Start the window in fullscreen. |
+| `fullscreenable` | `boolean` | _(optional)_ Whether the window can go fullscreen. |
+| `simpleFullscreen` | `boolean` | _(optional)_ _(macOS)_ Use pre-Lion fullscreen behavior. |
+| `skipTaskbar` | `boolean` | _(optional)_ _(macOS, Windows)_ Hide the window from the taskbar. |
+| `hiddenInMissionControl` | `boolean` | _(optional)_ _(macOS)_ Hide the window during Mission Control. |
+| `kiosk` | `boolean` | _(optional)_ Start in kiosk mode. |
+| `title` | `string` | _(optional)_ Default window title. Defaults to `"Electron"`. |
+| `icon` | `NativeImage \| string` | _(optional)_ Window icon. ICO is recommended on Windows. |
+| `show` | `boolean` | _(optional)_ Whether to show the window when it is created. |
+| `frame` | `boolean` | _(optional)_ Include the standard window frame. Set `false` for a frameless window. |
+| `parent` | `BrowserWindow` | _(optional)_ Parent window. |
+| `modal` | `boolean` | _(optional)_ Make this a modal window (requires a `parent`). |
+| `acceptFirstMouse` | `boolean` | _(optional)_ _(macOS)_ Let a click both activate and act on an inactive window. |
+| `disableAutoHideCursor` | `boolean` | _(optional)_ Keep the cursor visible while typing. |
+| `autoHideMenuBar` | `boolean` | _(optional)_ _(Linux, Windows)_ Hide the menu bar unless Alt is pressed. |
+| `enableLargerThanScreen` | `boolean` | _(optional)_ _(macOS)_ Allow the window to be larger than the screen. |
+| `backgroundColor` | `string` | _(optional)_ Window background color as a CSS color value. |
+| `hasShadow` | `boolean` | _(optional)_ Whether the window has a shadow. |
+| `opacity` | `number` | _(optional)_ _(macOS, Windows)_ Initial opacity from `0.0` to `1.0`. |
+| `darkTheme` | `boolean` | _(optional)_ Force a dark theme on GTK+3 desktops. |
+| `transparent` | `boolean` | _(optional)_ Make the window background transparent. |
+| `type` | `string` | _(optional)_ Window type (e.g. `desktop`, `dock`, `toolbar`). |
+| `visualEffectState` | `string` | _(optional)_ _(macOS)_ How vibrancy responds to window active state. |
+| `titleBarStyle` | `string` | _(optional)_ Title bar style: `default`, `hidden`, `hiddenInset`, `customButtonsOnHover`. |
+| `titleBarOverlay` | `Object \| boolean` | _(optional)_ Enable the Window Controls Overlay; object can set `color`, `symbolColor`, `height`. |
+| `accentColor` | `boolean \| string` | _(optional)_ _(Windows)_ Window accent color, or use the system default. |
+| `trafficLightPosition` | `Point` | _(optional)_ _(macOS)_ Custom position (`{ x, y }`) for the traffic light buttons. |
+| `roundedCorners` | `boolean` | _(optional)_ _(macOS, Windows)_ Round the corners of a frameless window. |
+| `thickFrame` | `boolean` | _(optional)_ _(Windows)_ Use a thick frame for a frameless window. |
+| `vibrancy` | `string` | _(optional)_ _(macOS)_ Add a vibrancy effect (e.g. `appearance-based`, `sidebar`). |
+| `backgroundMaterial` | `string` | _(optional)_ _(Windows)_ System background material (e.g. `mica`, `acrylic`). |
+| `zoomToPageWidth` | `boolean` | _(optional)_ _(macOS)_ Zoom the window to the preferred page width. |
+| `tabbingIdentifier` | `string` | _(optional)_ _(macOS)_ Tab group name for native macOS tabs. |
+| `paintWhenInitiallyHidden` | `boolean` | _(optional)_ Keep the renderer active even when the window starts hidden. |
+| `webPreferences` | `WebPreferences` | _(optional)_ Settings for the web page's features (e.g. `preload`, `contextIsolation`, `nodeIntegration`, `sandbox`). |
+
+```js
+const { BrowserWindow } = require('electron')
+
+const win = new BrowserWindow({
+  width: 1024,
+  height: 768,
+  center: true,
+  backgroundColor: '#1e1e1e',
+  titleBarStyle: 'hidden',
+  webPreferences: {
+    preload: '/path/to/preload.js',
+    contextIsolation: true
+  }
+})
+```
+
+<EasyNote>
+Think of this object as the order form you hand in when "ordering" a new window: how big, where on screen, what color, and what rules the page inside has to follow.
+</EasyNote>
+
+## In plain words
+
+Whenever you create a window in Electron, you describe what you want with this object. Want a small, centered, dark login window with no frame? You set those fields here. The most important one is `webPreferences`, which decides how much power the web page inside gets, so it is worth setting carefully for security. You only fill in the fields you care about; everything else uses sensible defaults.
+
+<Cards>
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

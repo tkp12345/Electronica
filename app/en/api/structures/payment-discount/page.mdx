@@ -1,0 +1,46 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="PaymentDiscount"
+  subtitle="A signed promotional discount offer for an in-app purchase product"
+  badge="API · Structure"
+/>
+
+The `PaymentDiscount` object describes a single promotional discount offer that the App Store can apply to a product. It appears on the `discounts` array of a [`Product`](/en/api/structures/product) returned by `inAppPurchase.getProducts()`, and its values are cryptographically signed by your server.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `identifier` | `string` | A string used to uniquely identify a discount offer for a product. |
+| `keyIdentifier` | `string` | A string that identifies the key used to generate the signature. |
+| `nonce` | `string` | A universally unique ID (UUID) value that you define. |
+| `signature` | `string` | A UTF-8 string representing the properties of a specific discount offer, cryptographically signed. |
+| `timestamp` | `number` | The date and time of the signature's creation in milliseconds, formatted in Unix epoch time. |
+
+```js
+const discount = {
+  identifier: 'spring_sale_2024',
+  keyIdentifier: 'ABC123XYZ',
+  nonce: 'd1f8c2a0-3b4e-4f6a-9c7d-1e2f3a4b5c6d',
+  signature: 'MEUCIQ...signed-payload...',
+  timestamp: 1711929600000
+}
+```
+
+<EasyNote>
+A PaymentDiscount is like a signed coupon: it has a code, a "who signed it" stamp, and a tamper-proof signature so the store knows the deal is genuine.
+</EasyNote>
+
+## In plain words
+
+When you offer a sale or special deal on something users buy inside your app, Apple needs proof that the discount really came from you and hasn't been faked. The `PaymentDiscount` object carries that proof — an offer ID plus a cryptographic signature your server generated. You don't usually build it by hand; you read it off the products the App Store hands back and pass it along when a user buys at the discounted price.
+
+<Cards>
+  <Cards.Card title="inAppPurchase" href="/en/api/in-app-purchase" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

@@ -1,0 +1,42 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="SharedDictionaryUsageInfo"
+  subtitle="Chromium이 저장한 공유 압축 사전 하나에 대한 요약 정보"
+  badge="API · Structure"
+/>
+
+`SharedDictionaryUsageInfo`는 Chromium 저장소에 들어 있는 공유 사전(shared dictionary) 항목 하나를 설명하는 단순 객체입니다. `session.getSharedDictionaryUsageInfo()`가 이 객체들의 배열을 반환하며, 이를 통해 엔진이 어떤 사전을 보관하고 있고 얼마만큼의 공간을 차지하는지 확인할 수 있습니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `frameOrigin` | `string` | 요청이 시작된 프레임의 출처(origin)입니다. 요청을 보내는 개별 프레임에 한정되며, 스킴·호스트·포트로 정의됩니다. 실제로는 URL처럼 보입니다. |
+| `topFrameSite` | `string` | 최상위 브라우징 컨텍스트(요청을 담고 있는 메인 프레임 또는 탭)의 사이트입니다. `frameOrigin`보다 덜 세분화되어 있으며, 더 넓은 "사이트" 범위에 초점을 둡니다. |
+| `totalSizeBytes` | `number` | 이 공유 사전 정보 객체가 Chromium 내부 저장소(주로 SQLite)에 저장하는 바이트 수입니다. |
+
+```js
+const usage = {
+  frameOrigin: 'https://example.com',
+  topFrameSite: 'https://example.com',
+  totalSizeBytes: 12345
+}
+```
+
+<EasyNote>
+저장소 영수증의 한 줄이라고 생각하시면 됩니다. 데이터가 어디서 왔는지, 어떤 사이트에 속하는지, 그리고 얼마나 많은 공간을 차지하는지를 알려줍니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+공유 사전은 자주 쓰이는 데이터를 재사용하여 브라우저가 다운로드를 더 효율적으로 압축하도록 돕습니다. 이 객체는 그렇게 저장된 사전 하나를 들여다보는 방법으로, 어떤 프레임과 사이트가 그 사전을 요청했고 몇 바이트를 사용하고 있는지 알려줍니다. 주로 저장소를 점검하거나 세션이 데이터를 왜 계속 들고 있는지 디버깅할 때 사용하게 됩니다.
+
+<Cards>
+  <Cards.Card title="session" href="/ko/api/session" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

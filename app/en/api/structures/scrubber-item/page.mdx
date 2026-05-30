@@ -1,0 +1,47 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ScrubberItem"
+  subtitle="A single item shown inside a Touch Bar scrubber"
+  badge="API · Structure"
+/>
+
+`ScrubberItem` describes one entry in a `TouchBarScrubber` — the horizontally scrollable list of items that can appear in the macOS Touch Bar. Each item can show a text label, an icon, or both.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `label` | `string` | The text to appear in this item. _(optional)_ |
+| `icon` | `NativeImage` | The image to appear in this item. _(optional)_ |
+
+```js
+const { TouchBar, nativeImage } = require('electron')
+const { TouchBarScrubber } = TouchBar
+
+const scrubber = new TouchBarScrubber({
+  items: [
+    { label: 'Home' },
+    { label: 'Photos', icon: nativeImage.createFromPath('/path/to/icon.png') },
+    { icon: nativeImage.createFromPath('/path/to/star.png') }
+  ],
+  selectedStyle: 'outline'
+})
+```
+
+<EasyNote>
+Think of a `ScrubberItem` as one card on a swipeable filmstrip — each card just needs a name, a picture, or both.
+</EasyNote>
+
+## In plain words
+
+A scrubber is the swipeable row of choices that shows up in the Touch Bar on some MacBooks. Each `ScrubberItem` is one of those choices. You use it to tell Electron what to display for each entry: some text with `label`, a small picture with `icon`, or a mix of the two. Both fields are optional, so you only fill in what you need.
+
+<Cards>
+  <Cards.Card title="TouchBar" href="/en/api/touch-bar" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

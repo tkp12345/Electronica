@@ -1,0 +1,48 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="FilesystemPermissionRequest"
+  subtitle="Details about a request to access the file system"
+  badge="API · Structure"
+/>
+
+`FilesystemPermissionRequest` extends the base `PermissionRequest` object and describes a single filesystem access request. It is passed to your permission request handler (`session.setPermissionRequestHandler`) so you can decide whether to allow reading from or writing to a given path.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `requestingUrl` | `string` | The last URL the requesting frame loaded. _(inherited from `PermissionRequest`)_ |
+| `isMainFrame` | `boolean` | Whether the frame making the request is the main frame. _(inherited from `PermissionRequest`)_ |
+| `filePath` | `string` | The filesystem path being requested. _(optional)_ |
+| `isDirectory` | `boolean` | Whether the request targets a directory rather than a single file. _(optional)_ |
+| `fileAccessType` | `string` | The access level requested — either `writable` or `readable`. _(optional)_ |
+
+```js
+session.defaultSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
+  if (permission === 'fileSystem') {
+    // details is a FilesystemPermissionRequest
+    const allow = details.fileAccessType === 'readable'
+    callback(allow)
+    return
+  }
+  callback(true)
+})
+```
+
+<EasyNote>
+Think of it as a slip of paper a web page hands you that says "I'd like to read this folder, is that OK?" — and you get to stamp it yes or no.
+</EasyNote>
+
+## In plain words
+
+When a page inside your app tries to touch the file system, Electron asks you first. This object tells you exactly what is being requested: which path, whether it is a folder, and whether the page wants to read or write. You'd use it inside your permission handler to approve safe requests and reject anything that looks risky.
+
+<Cards>
+  <Cards.Card title="session" href="/en/api/session" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

@@ -1,0 +1,43 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="Rectangle"
+  subtitle="화면 위의 사각형 영역을 위치와 크기로 나타냅니다"
+  badge="API · Structure"
+/>
+
+`Rectangle`은 원점(`x`, `y`)과 너비(`width`), 높이(`height`)를 사용해 사각형 영역을 나타냅니다. Electron 전반에서 경계가 있는 영역이 필요한 곳마다 사용됩니다. 예를 들어 `BrowserWindow.getBounds()`와 `setBounds()`가 이 값을 다루고, `screen`의 디스플레이 객체는 `bounds`와 `workArea`를 사각형으로 노출합니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `x` | `number` | 사각형 원점의 x 좌표입니다 (정수여야 합니다). |
+| `y` | `number` | 사각형 원점의 y 좌표입니다 (정수여야 합니다). |
+| `width` | `number` | 사각형의 너비입니다 (정수여야 합니다). |
+| `height` | `number` | 사각형의 높이입니다 (정수여야 합니다). |
+
+<Callout type="info">
+네 값 모두 정수여야 합니다. `Rectangle`을 Electron API에 전달하면 값이 가장 가까운 정수로 자동 반올림됩니다.
+</Callout>
+
+```js
+const bounds = { x: 0, y: 0, width: 800, height: 600 }
+```
+
+<EasyNote>
+`Rectangle`은 벽에 걸린 액자를 설명하는 것과 같습니다. 왼쪽 위 모서리가 어디에 있는지, 그리고 얼마나 넓고 높은지를 알려줍니다.
+</EasyNote>
+
+## 쉽게 풀어 설명하면
+
+`Rectangle`은 상자를 설명하는 데 필요한 모든 것을 한데 모아 줍니다. 왼쪽 위 모서리가 어디서 시작하는지(`x`, `y`)와 그 크기가 얼마나 되는지(`width`, `height`)를 담고 있습니다. 창을 정확히 어디에 두고 얼마나 크게 만들지 Electron에 알려줄 때, 또는 창이나 디스플레이가 현재 차지하고 있는 영역을 읽어올 때 사용합니다.
+
+<Cards>
+  <Cards.Card title="browser-window" href="/ko/api/browser-window" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

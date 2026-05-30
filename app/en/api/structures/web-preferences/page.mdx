@@ -1,0 +1,87 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="WebPreferences"
+  subtitle="Settings that control the web page running inside a window"
+  badge="API · Structure"
+/>
+
+The `WebPreferences` object configures how a renderer's web page behaves — its security model, Node.js access, fonts, media, and more. You pass it as the `webPreferences` option when creating a `BrowserWindow` (or a `<webview>` / `BrowserView`).
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `devTools` | `boolean` | _(optional)_ Whether to enable DevTools. Default: `true`. |
+| `nodeIntegration` | `boolean` | _(optional)_ Whether Node.js integration is enabled. Default: `false`. |
+| `nodeIntegrationInWorker` | `boolean` | _(optional)_ Whether Node.js integration is enabled in web workers. Default: `false`. |
+| `nodeIntegrationInSubFrames` | `boolean` | _(optional)_ _(Experimental)_ Enable Node.js support in sub-frames such as iframes and child windows. |
+| `preload` | `string` | _(optional)_ Path to a script that runs before other scripts in the page. |
+| `sandbox` | `boolean` | _(optional)_ Isolate the renderer with an OS-level sandbox. Default: `true`. |
+| `session` | `Session` | _(optional)_ The session instance the page should use. |
+| `partition` | `string` | _(optional)_ Session partition string used to isolate the page's storage. |
+| `zoomFactor` | `number` | _(optional)_ Default zoom factor of the page. Default: `1.0`. |
+| `javascript` | `boolean` | _(optional)_ Enable JavaScript execution. Default: `true`. |
+| `webSecurity` | `boolean` | _(optional)_ Enforce same-origin policy. Default: `true`. |
+| `allowRunningInsecureContent` | `boolean` | _(optional)_ Allow HTTP resources on HTTPS pages. Default: `false`. |
+| `images` | `boolean` | _(optional)_ Enable image support. Default: `true`. |
+| `imageAnimationPolicy` | `string` | _(optional)_ Control how animated images play (`animate`, `animateOnce`, `noAnimation`). Default: `animate`. |
+| `textAreasAreResizable` | `boolean` | _(optional)_ Make TextArea elements resizable. Default: `true`. |
+| `webgl` | `boolean` | _(optional)_ Enable WebGL support. Default: `true`. |
+| `plugins` | `boolean` | _(optional)_ Whether plugins should be enabled. Default: `false`. |
+| `experimentalFeatures` | `boolean` | _(optional)_ Enable Chromium's experimental features. Default: `false`. |
+| `scrollBounce` | `boolean` | _(optional)_ _(macOS)_ Enable the rubber-band scroll bounce effect. |
+| `enableBlinkFeatures` | `string` | _(optional)_ Comma-separated list of Blink features to enable. |
+| `disableBlinkFeatures` | `string` | _(optional)_ Comma-separated list of Blink features to disable. |
+| `defaultFontFamily` | `Object` | _(optional)_ Default fonts for each generic family. Sub-fields: `standard`, `serif`, `sansSerif`, `monospace`, `cursive`, `fantasy`, `math` (all `string`, optional). |
+| `defaultFontSize` | `Integer` | _(optional)_ Base font size. Default: `16`. |
+| `defaultMonospaceFontSize` | `Integer` | _(optional)_ Default monospace font size. Default: `13`. |
+| `minimumFontSize` | `Integer` | _(optional)_ Smallest allowed font size. Default: `0`. |
+| `defaultEncoding` | `string` | _(optional)_ Default character encoding. Default: `ISO-8859-1`. |
+| `backgroundThrottling` | `boolean` | _(optional)_ Throttle animations and timers when the page is backgrounded. Default: `true`. |
+| `offscreen` | `Object \| boolean` | _(optional)_ Enable offscreen rendering. Sub-fields (all _Experimental_): `useSharedTexture` (`boolean`, default `false`), `sharedTexturePixelFormat` (`string`, default `argb`), `deviceScaleFactor` (`number`, default `1`). |
+| `contextIsolation` | `boolean` | _(optional)_ Run Electron APIs and the preload in a separate JavaScript context. Default: `true`. |
+| `webviewTag` | `boolean` | _(optional)_ Enable the `<webview>` tag. Default: `false`. |
+| `additionalArguments` | `string[]` | _(optional)_ Extra arguments appended to `process.argv` in the renderer. |
+| `safeDialogs` | `boolean` | _(optional)_ Enable protection against consecutive dialog abuse. Default: `false`. |
+| `safeDialogsMessage` | `string` | _(optional)_ Custom message shown when the dialog protection triggers. |
+| `disableDialogs` | `boolean` | _(optional)_ Disable all dialogs completely. Default: `false`. |
+| `navigateOnDragDrop` | `boolean` | _(optional)_ Navigate when a file or link is dropped onto the page. Default: `false`. |
+| `autoplayPolicy` | `string` | _(optional)_ Autoplay policy for media. Default: `no-user-gesture-required`. |
+| `disableHtmlFullscreenWindowResize` | `boolean` | _(optional)_ Prevent the window from resizing on HTML fullscreen. Default: `false`. |
+| `accessibleTitle` | `string` | _(optional)_ Alternative title surfaced to screen readers. |
+| `spellcheck` | `boolean` | _(optional)_ Enable the built-in spellchecker. Default: `true`. |
+| `enableWebSQL` | `boolean` | _(optional)_ Enable the WebSQL API. Default: `true`. |
+| `v8CacheOptions` | `string` | _(optional)_ Code caching policy used by V8. Default: `code`. |
+| `enablePreferredSizeMode` | `boolean` | _(optional)_ Calculate the minimum size needed to lay out the document. Default: `false`. |
+| `transparent` | `boolean` | _(optional)_ Allow the page background to be transparent. Default: `true`. |
+| `enableDeprecatedPaste` | `boolean` | _(optional)_ _(Deprecated)_ Enable the legacy `paste` execCommand. Default: `false`. |
+| `focusOnNavigation` | `boolean` | _(optional)_ Focus the WebContents when navigating. Default: `true`. |
+
+```js
+const win = new BrowserWindow({
+  webPreferences: {
+    preload: path.join(__dirname, 'preload.js'),
+    contextIsolation: true,
+    nodeIntegration: false,
+    sandbox: true
+  }
+})
+```
+
+<EasyNote>
+WebPreferences is like the settings panel for a single browser tab — it decides what that page is allowed to do, how it's locked down, and how it looks.
+</EasyNote>
+
+## In plain words
+
+When you open a window, you're really opening a tiny web browser inside it. `WebPreferences` is where you tune that browser: how secure it is, whether it can use Node.js, which preload script runs first, what fonts it uses, and dozens of smaller behaviors. The most important ones are the security fields — keeping `contextIsolation` on and `nodeIntegration` off, with a `preload` script, is the safe default for almost every app.
+
+<Cards>
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

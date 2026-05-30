@@ -1,0 +1,45 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ColorSpace"
+  subtitle="색상이 어떻게 인코딩되고 화면에 표시되는지 설명하는 객체"
+  badge="API · Structure"
+/>
+
+`ColorSpace` 객체는 디스플레이, 이미지, 영상의 색상 특성을 정의하여, 숫자로 표현된 색상 값을 Electron이 어떻게 해석하고 표시해야 하는지 알려줍니다. `screen` 모듈이 반환하는 디스플레이 정보나 미디어·렌더링 관련 영역에서 등장합니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `primaries` | `string` | 색공간의 기본 색(primaries)입니다. 예: `bt709`, `bt2020`, `p3`, `adobe-rgb`, 또는 사용자 정의 값. |
+| `transfer` | `string` | 색공간의 전달 함수(transfer function)입니다. 예: `srgb`, `pq`, `hlg`, `linear`, 또는 사용자 정의 변형. |
+| `matrix` | `string` | 색공간의 색상 행렬(color matrix)입니다. 예: `rgb`, `bt709`, `bt2020-ncl`, 또는 기타 행렬 타입. |
+| `range` | `string` | 색공간의 색상 범위입니다. `limited`(16–235 RGB), `full`(0–255 RGB), `derived`, `invalid` 중 하나입니다. |
+
+```js
+// 일반적인 sRGB 색공간
+const srgb = {
+  primaries: 'bt709',
+  transfer: 'srgb',
+  matrix: 'rgb',
+  range: 'full',
+}
+```
+
+<EasyNote>
+ColorSpace는 화면이 색을 표현할 때 쓰는 "언어"라고 생각하시면 됩니다. 모두가 같은 언어를 쓰기로 약속하지 않으면, 같은 숫자도 서로 다른 색으로 보일 수 있습니다.
+</EasyNote>
+
+## 쉽게 말하면
+
+ColorSpace를 직접 만들 일은 거의 없습니다. 대신 디스플레이에서 이 값을 읽어, 해당 화면이 색을 어떻게 다루는지 — 예를 들어 Display P3 같은 넓은 색역을 지원하는지, HDR10 같은 HDR 포맷을 지원하는지 — 확인하는 데 사용합니다. 서로 매우 다른 모니터에서도 앱의 색상이나 영상이 정확하고 일관되게 보이도록 만들고 싶을 때 유용합니다.
+
+<Cards>
+  <Cards.Card title="screen" href="/ko/api/screen" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

@@ -1,0 +1,41 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ProductSubscriptionPeriod"
+  subtitle="자동 갱신 구독의 한 결제 주기가 얼마나 긴지를 나타냅니다"
+  badge="API · Structure"
+/>
+
+`ProductSubscriptionPeriod`는 자동 갱신 구독의 한 결제 주기 길이를 나타냅니다. `inAppPurchase` 모듈이 반환하는 `Product` 객체(예: `getProducts`)의 `subscriptionPeriod`와 `introductoryPrice` 정보 안에 들어 있습니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `numberOfUnits` | `number` | 한 구독 주기를 구성하는 단위의 개수입니다. |
+| `unit` | `string` | 주기를 측정하는 시간 단위입니다. `day`, `week`, `month`, `year` 중 하나입니다. |
+
+```js
+// 매월 갱신되는 구독
+const period = {
+  numberOfUnits: 1,
+  unit: 'month'
+}
+```
+
+<EasyNote>
+"매 1개월마다" 결제되는 헬스장 회원권을 떠올리면 됩니다. `unit`은 시간의 종류(월)이고, `numberOfUnits`는 한 주기에 그 단위가 몇 개인지를 뜻합니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+앱에서 정기 구독을 판매할 때, 이 객체는 고객에게 얼마나 자주 요금이 청구되는지를 알려줍니다. `numberOfUnits`와 `unit`을 함께 읽으세요. `numberOfUnits: 3`에 `unit: 'month'`이면 분기(3개월)마다 결제되는 구독입니다. 보통 구매 화면에 "3개월마다 청구"와 같은 문구를 표시할 때 사용합니다.
+
+<Cards>
+  <Cards.Card title="inAppPurchase" href="/ko/api/in-app-purchase" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

@@ -1,0 +1,60 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="Display"
+  subtitle="사용자 컴퓨터에 연결된 물리적 모니터 한 대를 설명하는 객체"
+  badge="API · Structure"
+/>
+
+`Display` 객체는 시스템에 연결된 화면 한 대의 해상도, 위치, 배율, 기능 등을 담고 있습니다. `screen.getPrimaryDisplay()`, `screen.getAllDisplays()`와 같은 [`screen`](/ko/api/screen) 모듈 메서드가 이 객체를 반환합니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `accelerometerSupport` | `string` | 가속도 센서 지원 여부입니다. `available`, `unavailable`, `unknown` 중 하나입니다. |
+| `bounds` | `Rectangle` | DIP 포인트 단위의 디스플레이 영역입니다 (`x`, `y`, `width`, `height`). |
+| `colorDepth` | `number` | 픽셀당 비트 수입니다. |
+| `colorSpace` | `string` | 색상 변환에 사용되는 색 공간(실현 가능한 모든 색 조합의 집합)입니다. |
+| `depthPerComponent` | `number` | 색상 구성 요소당 비트 수입니다. |
+| `detected` | `boolean` | 시스템이 디스플레이를 감지하면 `true`입니다. |
+| `displayFrequency` | `number` | 디스플레이 주사율(새로 고침 빈도)입니다. |
+| `id` | `number` | 디스플레이의 고유 식별자입니다. `-1`은 유효하지 않거나 아직 알 수 없음을, `-10`은 통합 데스크톱에 할당된 가상 디스플레이를 의미합니다. |
+| `internal` | `boolean` | 내장 디스플레이면 `true`, 외장 디스플레이면 `false`입니다. |
+| `label` | `string` | 플랫폼이 정해 주는 사용자 친화적인 이름입니다. |
+| `maximumCursorSize` | `Size` | 네이티브 픽셀 단위의 최대 커서 크기입니다 (`width`, `height`). |
+| `nativeOrigin` | `Point` | 픽셀 좌표 기준 디스플레이의 원점입니다 (`x`, `y`). X11처럼 픽셀 좌표로 디스플레이를 배치하는 윈도잉 시스템에서만 제공됩니다. |
+| `rotation` | `number` | 시계 방향 회전 각도입니다. `0`, `90`, `180`, `270` 중 하나입니다. |
+| `scaleFactor` | `number` | 출력 장치의 픽셀 배율입니다. |
+| `touchSupport` | `string` | 터치 입력 지원 여부입니다. `available`, `unavailable`, `unknown` 중 하나입니다. |
+| `monochrome` | `boolean` | 흑백(단색) 디스플레이인지 여부입니다. |
+| `size` | `Size` | 디스플레이 크기입니다 (`width`, `height`). |
+| `workArea` | `Rectangle` | 작업 표시줄 등 시스템 UI를 제외한, DIP 포인트 단위의 실제 사용 가능 영역입니다 (`x`, `y`, `width`, `height`). |
+| `workAreaSize` | `Size` | 작업 영역의 크기입니다 (`width`, `height`). |
+
+```js
+const { screen } = require('electron')
+
+const primary = screen.getPrimaryDisplay()
+console.log(primary.id)            // 예: 2779098405
+console.log(primary.size)          // { width: 1920, height: 1080 }
+console.log(primary.scaleFactor)   // 예: Retina 디스플레이에서는 2
+console.log(primary.workArea)      // 작업 표시줄/메뉴 막대를 뺀 사용 가능 영역
+```
+
+<EasyNote>
+`Display`는 모니터 한 대의 사양표와 같습니다. 화면이 얼마나 큰지, 얼마나 선명한지, 그리고 책상 위 어디에 놓여 있는지를 알려 줍니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+사용자의 화면 정보를 알고 싶을 때 `screen` 모듈에 물어보면 `Display` 객체들을 건네줍니다. 각 객체는 해상도, 배율(Retina나 HiDPI 화면에서 특히 중요합니다), 그리고 작업 표시줄이나 메뉴 막대를 제외하고 실제로 쓸 수 있는 공간이 얼마나 되는지를 알려 줍니다. 이를 활용하면 창을 올바른 모니터에 띄우거나, 사용자가 마지막으로 둔 위치를 기억하거나, 화면 크기에 맞춰 레이아웃을 조정할 수 있습니다.
+
+<Cards>
+  <Cards.Card title="screen" href="/ko/api/screen" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

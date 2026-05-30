@@ -1,0 +1,37 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="Size"
+  subtitle="너비와 높이를 픽셀 단위로 나타내는 간단한 객체입니다"
+  badge="API · Structure"
+/>
+
+`Size`는 크기를 두 개의 숫자 쌍으로 표현하는 단순한 객체입니다. Electron 전반에서 너비와 높이가 함께 필요한 곳마다 사용됩니다. 예를 들어 `BrowserWindow.setSize()`로 창 크기를 지정하거나, `screen` 모듈에서 디스플레이 해상도를 읽어올 때 쓰입니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `width` | `number` | 너비 값입니다(픽셀 단위). |
+| `height` | `number` | 높이 값입니다(픽셀 단위). |
+
+```js
+const size = { width: 800, height: 600 }
+```
+
+<EasyNote>
+택배 상자에 붙은 라벨을 떠올려 보세요. 무언가가 얼마나 넓고 높은지 알려주는 두 개의 숫자일 뿐입니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+Electron에게 "이건 얼마나 커야 할까?"를 알려주어야 할 때, `Size` 객체를 건네주면 됩니다. `width`와 `height`만 가진, API에서 가장 작은 구성 요소 중 하나지만 곳곳에서 만나게 됩니다. 창 크기를 바꾸거나, 화면을 측정하거나, 썸네일을 표현할 때 모두 쓰이죠. 추가 옵션도, 예상 밖의 동작도 없습니다.
+
+<Cards>
+  <Cards.Card title="BrowserWindow" href="/ko/api/browser-window" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

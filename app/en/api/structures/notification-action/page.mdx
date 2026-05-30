@@ -1,0 +1,54 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="NotificationAction"
+  subtitle="A single interactive action (button or selection) on a desktop notification"
+  badge="API · Structure"
+/>
+
+The `NotificationAction` object describes one interactive control attached to a notification. You pass an array of these as the `actions` option when constructing a `Notification`, and the user clicking one fires the notification's `action` event.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `type` | `string` | The kind of action. One of `button` or `selection`. The `selection` type is _(Windows)_ only and renders a dropdown combo box. |
+| `text` | `string` | _(optional)_ The label shown on the action. On macOS the first button defaults to the localized "Show" if omitted. |
+
+```js
+const { Notification } = require('electron')
+
+const notification = new Notification({
+  title: 'Download complete',
+  body: 'Your file is ready.',
+  actions: [
+    { type: 'button', text: 'Open' },
+    { type: 'button', text: 'Reveal in folder' }
+  ]
+})
+
+notification.on('action', (event, index) => {
+  // index identifies which action button was clicked
+})
+```
+
+<Callout type="info">
+**Platform notes.** On macOS, your app must be signed and have `NSUserNotificationAlertStyle` set to `alert` for buttons to appear; only the first button shows directly, with the rest revealed on hover, and buttons are ignored when `hasReply` is set. On Windows, a `selection` action needs accompanying option labels and fires `action` with both an `actionIndex` and a zero-based `selectedIndex` (`-1` if unavailable).
+</Callout>
+
+<EasyNote>
+A NotificationAction is like a button printed on the corner of a popup reminder — tap it and the app knows exactly which choice you made.
+</EasyNote>
+
+## In plain words
+
+A NotificationAction lets a notification do more than just show text — it adds a clickable button (or, on Windows, a dropdown) right inside the popup. You'd use it to offer quick choices like "Open", "Snooze", or "Reply" without making the user switch back to your app first. When the user picks one, your code hears about it through the notification's `action` event.
+
+<Cards>
+  <Cards.Card title="Notification" href="/en/api/notification" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

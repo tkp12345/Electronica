@@ -1,0 +1,40 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="WebSource"
+  subtitle="A piece of source code, with an optional URL that names where it came from"
+  badge="API · Structure"
+/>
+
+`WebSource` describes a chunk of source code to evaluate, together with an optional URL that identifies its origin. It is used in APIs that inject or run code in a page, such as `WebFrameMain.executeJavaScript` and the `webFrame` module.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `code` | `string` | The source code to run or inject. |
+| `url` | `string` | _(optional)_ A URL that identifies where the code came from. Useful so stack traces and dev tools can point back to a meaningful location. |
+
+```js
+const source = {
+  code: 'console.dir(window)',
+  url: 'electron://my-injected-script.js',
+}
+```
+
+<EasyNote>
+Think of it as a sticky note with some code written on it, plus a tiny label saying which file it came from.
+</EasyNote>
+
+## In plain words
+
+When you ask Electron to run a snippet of JavaScript inside a page, a `WebSource` is how you hand it that snippet. The `code` is the actual script you want executed, and the optional `url` is just a friendly name so that if something goes wrong, error messages and the debugger can tell you which "file" the code belonged to.
+
+<Cards>
+  <Cards.Card title="webFrame" href="/en/api/web-frame" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

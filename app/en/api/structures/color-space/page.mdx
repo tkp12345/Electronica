@@ -1,0 +1,45 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ColorSpace"
+  subtitle="Describes how colors are encoded and displayed on a screen"
+  badge="API · Structure"
+/>
+
+A `ColorSpace` object defines the color characteristics of a display, image, or video — telling Electron exactly how the numeric color values should be interpreted and shown. It appears on display information returned by the `screen` module and in media/rendering contexts.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `primaries` | `string` | The color primaries of the color space (for example `bt709`, `bt2020`, `p3`, `adobe-rgb`, or a custom value). |
+| `transfer` | `string` | The transfer function of the color space (for example `srgb`, `pq`, `hlg`, `linear`, or a custom variant). |
+| `matrix` | `string` | The color matrix of the color space (for example `rgb`, `bt709`, `bt2020-ncl`, or other matrix types). |
+| `range` | `string` | The color range of the color space: `limited` (16–235 RGB), `full` (0–255 RGB), `derived`, or `invalid`. |
+
+```js
+// A typical sRGB color space
+const srgb = {
+  primaries: 'bt709',
+  transfer: 'srgb',
+  matrix: 'rgb',
+  range: 'full',
+}
+```
+
+<EasyNote>
+Think of a ColorSpace as the "language" a screen speaks for color — the same numbers can mean different shades unless everyone agrees on the same language.
+</EasyNote>
+
+## In plain words
+
+You rarely build a ColorSpace by hand. Instead, you read it from a display to learn how that screen handles color — for instance, whether it supports a wide gamut like Display P3 or HDR formats like HDR10. It is handy when you want your app's colors or videos to look correct and consistent across very different monitors.
+
+<Cards>
+  <Cards.Card title="screen" href="/en/api/screen" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

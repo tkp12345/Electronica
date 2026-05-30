@@ -1,0 +1,48 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="UploadData"
+  subtitle="가로챈 요청의 일부로 업로드되는 데이터 한 조각"
+  badge="API · Structure"
+/>
+
+`UploadData` 객체는 요청과 함께 업로드되는 데이터 한 조각을 나타냅니다. `protocol` 모듈로 프로토콜 핸들러를 등록하거나 요청을 가로챌 때(예: `protocol.handle()`, `protocol.registerStreamProtocol()`), 요청의 `uploadData` 배열 안에서 이 객체를 받게 됩니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `bytes` | `Buffer` | 전송되는 실제 내용입니다. |
+| `file` | `string` | _(선택)_ 업로드되는 파일의 경로입니다. |
+| `blobUUID` | `string` | _(선택)_ blob 데이터의 UUID입니다. `ses.getBlobData()` 메서드로 실제 데이터를 가져올 수 있습니다. |
+
+```js
+const { protocol } = require('electron')
+
+protocol.handle('my-scheme', (request) => {
+  const upload = request.uploadData // UploadData[] | undefined
+  if (upload) {
+    for (const part of upload) {
+      console.log(part.bytes.toString())
+    }
+  }
+  return new Response('ok')
+})
+```
+
+<EasyNote>
+`UploadData`는 택배 컨베이어 벨트 위에 올려진 물건 하나와 같습니다. 실제 바이트 꾸러미일 수도 있고, 디스크에 있는 파일을 가리키는 쪽지일 수도 있으며, 나중에 실제 내용을 찾아올 수 있는 교환권(blob UUID)일 수도 있습니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+앱이 무언가를 업로드하는 요청(예: 폼 제출이나 파일 POST)을 가로채면, Electron은 그 업로드를 여러 조각으로 나누어 건네주는데 각 조각이 바로 `UploadData`입니다. 대부분의 경우 `bytes`만 읽으면 됩니다. 데이터가 파일이나 blob이라면 `file` 경로나 `blobUUID`가 대신 들어 있고, 거기서 실제 바이트를 가져올 수 있습니다. 커스텀 프로토콜을 만들면서 페이지가 무엇을 보내는지 확인해야 할 때 사용하게 됩니다.
+
+<Cards>
+  <Cards.Card title="protocol" href="/ko/api/protocol" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

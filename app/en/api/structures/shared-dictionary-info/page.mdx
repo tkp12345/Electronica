@@ -1,0 +1,56 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="SharedDictionaryInfo"
+  subtitle="Metadata about a shared dictionary cached for compression"
+  badge="API · Structure"
+/>
+
+The `SharedDictionaryInfo` object describes a single shared dictionary that Chromium has stored for the [Compression Dictionary Transport](https://developer.chrome.com/blog/shared-dictionary-compression) feature. You receive an array of these objects from `session.getSharedDictionaryUsageInfo()` and `session.getSharedDictionaryInfo()`.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `match` | `string` | The matching path pattern for the dictionary, declared in the `match` option of the `use-as-dictionary` response header. |
+| `matchDestinations` | `string[]` | The matching destinations for the dictionary, declared in the `match-dest` option of the `use-as-dictionary` response header. |
+| `id` | `string` | The id for the dictionary, declared in the `id` option of the `use-as-dictionary` response header. |
+| `dictionaryUrl` | `string` | The URL where the dictionary resource was fetched from. |
+| `lastFetchTime` | `Date` | When the dictionary was received from the network layer. |
+| `responseTime` | `Date` | When the dictionary was received from the server. For cached responses this can be far in the past. |
+| `expirationDuration` | `number` | The expiration time in seconds, declared in the `expires` option of the `use-as-dictionary` response header. |
+| `lastUsedTime` | `Date` | When the dictionary was most recently used. |
+| `size` | `number` | The number of bytes stored for this dictionary in Chromium's internal storage. |
+| `hash` | `string` | The SHA-256 checksum of the dictionary binary. |
+
+```js
+const info = {
+  match: '/product/*',
+  matchDestinations: ['document'],
+  id: 'my-dictionary',
+  dictionaryUrl: 'https://example.com/dict.bin',
+  lastFetchTime: new Date(),
+  responseTime: new Date(),
+  expirationDuration: 2592000,
+  lastUsedTime: new Date(),
+  size: 102400,
+  hash: 'e3b0c44298fc1c149afbf4c8996fb924...'
+}
+```
+
+<EasyNote>
+Think of it as the label on a reusable template: which pages it applies to, where it came from, how big it is, and when it expires.
+</EasyNote>
+
+## In plain words
+
+A shared dictionary lets the browser reuse common bytes across many downloads so each response can be much smaller. This object is the bookkeeping entry for one such dictionary: what it matches, where it was fetched, how large it is, and how fresh it is. You would read it when inspecting or debugging which dictionaries a session has cached.
+
+<Cards>
+  <Cards.Card title="session" href="/en/api/session" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

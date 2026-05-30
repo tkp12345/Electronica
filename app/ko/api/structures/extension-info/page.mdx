@@ -1,0 +1,40 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ExtensionInfo"
+  subtitle="로드된 브라우저 확장 프로그램을 설명하는 작은 정보 객체"
+  badge="API · Structure"
+/>
+
+`ExtensionInfo`는 로드된 확장 프로그램을 식별하는 작은 객체입니다. `extension-loaded`, `extension-ready`, `extension-unloaded` 같은 `session`의 확장 관련 이벤트에서 전달되는 `details.extension` 필드에서 만나게 됩니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `name` | `string` | 확장 프로그램의 식별 이름입니다. |
+| `version` | `string` | 확장 프로그램의 버전 번호입니다. |
+
+```js
+const info = {
+  name: 'My Cool Extension',
+  version: '1.2.0'
+}
+```
+
+<EasyNote>
+설치된 확장 프로그램에 붙은 이름표라고 생각하면 됩니다. 이름과 버전, 딱 그 두 가지만 담겨 있습니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+확장 프로그램이 로드되거나 언로드될 때, Electron은 이 작은 객체를 건네줘서 어떤 확장 프로그램이었는지와 어떤 버전이 실행 중인지 알려줍니다. 전체 확장 매니페스트를 뒤지지 않고도 이벤트 핸들러나 로그에서 확장 프로그램을 식별할 수 있을 만큼만, 의도적으로 최소한의 정보만 담고 있습니다.
+
+<Cards>
+  <Cards.Card title="session" href="/ko/api/session" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

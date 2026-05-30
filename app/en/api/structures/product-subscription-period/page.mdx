@@ -1,0 +1,41 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ProductSubscriptionPeriod"
+  subtitle="Describes how long one billing cycle of an auto-renewable subscription lasts"
+  badge="API · Structure"
+/>
+
+`ProductSubscriptionPeriod` describes the length of a single billing period for an auto-renewable subscription. It appears on the `Product` object returned by the `inAppPurchase` module (for example via `getProducts`), inside the `subscriptionPeriod` and `introductoryPrice` details.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `numberOfUnits` | `number` | The number of units that make up one subscription period. |
+| `unit` | `string` | The increment of time the period is measured in. One of `day`, `week`, `month`, or `year`. |
+
+```js
+// A subscription that renews every month
+const period = {
+  numberOfUnits: 1,
+  unit: 'month'
+}
+```
+
+<EasyNote>
+Think of it like a gym membership that bills "every 1 month" — `unit` is the kind of time (month), and `numberOfUnits` is how many of them per cycle.
+</EasyNote>
+
+## In plain words
+
+When you sell a recurring subscription in your app, this object tells you how often it charges the customer. Read `numberOfUnits` and `unit` together — `numberOfUnits: 3` with `unit: 'month'` means a quarterly subscription. You'll typically use it to show wording like "billed every 3 months" on your purchase screen.
+
+<Cards>
+  <Cards.Card title="inAppPurchase" href="/en/api/in-app-purchase" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

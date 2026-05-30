@@ -1,0 +1,40 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ProcessMemoryInfo"
+  subtitle="하나의 프로세스가 사용 중인 메모리 양을 담은 스냅샷"
+  badge="API · Structure"
+/>
+
+`ProcessMemoryInfo`는 한 프로세스의 메모리 사용량을 나타내며, 모든 값은 킬로바이트 단위로 보고됩니다. `process.getProcessMemoryInfo()`가 반환하는 객체입니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `residentSet` | `Integer` | _(Linux)_ _(Windows)_ 현재 실제 물리 RAM에 고정되어 있는 메모리 양으로, 킬로바이트 단위입니다. |
+| `private` | `Integer` | JS 힙이나 HTML 콘텐츠처럼 다른 프로세스와 공유되지 않는 메모리 양으로, 킬로바이트 단위입니다. |
+| `shared` | `Integer` | 프로세스 간에 공유되는 메모리 양으로, 보통 Electron 코드 자체가 사용하는 메모리이며 킬로바이트 단위입니다. |
+
+```js
+// process.getProcessMemoryInfo()는 Promise<ProcessMemoryInfo>를 반환합니다
+const memoryInfo = await process.getProcessMemoryInfo()
+// => { residentSet: 12345, private: 6789, shared: 2345 }
+```
+
+<EasyNote>
+한 프로세스의 메모리 사용 내역을 항목별로 정리한 영수증이라고 생각하면 됩니다. 실제 RAM에 고정된 양, 이 프로세스만의 전용 메모리, 다른 프로세스와 공유하는 메모리로 나뉘어 있습니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+앱이 메모리를 너무 많이 쓰고 있는지 알고 싶을 때, 프로세스에게 메모리 정보를 물어봅니다. 이 객체는 사용량을 세 가지로 나누어 보여 주기 때문에, 이 프로세스만의 전용 메모리와 Electron 전체가 함께 쓰는 공유 메모리를 구분할 수 있습니다. 주로 진단, 성능 모니터링, 메모리 누수를 잡는 데 유용합니다.
+
+<Cards>
+  <Cards.Card title="process" href="/ko/api/process" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

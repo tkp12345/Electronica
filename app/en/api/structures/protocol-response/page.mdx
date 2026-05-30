@@ -1,0 +1,52 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ProtocolResponse"
+  subtitle="The object you hand back when answering a custom protocol request"
+  badge="API · Structure"
+/>
+
+`ProtocolResponse` is the object you return from a `protocol` handler (for example inside `protocol.handle` or the older `registerBufferProtocol` / `registerFileProtocol` / `registerStreamProtocol` callbacks) to describe the response Electron should send back for an intercepted or custom-scheme request.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `error` | `Integer` | _(optional)_ When set, the request fails with this error number from Chromium's net error list. |
+| `statusCode` | `number` | _(optional)_ The HTTP response code. Defaults to `200`. |
+| `charset` | `string` | _(optional)_ The character encoding of the response body. Defaults to `"utf-8"`. |
+| `mimeType` | `string` | _(optional)_ The media type of the response body. Defaults to `"text/html"` and sets the `content-type` header. |
+| `headers` | `Record<string, string \| string[]>` | _(optional)_ Response headers as key/value pairs; each value can be a string or an array of strings. |
+| `data` | `Buffer \| string \| ReadableStream` | _(optional)_ The response body, as a buffer, string, or Node.js readable stream. |
+| `path` | `string` | _(optional)_ A file-system path whose contents are sent as the response body (for file responses). |
+| `url` | `string` | _(optional)_ A URL to download and pipe as the response body (for URL responses). |
+| `referrer` | `string` | _(optional)_ The referrer URL used for file and URL responses. |
+| `method` | `string` | _(optional)_ The HTTP method used for file and URL responses. |
+| `session` | `Session` | _(optional)_ The session used for URL requests. Reuses the current session by default. |
+| `uploadData` | `ProtocolResponseUploadData` | _(optional)_ The upload data sent with POST requests to URLs. |
+
+```js
+// Inside a protocol handler, answer with an in-memory string
+callback({
+  statusCode: 200,
+  mimeType: 'application/json',
+  data: JSON.stringify({ hello: 'world' }),
+})
+```
+
+<EasyNote>
+Think of it as the reply card you fill out when someone "rings the doorbell" on your custom URL scheme: status, content type, and the actual content go on the card.
+</EasyNote>
+
+## In plain words
+
+When you register your own URL scheme (like `myapp://`) or intercept an existing one, Electron asks your code "what should I send back?" `ProtocolResponse` is your answer. You can return raw data, point to a file on disk, redirect to a URL, or signal a failure with an error code. Most fields are optional, so you only fill in the ones you need.
+
+<Cards>
+  <Cards.Card title="protocol" href="/en/api/protocol" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

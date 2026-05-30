@@ -1,0 +1,42 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="CrashReport"
+  subtitle="A record of a single crash that was uploaded to your crash server"
+  badge="API · Structure"
+/>
+
+`CrashReport` describes one crash that the `crashReporter` module has collected. You get these objects from `crashReporter.getLastCrashReport()` and `crashReporter.getUploadedReports()`.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `date` | `Date` | When the crash happened. |
+| `id` | `string` | A unique identifier for this crash report. |
+
+```js
+const { crashReporter } = require('electron')
+
+const last = crashReporter.getLastCrashReport()
+if (last) {
+  console.log(last.id, last.date)
+}
+```
+
+<EasyNote>
+Think of it like an entry in an accident logbook: each line just says when something went wrong and gives it a case number to look it up later.
+</EasyNote>
+
+## In plain words
+
+When your app crashes and the report is sent off, Electron keeps a small receipt for it. A `CrashReport` is that receipt: it tells you the time of the crash and a unique ID. You would use it to show users their crash history, or to match a local crash with the full report on your crash server.
+
+<Cards>
+  <Cards.Card title="crashReporter" href="/en/api/crash-reporter" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

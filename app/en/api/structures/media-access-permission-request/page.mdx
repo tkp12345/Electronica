@@ -1,0 +1,48 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="MediaAccessPermissionRequest"
+  subtitle="Details about a request to use the camera or microphone"
+  badge="API · Structure"
+/>
+
+`MediaAccessPermissionRequest` is the object Electron hands you when a web page asks for media (camera/microphone) access. It is passed to the handlers you register with `session`'s `setPermissionRequestHandler` and `setPermissionCheckHandler`, so you can decide whether to allow or deny the request. It extends the base `PermissionRequest` structure, so it also carries the standard request fields.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `securityOrigin` | `string` | _(optional)_ The security origin the media access request comes from. |
+| `mediaTypes` | `string[]` | _(optional)_ The types of media access being requested. Elements can be `video` or `audio`. |
+| `requestingUrl` | `string` | The last URL the requesting frame loaded (inherited from `PermissionRequest`). |
+| `isMainFrame` | `boolean` | Whether the frame making the request is the main frame (inherited from `PermissionRequest`). |
+
+```js
+const { session } = require('electron')
+
+session.defaultSession.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
+  if (permission === 'media') {
+    // details is a MediaAccessPermissionRequest
+    const wantsCamera = details.mediaTypes?.includes('video')
+    return !wantsCamera // e.g. allow microphone, block camera
+  }
+  return true
+})
+```
+
+<EasyNote>
+Think of it as the slip a website hands you that says "Hi, I'd like to use your camera and/or microphone" — it tells you who's asking and what they want.
+</EasyNote>
+
+## In plain words
+
+Whenever a page tries to turn on the webcam or mic, your app gets to act as the bouncer. This object is the request form: it tells you which site is asking (`securityOrigin` / `requestingUrl`), whether it's the main page or an embedded frame, and exactly what it wants (`video`, `audio`, or both). You read those fields and then say yes or no — handy for building your own privacy prompts instead of trusting every site automatically.
+
+<Cards>
+  <Cards.Card title="session" href="/en/api/session" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

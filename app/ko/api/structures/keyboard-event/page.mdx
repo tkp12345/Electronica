@@ -1,0 +1,47 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="KeyboardEvent"
+  subtitle="액셀러레이터가 발생했을 때 어떤 보조키가 눌려 있었는지 알려주는 작은 객체입니다."
+  badge="API · Structure"
+/>
+
+`KeyboardEvent`는 `MenuItem`의 `click` 콜백에 두 번째 인자로 전달되며, `globalShortcut` 핸들러에도 함께 전달됩니다. 해당 동작이 키보드 액셀러레이터로 실행되었는지, 그리고 그 순간 어떤 보조키가 눌려 있었는지를 알려줍니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `ctrlKey` | `boolean` | _(선택)_ 이벤트를 트리거한 액셀러레이터에 Control 키가 사용되었는지 여부입니다. |
+| `metaKey` | `boolean` | _(선택)_ 이벤트를 트리거한 액셀러레이터에 메타 키(macOS의 Command, Windows의 Windows 키)가 사용되었는지 여부입니다. |
+| `shiftKey` | `boolean` | _(선택)_ 이벤트를 트리거한 액셀러레이터에 Shift 키가 사용되었는지 여부입니다. |
+| `altKey` | `boolean` | _(선택)_ 이벤트를 트리거한 액셀러레이터에 Alt 키가 사용되었는지 여부입니다. |
+| `triggeredByAccelerator` | `boolean` | _(선택)_ 마우스 클릭과 같은 다른 사용자 제스처가 아니라, 액셀러레이터로 이벤트가 트리거되었는지 여부입니다. |
+
+```js
+const menuItem = {
+  label: '새로고침',
+  click: (item, window, event) => {
+    if (event.shiftKey) {
+      // Shift를 누른 상태였다면 강제 새로고침
+    }
+  },
+}
+```
+
+<EasyNote>
+`KeyboardEvent`는 클릭에 붙은 포스트잇이라고 생각하면 됩니다. "참고로, 이 키들이 함께 눌려 있었어요"라고 알려 주는 메모인 셈입니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+사용자가 메뉴 항목이나 전역 단축키를 실행할 때, 어떤 키를 함께 누르고 있었는지에 따라 동작을 다르게 하고 싶을 때가 있습니다. 예를 들어 Shift를 눌러 동작을 "강제로" 실행하는 경우가 그렇습니다. `KeyboardEvent`는 바로 그런 상황을 위해, 보조키별로 참/거짓 플래그 몇 개와 함께 이 이벤트가 마우스가 아닌 키보드 단축키로 발생했는지 알려 주는 플래그를 제공합니다. 이 객체를 직접 만들 필요는 없으며, 콜백 안에서 읽어 쓰기만 하면 됩니다.
+
+<Cards>
+  <Cards.Card title="menu-item" href="/ko/api/menu-item" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

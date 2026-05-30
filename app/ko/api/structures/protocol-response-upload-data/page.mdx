@@ -1,0 +1,40 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ProtocolResponseUploadData"
+  subtitle="커스텀 프로토콜이 요청을 보낼 때 업로드할 본문"
+  badge="API · Structure"
+/>
+
+`ProtocolResponseUploadData`는 커스텀 프로토콜 핸들러가 외부로 보내는 요청 본문을 나타냅니다. `ProtocolResponse`의 `uploadData` 필드로 사용되며, 보통 `protocol.registerHttpProtocol`로 요청을 다른 URL로 전달하면서 POST 본문을 함께 담아야 할 때 쓰입니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `contentType` | `string` | 콘텐츠의 MIME 타입입니다 (예: `application/json`). |
+| `data` | `string \| Buffer` | 요청 본문으로 보낼 콘텐츠입니다. |
+
+```js
+const uploadData = {
+  contentType: 'application/json',
+  data: JSON.stringify({ hello: 'world' }),
+}
+```
+
+<EasyNote>
+편지 봉투 안에 든 내용물과, 어떤 종류의 편지인지 알려주는 라벨을 합쳐 놓은 것이라고 생각하시면 됩니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+앱이 어떤 URL을 가로채서 다른 곳으로 전달할 때, POST 요청의 본문처럼 함께 보낼 데이터가 필요한 경우가 있습니다. 이 객체는 그 데이터(`data`)를 담고, 받는 쪽이 어떻게 읽어야 하는지(`contentType`)를 알려 줍니다. 단순히 무언가를 가져오는 것이 아니라, 커스텀 프로토콜 응답이 요청과 함께 데이터를 보내야 할 때 사용하시면 됩니다.
+
+<Cards>
+  <Cards.Card title="protocol" href="/ko/api/protocol" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

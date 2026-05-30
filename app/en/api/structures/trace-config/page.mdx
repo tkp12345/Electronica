@@ -1,0 +1,50 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="TraceConfig"
+  subtitle="Settings that control how Electron records performance traces"
+  badge="API · Structure"
+/>
+
+`TraceConfig` is the options object you pass to `contentTracing.startRecording()`. It tells Electron what to record, which categories to include or exclude, and how big the recording buffer should be.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `recording_mode` | `string` | _(optional)_ One of `record-until-full`, `record-continuously`, `record-as-much-as-possible`, or `trace-to-console`. Defaults to `record-until-full`. |
+| `trace_buffer_size_in_kb` | `number` | _(optional)_ Maximum size of the trace recording buffer in kilobytes. Defaults to 100MB. |
+| `trace_buffer_size_in_events` | `number` | _(optional)_ Maximum size of the trace recording buffer in events. |
+| `enable_argument_filter` | `boolean` | _(optional)_ If true, filters event data according to manually vetted categories to exclude personally identifiable information (PII). |
+| `included_categories` | `string[]` | _(optional)_ List of tracing categories to include. Supports glob patterns using `*` at the end of a category name. |
+| `excluded_categories` | `string[]` | _(optional)_ List of tracing categories to exclude. Supports glob patterns using `*` at the end of a category name. |
+| `included_process_ids` | `number[]` | _(optional)_ List of process IDs to include in the trace. If unspecified, all processes are traced. |
+| `histogram_names` | `string[]` | _(optional)_ List of histogram names to report with the trace. |
+| `memory_dump_config` | `Record<string, any>` | _(optional)_ If the `disabled-by-default-memory-infra` category is enabled, this contains optional additional configuration for data collection. |
+
+```js
+const { contentTracing } = require('electron')
+
+await contentTracing.startRecording({
+  recording_mode: 'record-until-full',
+  trace_buffer_size_in_kb: 102400,
+  included_categories: ['*']
+})
+```
+
+<EasyNote>
+Think of this object as the settings dial on a flight recorder: it decides what gets logged, how much fits, and which parts to keep or skip.
+</EasyNote>
+
+## In plain words
+
+When you want to find out why your app is slow, you ask Electron to record a trace. `TraceConfig` is how you describe that recording before it starts. You pick which categories of activity to capture, set how large the recording buffer can grow, and choose whether old data gets overwritten or kept. Everything is optional, so you can start with an empty object and only add the knobs you actually care about.
+
+<Cards>
+  <Cards.Card title="contentTracing" href="/en/api/content-tracing" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

@@ -1,0 +1,46 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="UploadFile"
+  subtitle="POST 요청 본문에 첨부할 파일을 설명하는 객체"
+  badge="API · Structure"
+/>
+
+`UploadFile`은 네트워크 요청 본문의 일부로 업로드할 파일 하나를 설명합니다. 본문을 메모리에서 직접 만들지 않고 디스크의 파일을 스트리밍하고 싶을 때, `net.request`(및 `ClientRequest`)에 전달하는 옵션의 `uploadData` 필드에서 사용됩니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `type` | `string` | 데이터 타입입니다. 반드시 `'file'`로 설정해야 합니다. |
+| `filePath` | `string` | 업로드할 파일의 경로입니다. |
+| `offset` | `Integer` | _(선택)_ 읽기를 시작할 바이트 오프셋입니다. 기본값은 `0`입니다. |
+| `length` | `Integer` | _(선택)_ `offset`부터 읽을 바이트 수입니다. 기본값은 `0`이며, 파일 전체를 의미합니다. |
+| `modificationTime` | `Double` | _(선택)_ UNIX 에폭 기준 마지막 수정 시각(초)입니다. 기본값은 `0`입니다. |
+
+```js
+const uploadFile = {
+  type: 'file',
+  filePath: '/Users/me/photo.png',
+  offset: 0,
+  length: 0,
+  modificationTime: Date.now() / 1000
+}
+```
+
+<EasyNote>
+파일에 붙이는 택배 송장과 비슷합니다. "이 위치에 있는 파일을, 이 지점부터 보내줘"라고 요청에게 알려주는 역할이에요.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+네트워크로 파일을 업로드할 때, 파일 전체를 먼저 메모리에 올리고 싶지는 않을 거예요. `UploadFile`을 사용하면 디스크에 있는 파일을 경로로 가리키기만 하면 되고, 나머지는 Electron이 알아서 스트리밍해 줍니다. 파일의 일부만 필요할 때는 `offset`과 `length`를 사용해 원하는 구간만 업로드할 수도 있습니다.
+
+<Cards>
+  <Cards.Card title="net" href="/ko/api/net" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

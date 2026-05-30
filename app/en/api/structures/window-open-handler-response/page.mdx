@@ -1,0 +1,53 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="WindowOpenHandlerResponse"
+  subtitle="The decision object you return when a page tries to open a new window"
+  badge="API · Structure"
+/>
+
+This structure is the value you return from the callback passed to `webContents.setWindowOpenHandler`. It tells Electron whether to allow the new window, and optionally how to customize or create it.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `action` | `string` | Can be `allow` or `deny`. Controls whether the new window should be created. |
+| `overrideBrowserWindowOptions` | `BrowserWindowConstructorOptions` | _(optional)_ Lets you modify the configuration of the newly created window. |
+| `outlivesOpener` | `boolean` | _(optional)_ When `true`, the opened window persists after its opener is closed; otherwise the child window closes with its opener. |
+| `createWindow` | `(options: BrowserWindowConstructorOptions) => WebContents` | _(optional)_ If specified, this is called instead of `new BrowserWindow` to create the child window, and it prevents the `did-create-window` event from being emitted. |
+
+```js
+const { app } = require('electron')
+
+contents.setWindowOpenHandler(({ url }) => {
+  if (isSafe(url)) {
+    return {
+      action: 'allow',
+      overrideBrowserWindowOptions: {
+        width: 800,
+        height: 600,
+        frame: false
+      }
+    }
+  }
+  return { action: 'deny' }
+})
+```
+
+<EasyNote>
+Think of it as a bouncer's verdict slip: "let them in" or "turn them away" — and if you let them in, a note on which room to give them.
+</EasyNote>
+
+## In plain words
+
+Whenever a web page tries to pop open a new window (for example via `window.open` or a target=_blank link), Electron asks your handler what to do. You answer with this object: `allow` to let it open, or `deny` to block it. When you allow it, you can also hand over custom window settings so the new window looks and behaves exactly how you want. This is your main tool for keeping unwanted pop-ups under control.
+
+<Cards>
+  <Cards.Card title="web-contents" href="/en/api/web-contents" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

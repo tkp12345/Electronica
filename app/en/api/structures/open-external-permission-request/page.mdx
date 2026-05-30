@@ -1,0 +1,47 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="OpenExternalPermissionRequest"
+  subtitle="Details about a request to open a URL in an external application"
+  badge="API · Structure"
+/>
+
+The `OpenExternalPermissionRequest` object is passed to your permission handlers when a page tries to open an external URL (for example via `shell.openExternal` or a link that leaves the app). It extends the base `PermissionRequest`, so it carries the standard request details plus the external URL being requested. You receive it inside `session`'s `setPermissionRequestHandler` and `setPermissionCheckHandler`.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `externalURL` | `string` | _(optional)_ The URL of the `openExternal` request. |
+| `requestingUrl` | `string` | The last URL the requesting frame loaded. |
+| `isMainFrame` | `boolean` | Whether the frame making the request is the main frame. |
+
+```js
+const { session } = require('electron')
+
+session.defaultSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
+  if (permission === 'openExternal') {
+    // details is an OpenExternalPermissionRequest
+    const allowed = details.externalURL?.startsWith('https://example.com')
+    return callback(Boolean(allowed))
+  }
+  callback(true)
+})
+```
+
+<EasyNote>
+Think of it as a visitor's note that says "I'm on this page and I'd like to send you to this outside link" — it tells you who is asking and where they want to go.
+</EasyNote>
+
+## In plain words
+
+When a web page in your app wants to open a link in the user's real browser or another app, Electron asks your permission first and hands you this object. You'd use it to check the external URL and decide whether to allow it — a simple way to block users from being sent to suspicious sites without your approval.
+
+<Cards>
+  <Cards.Card title="session" href="/en/api/session" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

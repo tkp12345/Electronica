@@ -1,0 +1,54 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="IpcMainEvent"
+  subtitle="메인 프로세스의 ipcMain 메시지 리스너에 전달되는 이벤트 객체"
+  badge="API · Structure"
+/>
+
+`IpcMainEvent`는 `ipcMain.on(channel, listener)`로 메시지를 수신할 때 Electron이 콜백에 넘겨주는 객체입니다. 누가 메시지를 보냈는지, 그리고 어떻게 답장할 수 있는지에 필요한 모든 정보를 담고 있습니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `type` | `string` | 보낸 쪽의 타입입니다. 가능한 값으로 `frame`이 있습니다. |
+| `processId` | `number` | 이 메시지를 보낸 렌더러 프로세스의 내부 ID입니다. |
+| `frameId` | `number` | 이 메시지를 보낸 렌더러 프레임의 ID입니다. |
+| `returnValue` | `any` | 동기 메시지에서 반환할 값을 여기에 설정합니다 (`ipcRenderer.sendSync`와 함께 사용). |
+| `sender` | `WebContents` | 메시지를 보낸 `webContents`를 반환합니다. 이를 통해 해당 창에 직접 답장할 수 있습니다. |
+| `senderFrame` | `WebFrameMain \| null` | 이 메시지를 보낸 프레임입니다. 프레임이 이동했거나 파괴된 뒤 접근하면 `null`일 수 있습니다 (읽기 전용). |
+| `ports` | `MessagePortMain[]` | 이 메시지와 함께 전달된 `MessagePortMain` 객체들의 목록입니다. |
+| `reply` | `Function` | 렌더러 프레임으로 IPC 메시지를 다시 보내는 함수입니다. `channel`(`string`)과 `...args`(`any[]`)를 인자로 받습니다. |
+
+```js
+const { ipcMain } = require('electron')
+
+ipcMain.on('request-data', (event, query) => {
+  // 동기 응답
+  event.returnValue = lookup(query)
+
+  // 또는 같은 렌더러로 비동기 메시지를 다시 보내기
+  event.reply('data-ready', { ok: true })
+
+  // 또는 sender를 직접 사용하기
+  event.sender.send('data-ready', { ok: true })
+})
+```
+
+<EasyNote>
+이미 반송 주소가 적힌 편지라고 생각해 보세요. 누가 보냈는지(`sender`, `frameId`)도 알려주고, 답장을 쓸 수 있는 선불 봉투(`reply`)까지 함께 들어 있습니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+메인 프로세스가 창으로부터 오는 메시지를 수신하면, 모든 메시지는 `IpcMainEvent`에 감싸여 도착합니다. 이 객체를 직접 만들 일은 거의 없고, 그저 받아서 값을 읽어 사용합니다. `event.reply`나 `event.sender`를 사용하면 메시지를 보낸 바로 그 창에 정확히 답장할 수 있고, 렌더러가 동기적으로 응답을 기다리고 있을 때는 `event.returnValue`를 설정해 주면 됩니다.
+
+<Cards>
+  <Cards.Card title="ipc-main" href="/ko/api/ipc-main" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

@@ -1,0 +1,42 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="MimeTypedBuffer"
+  subtitle="MIME 타입과 문자셋 정보가 함께 담긴 바이너리 데이터 묶음"
+  badge="API · Structure"
+/>
+
+`MimeTypedBuffer`는 원시 데이터와 그 데이터를 어떻게 해석해야 하는지에 대한 정보를 함께 담은 구조입니다. `protocol.registerBufferProtocol`이나 커스텀 프로토콜 핸들러가 반환하는 버퍼 응답 등에서 사용되며, 렌더러가 어떤 종류의 콘텐츠를 받았는지 정확히 알 수 있게 해줍니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `mimeType` | `string` | _(선택)_ 버퍼의 MIME 타입입니다. 예: `text/html`, `image/png`. |
+| `charset` | `string` | _(선택)_ 버퍼의 문자셋입니다. 예: `utf-8`. |
+| `data` | `Buffer` | 실제 Buffer 콘텐츠입니다. |
+
+```js
+const response = {
+  mimeType: 'text/html',
+  charset: 'utf-8',
+  data: Buffer.from('<h1>Hello</h1>')
+}
+```
+
+<EasyNote>
+이름표가 붙은 택배 상자라고 생각하면 됩니다. 상자 안에는 내용물(`data`)이 들어 있고, 송장에는 무엇이 들어 있는지(`mimeType`)와 어떤 언어로 쓰였는지(`charset`)가 적혀 있는 셈입니다.
+</EasyNote>
+
+## 쉽게 말하면
+
+앱이 커스텀 프로토콜로 콘텐츠를 제공할 때, 브라우저는 받은 것이 HTML 페이지인지 이미지인지 일반 텍스트인지 알아야 합니다. `MimeTypedBuffer`를 사용하면 원시 바이트를 넘기면서 동시에 MIME 타입과 문자셋을 함께 표시할 수 있어, 콘텐츠가 의미 없는 덩어리로 취급되지 않고 올바르게 렌더링됩니다.
+
+<Cards>
+  <Cards.Card title="protocol" href="/ko/api/protocol" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

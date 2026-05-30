@@ -1,0 +1,47 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="Extension"
+  subtitle="로드된 크롬 확장 프로그램과 그 메타데이터를 설명합니다"
+  badge="API · Structure"
+/>
+
+`Extension` 객체는 `session`에 로드된 확장 프로그램을 나타냅니다. `ses.loadExtension()`, `ses.getExtension()`, `ses.getAllExtensions()` 같은 메서드가 이 객체를 반환합니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `id` | `string` | 확장 프로그램의 고유 식별자입니다. |
+| `manifest` | `unknown` | 확장 프로그램의 파싱된 `manifest.json` 데이터 사본입니다(크롬 확장 매니페스트 객체). |
+| `name` | `string` | 확장 프로그램의 표시 이름입니다. |
+| `path` | `string` | 디스크상에 있는 확장 프로그램의 기본 파일 경로입니다. |
+| `version` | `string` | 확장 프로그램의 버전 번호입니다. |
+| `url` | `string` | 확장 프로그램의 `chrome-extension://` 기본 URL입니다. |
+
+```js
+const { session } = require('electron')
+
+const ext = await session.defaultSession.loadExtension('/path/to/extension')
+console.info(ext.id)       // 예: "ablahblahblahblahblahblahblahbla"
+console.info(ext.name)     // 예: "My Extension"
+console.info(ext.version)  // 예: "1.0.0"
+console.info(ext.url)      // 예: "chrome-extension://ablah.../"
+```
+
+<EasyNote>
+설치된 브라우저 확장 프로그램의 신분증이라고 생각하면 됩니다. 확장 프로그램의 이름, 버전, 저장 위치, 그리고 해당 페이지에 접근하는 방법을 알려줍니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+크롬 형식의 확장 프로그램을 Electron에 로드하면 그것을 설명하는 이 작은 기록을 돌려받습니다. 나중에 제거할 때 쓰려고 확장 프로그램의 `id`를 기억해 두거나, 기능을 확인하려고 `manifest`를 읽거나, 확장 프로그램의 특정 페이지를 가리키는 `chrome-extension://` URL을 만들 때 사용합니다. 이미 로드된 대상에 대한 읽기 전용 정보입니다.
+
+<Cards>
+  <Cards.Card title="session" href="/ko/api/session" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

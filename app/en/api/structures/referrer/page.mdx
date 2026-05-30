@@ -1,0 +1,40 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="Referrer"
+  subtitle="The referring URL and the privacy policy that controls how it is shared"
+  badge="API · Structure"
+/>
+
+The `Referrer` object describes the page a request came from and how much of that information should be sent along. You receive it in events like `webContents`' `did-redirect-navigation` and `will-redirect`, and you can pass it to `webContents.loadURL()` and `webContents.downloadURL()`.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `url` | `string` | The HTTP referrer URL — the address of the page the request originated from. |
+| `policy` | `string` | The referrer policy that controls how much of the URL is sent. One of `default`, `unsafe-url`, `no-referrer-when-downgrade`, `no-referrer`, `origin`, `strict-origin-when-cross-origin`, `same-origin`, or `strict-origin`. Follows the [Referrer-Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy) spec. |
+
+```js
+const referrer = {
+  url: 'https://www.example.com/page',
+  policy: 'strict-origin-when-cross-origin'
+}
+```
+
+<EasyNote>
+A Referrer is like the return address on a letter — it says where the request came from, and the policy decides whether you write the full address or just the city.
+</EasyNote>
+
+## In plain words
+
+When you click a link or load a page, the browser usually tells the destination which page you came from. The `Referrer` object captures that: `url` is where you came from, and `policy` controls how much of it gets shared for privacy. You will mostly see it when navigating or downloading through `webContents`, where you can hand over both pieces to set the right referrer.
+
+<Cards>
+  <Cards.Card title="webContents" href="/en/api/web-contents" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

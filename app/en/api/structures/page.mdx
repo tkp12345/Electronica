@@ -1,0 +1,28 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="Structures"
+  subtitle="The plain object shapes Electron passes around — the args you fill in and the data you get back."
+  badge="API · Structures"
+/>
+
+## What these are
+
+Structures aren't modules you call — they're **object type definitions**. When a method asks for options or hands you data (a `Cookie`, a `Display`, a `Rectangle`), this section tells you exactly which fields exist and what each one means.
+
+<EasyNote>
+If modules are the verbs (do something), structures are the nouns (the shapes of the things). You don't "run" a `Cookie` — you read or build one.
+</EasyNote>
+
+Browse the full list in the sidebar. A few you'll meet early:
+
+<Cards>
+  <Cards.Card title="BrowserWindowOptions" href="/en/api/structures/browser-window-options" arrow />
+  <Cards.Card title="Cookie" href="/en/api/structures/cookie" arrow />
+  <Cards.Card title="Display" href="/en/api/structures/display" arrow />
+  <Cards.Card title="Rectangle" href="/en/api/structures/rectangle" arrow />
+</Cards>

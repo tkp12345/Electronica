@@ -1,0 +1,41 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="SegmentedControlSegment"
+  subtitle="터치 바 분할 컨트롤 안의 세그먼트 하나를 설명하는 객체"
+  badge="API · Structure"
+/>
+
+이 구조는 `TouchBarSegmentedControl` 안에 들어가는 버튼 같은 세그먼트 하나를 정의합니다. 이 객체들을 배열로 만들어 컨트롤의 `segments` 옵션에 전달하면 각 선택지가 배치됩니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `label` | `string` | _(선택)_ 이 세그먼트에 표시될 텍스트입니다. |
+| `icon` | `NativeImage` | _(선택)_ 이 세그먼트에 표시될 이미지입니다. |
+| `enabled` | `boolean` | _(선택)_ 이 세그먼트를 선택할 수 있는지 여부입니다. 기본값: `true`. |
+
+```js
+const segment = {
+  label: 'Bold',
+  enabled: true,
+}
+```
+
+<EasyNote>
+작은 리모컨의 글자가 적힌 버튼 하나라고 생각하면 됩니다. 텍스트나 아이콘을 보여줄 수 있고, 비활성화하면 눌리지 않게 만들 수도 있습니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+macOS 터치 바용 분할 컨트롤을 만들 때, 클릭할 수 있는 각 조각 하나가 바로 `SegmentedControlSegment`입니다. 무슨 글자를 보여줄지(`label`), 그림을 함께 보여줄지(`icon`), 사용자가 실제로 누를 수 있는지(`enabled`)를 정하면 됩니다. 이런 세그먼트를 여러 개 묶으면 토글 방식의 선택지 한 줄이 만들어집니다.
+
+<Cards>
+  <Cards.Card title="TouchBar" href="/ko/api/touch-bar" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

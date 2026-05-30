@@ -1,0 +1,41 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="SegmentedControlSegment"
+  subtitle="Describes a single segment inside a Touch Bar segmented control"
+  badge="API · Structure"
+/>
+
+This structure defines one button-like segment within a `TouchBarSegmentedControl`. You pass an array of these objects to the control's `segments` option to lay out each choice.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `label` | `string` | _(optional)_ The text to appear in this segment. |
+| `icon` | `NativeImage` | _(optional)_ The image to appear in this segment. |
+| `enabled` | `boolean` | _(optional)_ Whether this segment is selectable. Default: `true`. |
+
+```js
+const segment = {
+  label: 'Bold',
+  enabled: true,
+}
+```
+
+<EasyNote>
+Think of it as one labeled key on a small remote control — it can show text, an icon, or both, and you can grey it out so it can't be pressed.
+</EasyNote>
+
+## In plain words
+
+When you build a segmented control for the macOS Touch Bar, each clickable piece is one `SegmentedControlSegment`. You decide what it says (`label`), whether it shows a picture (`icon`), and whether the user can actually tap it (`enabled`). Group several of them together to make a row of toggle-style choices.
+
+<Cards>
+  <Cards.Card title="TouchBar" href="/en/api/touch-bar" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

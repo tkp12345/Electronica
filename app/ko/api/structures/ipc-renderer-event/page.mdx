@@ -1,0 +1,43 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="IpcRendererEvent"
+  subtitle="ipcRenderer 리스너에 전달되는 이벤트 객체"
+  badge="API · Structure"
+/>
+
+`IpcRendererEvent` 객체는 표준 DOM `Event`를 확장한 것으로, `ipcRenderer.on`, `ipcRenderer.once` 등으로 등록한 모든 콜백의 첫 번째 인자로 전달됩니다. 누가 메시지를 보냈는지 알려주고, 함께 전송된 `MessagePort`들을 담아 옵니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `sender` | `IpcRenderer` | 이 이벤트를 처음 발생시킨 `IpcRenderer` 인스턴스입니다. |
+| `ports` | `MessagePort[]` | 이 메시지와 함께 전송된 `MessagePort`들의 목록입니다. |
+
+```js
+const { ipcRenderer } = require('electron')
+
+ipcRenderer.on('reply', (event, ...args) => {
+  // event는 IpcRendererEvent입니다
+  console.log(event.sender) // 이 이벤트를 발생시킨 IpcRenderer
+  console.log(event.ports)  // 함께 전송된 MessagePort들
+})
+```
+
+<EasyNote>
+IpcRendererEvent는 편지가 도착한 봉투와 같습니다. 편지 내용 자체는 아니지만, 어디서 왔는지 알려주고 함께 끼워 보낸 것들도 담겨 있습니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+메인 프로세스가 웹 페이지로 메시지를 보낼 때마다, 리스너는 두 가지를 받습니다. 바로 이 이벤트 객체와 실제 데이터입니다. `IpcRendererEvent`는 그중 "메타데이터" 부분으로, 메시지를 전달한 `ipcRenderer`에 다시 접근하거나 함께 보내진 `MessagePort`들을 꺼낼 수 있게 해줍니다(직접적인 양방향 채널을 만들 때 유용합니다). 대부분은 데이터 인자만 읽으면 되지만, `MessageChannel` 방식의 통신을 연결할 때는 `event.ports`를 사용하게 됩니다.
+
+<Cards>
+  <Cards.Card title="ipcRenderer" href="/ko/api/ipc-renderer" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

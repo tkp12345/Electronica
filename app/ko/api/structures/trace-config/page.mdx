@@ -1,0 +1,50 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="TraceConfig"
+  subtitle="Electron이 성능 추적(trace)을 기록하는 방식을 제어하는 설정"
+  badge="API · Structure"
+/>
+
+`TraceConfig`는 `contentTracing.startRecording()`에 전달하는 옵션 객체입니다. 무엇을 기록할지, 어떤 카테고리를 포함하거나 제외할지, 기록 버퍼의 크기를 얼마로 할지를 Electron에 알려줍니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `recording_mode` | `string` | _(선택)_ `record-until-full`, `record-continuously`, `record-as-much-as-possible`, `trace-to-console` 중 하나입니다. 기본값은 `record-until-full`입니다. |
+| `trace_buffer_size_in_kb` | `number` | _(선택)_ 추적 기록 버퍼의 최대 크기(킬로바이트 단위)입니다. 기본값은 100MB입니다. |
+| `trace_buffer_size_in_events` | `number` | _(선택)_ 추적 기록 버퍼의 최대 크기(이벤트 개수 단위)입니다. |
+| `enable_argument_filter` | `boolean` | _(선택)_ true이면 수동으로 검증된 카테고리에 따라 이벤트 데이터를 필터링하여 개인 식별 정보(PII)를 제외합니다. |
+| `included_categories` | `string[]` | _(선택)_ 포함할 추적 카테고리 목록입니다. 카테고리 이름 끝에 `*`를 사용하는 글로브 패턴을 지원합니다. |
+| `excluded_categories` | `string[]` | _(선택)_ 제외할 추적 카테고리 목록입니다. 카테고리 이름 끝에 `*`를 사용하는 글로브 패턴을 지원합니다. |
+| `included_process_ids` | `number[]` | _(선택)_ 추적에 포함할 프로세스 ID 목록입니다. 지정하지 않으면 모든 프로세스를 추적합니다. |
+| `histogram_names` | `string[]` | _(선택)_ 추적과 함께 보고할 히스토그램 이름 목록입니다. |
+| `memory_dump_config` | `Record<string, any>` | _(선택)_ `disabled-by-default-memory-infra` 카테고리가 활성화된 경우, 데이터 수집을 위한 추가 설정을 담습니다. |
+
+```js
+const { contentTracing } = require('electron')
+
+await contentTracing.startRecording({
+  recording_mode: 'record-until-full',
+  trace_buffer_size_in_kb: 102400,
+  included_categories: ['*']
+})
+```
+
+<EasyNote>
+이 객체는 비행 기록 장치(블랙박스)의 설정 다이얼이라고 생각하시면 됩니다. 무엇을 기록할지, 얼마나 담을지, 어떤 부분을 남기고 건너뛸지를 결정합니다.
+</EasyNote>
+
+## 쉽게 풀어서
+
+앱이 왜 느린지 알아보고 싶을 때, Electron에 추적(trace)을 기록해 달라고 요청합니다. `TraceConfig`는 그 기록을 시작하기 전에 어떻게 기록할지 설명하는 방법입니다. 어떤 종류의 활동을 캡처할지 카테고리를 고르고, 기록 버퍼가 얼마나 커질 수 있는지 정하고, 오래된 데이터를 덮어쓸지 아니면 계속 남길지 선택합니다. 모든 필드가 선택 사항이므로 빈 객체로 시작한 뒤 실제로 필요한 항목만 추가하시면 됩니다.
+
+<Cards>
+  <Cards.Card title="contentTracing" href="/ko/api/content-tracing" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

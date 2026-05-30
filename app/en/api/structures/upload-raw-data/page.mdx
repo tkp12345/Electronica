@@ -1,0 +1,40 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="UploadRawData"
+  subtitle="A chunk of raw in-memory bytes to send as request body data"
+  badge="API · Structure"
+/>
+
+The `UploadRawData` object describes a piece of raw binary data to be uploaded. It appears as one of the entries in a request's `uploadData` array (for example, in the `request` you build for `protocol` handlers or read from intercepted requests).
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `type` | `string` | Always the literal `'rawData'`, identifying this entry as raw bytes (as opposed to a file or blob). |
+| `bytes` | `Buffer` | The raw binary content to upload. |
+
+```js
+const uploadData = {
+  type: 'rawData',
+  bytes: Buffer.from('hello world')
+}
+```
+
+<EasyNote>
+UploadRawData is like an envelope with the actual bytes inside — it just says "this is raw data" and hands over the contents.
+</EasyNote>
+
+## In plain words
+
+When you send data to a server, the body can come from a file, a blob, or just some bytes you already have in memory. `UploadRawData` is that last case: a small object that flags itself as raw data and carries the actual `Buffer` of bytes. You'll run into it when you inspect or construct request bodies through the `protocol` module.
+
+<Cards>
+  <Cards.Card title="protocol" href="/en/api/protocol" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

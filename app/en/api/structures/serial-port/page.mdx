@@ -1,0 +1,47 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="SerialPort"
+  subtitle="A serial (COM) port discovered on the user's machine"
+  badge="API · Structure"
+/>
+
+The `SerialPort` object describes a single serial port that the user could connect to. You receive these objects in the `select-serial-port` event on a `session`, where you pick which port to grant a Web Serial API request.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `portId` | `string` | Unique identifier for the port. |
+| `portName` | `string` | Name of the port. |
+| `displayName` | `string` | _(optional)_ A string suitable for display to the user for describing this device. |
+| `vendorId` | `string` | _(optional)_ The USB vendor ID. |
+| `productId` | `string` | _(optional)_ The USB product ID. |
+| `serialNumber` | `string` | _(optional)_ The USB device serial number. |
+| `usbDriverName` | `string` | _(optional)_ _(macOS)_ Represents a single serial port on macOS that can be enumerated by multiple drivers. |
+| `deviceInstanceId` | `string` | _(optional)_ _(Windows)_ A stable identifier on Windows that can be used for device permissions. |
+
+```js
+session.defaultSession.on('select-serial-port', (event, portList, webContents, callback) => {
+  event.preventDefault()
+  const selected = portList.find((port) => port.vendorId === '2341')
+  callback(selected ? selected.portId : '')
+})
+```
+
+<EasyNote>
+A SerialPort is like an entry in a list of plugged-in cables — each one has an ID and a name so you can point to the exact device you mean.
+</EasyNote>
+
+## In plain words
+
+When a web page asks to talk to a serial device (like an Arduino or a printer), Electron hands you a list of `SerialPort` objects — one per available port. Each object tells you which device it is (its IDs, name, and serial number) so you can decide which one to allow. You return its `portId` to grant access.
+
+<Cards>
+  <Cards.Card title="session" href="/en/api/session" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

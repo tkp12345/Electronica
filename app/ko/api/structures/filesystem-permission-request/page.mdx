@@ -1,0 +1,48 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="FilesystemPermissionRequest"
+  subtitle="파일 시스템 접근을 요청하는 정보를 담은 객체"
+  badge="API · Structure"
+/>
+
+`FilesystemPermissionRequest`는 기본 `PermissionRequest` 객체를 확장하며, 하나의 파일 시스템 접근 요청을 설명합니다. 이 객체는 권한 요청 핸들러(`session.setPermissionRequestHandler`)에 전달되어, 특정 경로에 대한 읽기 또는 쓰기를 허용할지 결정할 수 있게 해 줍니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `requestingUrl` | `string` | 요청하는 프레임이 마지막으로 로드한 URL입니다. _(`PermissionRequest`에서 상속됨)_ |
+| `isMainFrame` | `boolean` | 요청을 보내는 프레임이 메인 프레임인지 여부입니다. _(`PermissionRequest`에서 상속됨)_ |
+| `filePath` | `string` | 요청 대상이 되는 파일 시스템 경로입니다. _(선택)_ |
+| `isDirectory` | `boolean` | 요청 대상이 단일 파일이 아니라 디렉터리인지 여부입니다. _(선택)_ |
+| `fileAccessType` | `string` | 요청된 접근 수준으로, `writable` 또는 `readable` 중 하나입니다. _(선택)_ |
+
+```js
+session.defaultSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
+  if (permission === 'fileSystem') {
+    // details는 FilesystemPermissionRequest입니다
+    const allow = details.fileAccessType === 'readable'
+    callback(allow)
+    return
+  }
+  callback(true)
+})
+```
+
+<EasyNote>
+웹 페이지가 "이 폴더를 좀 읽어도 될까요?"라고 적어 건네는 쪽지라고 생각하면 됩니다. 여러분은 거기에 예/아니오 도장을 찍어 주면 됩니다.
+</EasyNote>
+
+## 쉽게 말하면
+
+앱 안의 페이지가 파일 시스템에 접근하려 하면, Electron은 먼저 여러분에게 묻습니다. 이 객체는 무엇을 요청하는지 정확히 알려 줍니다. 어떤 경로인지, 폴더인지, 그리고 페이지가 읽으려는지 쓰려는지를 말이죠. 권한 핸들러 안에서 이 객체를 활용해 안전한 요청은 허용하고, 위험해 보이는 요청은 거절하면 됩니다.
+
+<Cards>
+  <Cards.Card title="session" href="/ko/api/session" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

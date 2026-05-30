@@ -1,0 +1,51 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="JumpListCategory"
+  subtitle="A single group of items shown in the Windows Jump List"
+  badge="API · Structure"
+/>
+
+The `JumpListCategory` object describes one category (a labeled group of items) in the Windows taskbar Jump List. You pass an array of these objects to `app.setJumpList(categories)` to build the menu that appears when a user right-clicks your app's taskbar or Start Menu icon.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `type` | `string` | _(optional)_ _(Windows)_ One of `"tasks"`, `"frequent"`, `"recent"`, or `"custom"`. `tasks` adds items to the standard Tasks group (only one allowed). `frequent` and `recent` are managed by Windows. `custom` is an app-defined group. |
+| `name` | `string` | _(optional)_ _(Windows)_ Display name of the category. Required when `type` is `custom`. |
+| `items` | `JumpListItem[]` | _(optional)_ _(Windows)_ Array of `JumpListItem` objects to place in this category (used with `tasks` and `custom`). |
+
+<Callout type="info">
+If neither `type` nor `name` is set, `type` defaults to `tasks`. If `name` is set but `type` is omitted, `type` defaults to `custom`. Item descriptions are limited to 260 characters; longer ones are dropped.
+</Callout>
+
+```js
+const category = {
+  type: 'custom',
+  name: 'Recent Projects',
+  items: [
+    {
+      type: 'file',
+      path: 'C:\\Projects\\demo.proj'
+    }
+  ]
+}
+```
+
+<EasyNote>
+Think of it as one labeled drawer in the little menu that pops up when you right-click an app's taskbar icon.
+</EasyNote>
+
+## In plain words
+
+When you right-click an app pinned to the Windows taskbar, you see a small menu of shortcuts. A `JumpListCategory` is one section of that menu, like "Tasks" or your own "Recent Projects" group. You give each section a name and a list of items, and Windows shows them grouped together. It's a Windows-only convenience for quick access to common actions or files.
+
+<Cards>
+  <Cards.Card title="app" href="/en/api/app" arrow />
+  <Cards.Card title="JumpListItem" href="/en/api/structures/jump-list-item" arrow />
+</Cards>

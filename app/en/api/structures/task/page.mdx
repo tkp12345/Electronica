@@ -1,0 +1,57 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="Task"
+  subtitle="One entry in a Windows JumpList — a shortcut that launches your program with specific arguments"
+  badge="API · Structure"
+/>
+
+A `Task` object describes a single item in a Windows JumpList (the menu that appears when you right-click an app icon on the taskbar). You pass an array of these to `app.setUserTasks(tasks)` to give users quick shortcuts into your app.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `program` | `string` | Path of the program to execute — usually `process.execPath`. |
+| `arguments` | `string` | The command line arguments passed when `program` is executed. |
+| `title` | `string` | The string shown for this task in the JumpList. |
+| `description` | `string` | Explanatory text shown in a tooltip for this task. |
+| `iconPath` | `string` | The absolute path to an icon to display in the JumpList. |
+| `iconIndex` | `number` | The index of the icon when `iconPath` holds multiple icons. Defaults to `0` for files with a single icon. |
+| `workingDirectory` | `string` | _(optional)_ The working directory. Defaults to empty. |
+
+<Callout type="info">
+The `Task` structure is **Windows only**. On other platforms `app.setUserTasks` simply does nothing.
+</Callout>
+
+```js
+const { app } = require('electron')
+
+app.setUserTasks([
+  {
+    program: process.execPath,
+    arguments: '--new-window',
+    iconPath: process.execPath,
+    iconIndex: 0,
+    title: 'New Window',
+    description: 'Create a new window',
+  },
+])
+```
+
+<EasyNote>
+A Task is like a labeled button on a control panel — pressing it always launches the same machine (`program`) in the same preset mode (`arguments`).
+</EasyNote>
+
+## In plain words
+
+A Task lets you add handy shortcuts to the right-click menu of your app's taskbar icon on Windows. Think "New Window", "Compose Email", or "Open Last Project" — each one just relaunches your app with different arguments so it knows what to do. You give each task a `title`, an optional `description` tooltip, and an `iconPath`, then hand the whole list to `app.setUserTasks`.
+
+<Cards>
+  <Cards.Card title="app" href="/en/api/app" arrow />
+  <Cards.Card title="JumpListCategory" href="/en/api/structures/jump-list-category" arrow />
+</Cards>

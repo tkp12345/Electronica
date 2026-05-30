@@ -1,0 +1,46 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="PaymentDiscount"
+  subtitle="인앱 구매 상품에 적용되는 서명된 프로모션 할인 정보"
+  badge="API · Structure"
+/>
+
+`PaymentDiscount` 객체는 App Store가 상품에 적용할 수 있는 하나의 프로모션 할인 정보를 나타냅니다. `inAppPurchase.getProducts()`가 반환하는 [`Product`](/ko/api/structures/product)의 `discounts` 배열에 담겨 있으며, 그 값들은 여러분의 서버에서 암호학적으로 서명됩니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `identifier` | `string` | 상품의 할인 혜택을 고유하게 식별하는 데 사용되는 문자열입니다. |
+| `keyIdentifier` | `string` | 서명을 생성하는 데 사용된 키를 식별하는 문자열입니다. |
+| `nonce` | `string` | 여러분이 직접 정의하는 범용 고유 식별자(UUID) 값입니다. |
+| `signature` | `string` | 특정 할인 혜택의 속성을 나타내는, 암호학적으로 서명된 UTF-8 문자열입니다. |
+| `timestamp` | `number` | 서명이 생성된 날짜와 시각으로, Unix epoch 시간 기준 밀리초 단위로 표시됩니다. |
+
+```js
+const discount = {
+  identifier: 'spring_sale_2024',
+  keyIdentifier: 'ABC123XYZ',
+  nonce: 'd1f8c2a0-3b4e-4f6a-9c7d-1e2f3a4b5c6d',
+  signature: 'MEUCIQ...signed-payload...',
+  timestamp: 1711929600000
+}
+```
+
+<EasyNote>
+PaymentDiscount는 서명된 쿠폰과 같습니다. 쿠폰 코드와 "누가 서명했는지"를 알려주는 표시, 그리고 위조를 막는 서명이 함께 들어 있어서 스토어가 이 혜택이 진짜임을 확인할 수 있습니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+앱 안에서 사용자가 구매하는 항목에 세일이나 특별 혜택을 제공할 때, Apple은 그 할인이 정말 여러분에게서 나온 것이며 위조되지 않았다는 증거를 필요로 합니다. `PaymentDiscount` 객체가 바로 그 증거를 담고 있습니다. 할인 혜택 ID와 함께, 여러분의 서버가 생성한 암호학적 서명이 들어 있죠. 보통 이 객체를 직접 만들지는 않습니다. App Store가 돌려주는 상품 정보에서 읽어 와서, 사용자가 할인된 가격으로 구매할 때 그대로 전달하면 됩니다.
+
+<Cards>
+  <Cards.Card title="inAppPurchase" href="/ko/api/in-app-purchase" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

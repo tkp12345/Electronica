@@ -1,0 +1,54 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="IpcMainEvent"
+  subtitle="The event object passed to ipcMain message listeners in the main process"
+  badge="API · Structure"
+/>
+
+`IpcMainEvent` is the object Electron hands to your callback whenever you listen for a message with `ipcMain.on(channel, listener)`. It carries everything you need to know about who sent the message and how to answer it.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `type` | `string` | The type of the sender. Possible values include `frame`. |
+| `processId` | `number` | The internal ID of the renderer process that sent this message. |
+| `frameId` | `number` | The ID of the renderer frame that sent this message. |
+| `returnValue` | `any` | Set this to the value to be returned in a synchronous message (used with `ipcRenderer.sendSync`). |
+| `sender` | `WebContents` | Returns the `webContents` that sent the message, so you can reply directly to it. |
+| `senderFrame` | `WebFrameMain \| null` | The frame that sent this message. May be `null` if accessed after the frame has navigated or been destroyed (readonly). |
+| `ports` | `MessagePortMain[]` | A list of `MessagePortMain` objects transferred along with this message. |
+| `reply` | `Function` | A function that sends an IPC message back to the renderer frame. Accepts `channel` (`string`) and `...args` (`any[]`). |
+
+```js
+const { ipcMain } = require('electron')
+
+ipcMain.on('request-data', (event, query) => {
+  // Synchronous reply
+  event.returnValue = lookup(query)
+
+  // Or send an async message back to the same renderer
+  event.reply('data-ready', { ok: true })
+
+  // Or use the sender directly
+  event.sender.send('data-ready', { ok: true })
+})
+```
+
+<EasyNote>
+Think of it like a letter that arrives with a return address already on the envelope: it tells you who wrote (`sender`, `frameId`) and gives you a pre-paid envelope to write back (`reply`).
+</EasyNote>
+
+## In plain words
+
+When the main process listens for messages from a window, every message arrives wrapped in an `IpcMainEvent`. You rarely create one yourself; you just receive it and read from it. Use `event.reply` or `event.sender` to talk back to the exact window that messaged you, and set `event.returnValue` when the renderer is waiting synchronously for an answer.
+
+<Cards>
+  <Cards.Card title="ipc-main" href="/en/api/ipc-main" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

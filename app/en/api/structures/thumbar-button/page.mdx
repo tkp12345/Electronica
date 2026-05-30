@@ -1,0 +1,48 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ThumbarButton"
+  subtitle="A button in the Windows taskbar thumbnail toolbar"
+  badge="API · Structure"
+/>
+
+`ThumbarButton` describes a single button shown in the thumbnail toolbar that appears when you hover over an app's taskbar icon on Windows. You pass an array of these to `win.setThumbarButtons(buttons)`. It is a Windows-only structure.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `icon` | `NativeImage` | _(Windows)_ The icon shown for the button in the thumbnail toolbar. |
+| `click` | `Function` | _(Windows)_ Callback invoked when the user clicks the button. |
+| `tooltip` | `string` | _(optional)_ _(Windows)_ The text shown in the button's tooltip. |
+| `flags` | `string[]` | _(optional)_ _(Windows)_ Controls the button's states and behavior. Defaults to `['enabled']`. Allowed values: `enabled`, `disabled`, `dismissonclick`, `nobackground`, `hidden`, `noninteractive`. |
+
+```js
+const { nativeImage } = require('electron')
+
+const button = {
+  tooltip: 'Play',
+  icon: nativeImage.createFromPath('/path/to/play.png'),
+  flags: ['enabled'],
+  click() {
+    console.info('clicked')
+  },
+}
+```
+
+<EasyNote>
+Think of a ThumbarButton like the little play/pause buttons on a music app's taskbar preview, controls you can tap without opening the window.
+</EasyNote>
+
+## In plain words
+
+When you hover over an app's icon in the Windows taskbar, a small preview pops up. ThumbarButton lets you add up to seven tiny control buttons under that preview, perfect for media controls like previous, play, and next. Each button needs an `icon` and a `click` handler; the rest is optional polish.
+
+<Cards>
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

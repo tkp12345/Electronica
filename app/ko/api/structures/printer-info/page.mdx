@@ -1,0 +1,49 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="PrinterInfo"
+  subtitle="사용자 시스템에서 사용할 수 있는 프린터를 설명하는 객체"
+  badge="API · Structure"
+/>
+
+`PrinterInfo` 객체는 운영체제가 인식하고 있는 하나의 프린터를 설명합니다. 사용자가 인쇄할 수 있는 프린터 목록을 돌려주는 `webContents.getPrintersAsync()` 같은 [`webContents`](/ko/api/web-contents) 메서드가 이 객체를 반환합니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `name` | `string` | 운영체제가 인식하는 프린터의 이름입니다. |
+| `displayName` | `string` | 인쇄 미리보기에 표시되는 프린터의 이름입니다. |
+| `description` | `string` | 프린터 종류에 대한 더 자세한 설명입니다. |
+| `status` | `number` | 프린터의 상태입니다. 숫자의 의미는 플랫폼마다 다릅니다(Windows 프린터 또는 CUPS 문서 참고). |
+| `options` | `Object` | 프린터를 설명하는, 플랫폼별로 개수가 달라지는 키들을 담은 객체입니다. |
+
+```js
+const { BrowserWindow } = require('electron')
+
+const win = new BrowserWindow()
+const printers = await win.webContents.getPrintersAsync()
+
+const printer = printers[0]
+// printer.name        -> 'Brother_HL_L2350DW'
+// printer.displayName  -> 'Brother HL-L2350DW'
+// printer.status       -> 3
+// printer.options      -> { 'printer-location': 'Office', ... }
+```
+
+<EasyNote>
+`PrinterInfo`는 프린터 한 대에 붙은 이름표와 같습니다. 이름이 무엇인지, 어떤 종류인지, 인쇄할 준비가 되었는지를 알려줍니다.
+</EasyNote>
+
+## 쉽게 말하면
+
+앱에서 무언가를 인쇄하려면 먼저 어떤 프린터를 쓸 수 있는지 알아야 합니다. 웹 콘텐츠에 프린터 목록을 요청하면 프린터마다 하나씩 `PrinterInfo` 객체가 담긴 목록을 받게 됩니다. 이 객체로 프린터 선택 드롭다운을 만들거나, 사용자에게 친숙한 이름을 보여주거나, 인쇄 작업을 보내기 전에 프린터 상태를 확인할 수 있습니다.
+
+<Cards>
+  <Cards.Card title="webContents" href="/ko/api/web-contents" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

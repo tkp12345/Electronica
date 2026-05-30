@@ -1,0 +1,51 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="JumpListCategory"
+  subtitle="Windows 점프 목록에 표시되는 하나의 항목 그룹"
+  badge="API · Structure"
+/>
+
+`JumpListCategory` 객체는 Windows 작업 표시줄 점프 목록(Jump List)에 표시되는 하나의 카테고리, 즉 이름이 붙은 항목 그룹을 나타냅니다. 이 객체들의 배열을 `app.setJumpList(categories)`에 전달하면, 사용자가 작업 표시줄이나 시작 메뉴의 앱 아이콘을 마우스 오른쪽 버튼으로 클릭했을 때 나타나는 메뉴를 구성할 수 있습니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `type` | `string` | _(선택)_ _(Windows)_ `"tasks"`, `"frequent"`, `"recent"`, `"custom"` 중 하나입니다. `tasks`는 표준 작업(Tasks) 그룹에 항목을 추가하며 하나만 허용됩니다. `frequent`와 `recent`는 Windows가 관리합니다. `custom`은 앱이 직접 정의하는 그룹입니다. |
+| `name` | `string` | _(선택)_ _(Windows)_ 카테고리의 표시 이름입니다. `type`이 `custom`일 때는 반드시 지정해야 합니다. |
+| `items` | `JumpListItem[]` | _(선택)_ _(Windows)_ 이 카테고리에 넣을 `JumpListItem` 객체 배열입니다 (`tasks`와 `custom`에서 사용). |
+
+<Callout type="info">
+`type`과 `name`을 모두 지정하지 않으면 `type`은 기본값 `tasks`가 됩니다. `name`만 지정하고 `type`을 생략하면 `type`은 `custom`이 됩니다. 항목 설명은 260자로 제한되며, 이를 초과하면 목록에서 제외됩니다.
+</Callout>
+
+```js
+const category = {
+  type: 'custom',
+  name: '최근 프로젝트',
+  items: [
+    {
+      type: 'file',
+      path: 'C:\\Projects\\demo.proj'
+    }
+  ]
+}
+```
+
+<EasyNote>
+작업 표시줄 아이콘을 마우스 오른쪽 버튼으로 클릭하면 뜨는 작은 메뉴 속, 이름이 붙은 하나의 서랍이라고 생각하시면 됩니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+Windows 작업 표시줄에 고정된 앱을 오른쪽 클릭하면 바로가기 메뉴가 작게 나타납니다. `JumpListCategory`는 바로 그 메뉴의 한 구역으로, "작업(Tasks)"이나 직접 만든 "최근 프로젝트" 같은 그룹입니다. 각 구역에 이름과 항목 목록을 지정하면 Windows가 그것들을 묶어서 보여 줍니다. 자주 쓰는 동작이나 파일에 빠르게 접근하도록 돕는 Windows 전용 기능입니다.
+
+<Cards>
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+  <Cards.Card title="JumpListItem" href="/ko/api/structures/jump-list-item" arrow />
+</Cards>

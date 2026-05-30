@@ -1,0 +1,44 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="TraceCategoriesAndOptions"
+  subtitle="The recording settings you hand to the tracing system before you start a trace."
+  badge="API · Structure"
+/>
+
+A `TraceCategoriesAndOptions` object describes how Chromium's tracing system should record a trace. You pass it to `contentTracing.startRecording()` to choose which categories of events to capture and how the recording should behave.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `categoryFilter` | `string` | A filter that controls which category groups are traced. A category can have an optional `-` prefix to exclude groups that contain a matching category (e.g. `test_MyTest*` or `-excluded_category1,-excluded_category2`). |
+| `traceOptions` | `string` | A comma-delimited sequence of options that controls what kind of tracing is enabled: `record-until-full`, `record-continuously`, `trace-to-console`, `enable-sampling`, `enable-systrace`. The first three are mutually exclusive recording modes (the last specified wins). Defaults to `record-until-full`. |
+
+```js
+const options = {
+  categoryFilter: '*',
+  traceOptions: 'record-until-full,enable-sampling'
+}
+
+contentTracing.startRecording(options).then(() => {
+  console.info('Tracing started')
+})
+```
+
+<EasyNote>
+Think of it as the settings sheet you fill in before pressing "record" on a video camera: which channels to capture and how long to keep rolling.
+</EasyNote>
+
+## In plain words
+
+When you want to investigate a performance problem, you tell Electron exactly what to watch and how to record it. `categoryFilter` is the "what" (which kinds of events), and `traceOptions` is the "how" (keep recording until the buffer fills, record continuously, print to console, and so on). You build this small object once and hand it to the tracing system to begin capturing data.
+
+<Cards>
+  <Cards.Card title="contentTracing" href="/en/api/content-tracing" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

@@ -1,0 +1,50 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ProcessMetric"
+  subtitle="Resource-usage stats for a single Electron process"
+  badge="API · Structure"
+/>
+
+`ProcessMetric` is a plain object that describes one process running inside your Electron app, along with how much CPU and memory it is using. You get an array of these objects from `app.getAppMetrics()`.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `pid` | `Integer` | Process id of the process. |
+| `type` | `string` | Process type. One of: `Browser`, `Tab`, `Utility`, `Zygote`, `Sandbox helper`, `GPU`, `Pepper Plugin`, `Pepper Plugin Broker`, `Unknown`. |
+| `serviceName` | `string` | _(optional)_ The non-localized name of the process. |
+| `name` | `string` | _(optional)_ The name of the process. Examples for `Utility` include `Audio Service` and `Content Decryption Module Service`. |
+| `cpu` | `CPUUsage` | CPU usage of the process. Nested object with `percentCPUUsage` (number), `cumulativeCPUUsage` (number, _optional_), and `idleWakeupsPerSecond` (number). |
+| `creationTime` | `number` | Creation time for this process, in milliseconds since epoch. Because pids can be reused, this helps uniquely identify a process over time. |
+| `memory` | `MemoryInfo` | Memory information for the process (in kilobytes). Nested object with `workingSetSize` (Integer), `peakWorkingSetSize` (Integer), and `privateBytes` (Integer, _optional_, _Windows_). |
+| `sandboxed` | `boolean` | _(optional)_ _(macOS, Windows)_ Whether the process is sandboxed on the OS level. |
+| `integrityLevel` | `string` | _(optional)_ _(Windows)_ Integrity level of the process. One of: `untrusted`, `low`, `medium`, `high`, `unknown`. |
+
+```js
+const { app } = require('electron')
+
+// List every process and how much CPU it is using
+for (const metric of app.getAppMetrics()) {
+  // { pid: 1234, type: 'GPU', cpu: { percentCPUUsage: 1.2, ... }, ... }
+  console.error(metric.pid, metric.type, metric.cpu.percentCPUUsage)
+}
+```
+
+<EasyNote>
+Think of it like a single row in your computer's Task Manager: one process, with its name, its CPU number, and its memory number all in one place.
+</EasyNote>
+
+## In plain words
+
+You reach for `ProcessMetric` when you want to see what your app is actually doing under the hood. An Electron app is not one process but many (the main browser process, the GPU process, each tab, helper utilities), and `app.getAppMetrics()` hands you one `ProcessMetric` for each. Logging these over time helps you find which process is eating CPU or leaking memory.
+
+<Cards>
+  <Cards.Card title="app" href="/en/api/app" arrow />
+  <Cards.Card title="cpu-usage" href="/en/api/structures/cpu-usage" arrow />
+</Cards>

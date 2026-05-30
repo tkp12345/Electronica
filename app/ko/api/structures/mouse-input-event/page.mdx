@@ -1,0 +1,51 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="MouseInputEvent"
+  subtitle="웹 페이지에 직접 전달할 수 있는 가상 마우스 이벤트"
+  badge="API · Structure"
+/>
+
+`MouseInputEvent`는 클릭, 이동, 스크롤 같은 하나의 마우스 동작을 일반 객체로 표현합니다. 이 객체를 [`webContents.sendInputEvent(event)`](/ko/api/web-contents)에 전달하면 페이지 안에서 마우스 동작을 흉내 낼 수 있습니다. `InputEvent`를 확장하므로 공통 필드인 `type`과 `modifiers`도 함께 가집니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `type` | `string` | 이벤트 종류입니다. `mouseDown`, `mouseUp`, `mouseEnter`, `mouseLeave`, `contextMenu`, `mouseWheel`, `mouseMove` 중 하나입니다. |
+| `x` | `Integer` | 페이지 기준 가로 좌표입니다. |
+| `y` | `Integer` | 페이지 기준 세로 좌표입니다. |
+| `modifiers` | `string[]` | _(선택)_ 이벤트 중 눌린 키/버튼 목록입니다. 예: `shift`, `control`, `alt`, `meta`. _(`InputEvent`에서 상속됨)_ |
+| `button` | `string` | _(선택)_ 눌린 버튼입니다. `left`, `middle`, `right` 중 하나입니다. |
+| `globalX` | `Integer` | _(선택)_ 화면 전체 기준 가로 좌표입니다. |
+| `globalY` | `Integer` | _(선택)_ 화면 전체 기준 세로 좌표입니다. |
+| `movementX` | `Integer` | _(선택)_ 직전 이벤트 대비 가로 이동량입니다. |
+| `movementY` | `Integer` | _(선택)_ 직전 이벤트 대비 세로 이동량입니다. |
+| `clickCount` | `Integer` | _(선택)_ 연속 클릭 횟수입니다. 더블클릭이면 `2`가 됩니다. |
+
+```js
+webContents.sendInputEvent({
+  type: 'mouseDown',
+  x: 120,
+  y: 80,
+  button: 'left',
+  clickCount: 1
+})
+```
+
+<EasyNote>
+페이지에게 "방금 여기를 마우스로 클릭했어요"라고 알려 주는 쪽지라고 생각하면 됩니다. 실제로 마우스가 움직이지 않았어도 말이죠.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+사용자가 실제로 트랙패드를 만지지 않아도, 앱이 마치 마우스를 클릭하거나 움직이거나 스크롤한 것처럼 동작하게 하고 싶을 때 이 객체를 사용합니다. 자동화 테스트, 데모, 키오스크 앱, 또는 사용자를 대신해 화면을 조작하는 접근성 도구에 유용합니다. 객체를 만들어 `sendInputEvent`에 넘기면, 페이지는 진짜 마우스가 동작한 것처럼 반응합니다.
+
+<Cards>
+  <Cards.Card title="webContents" href="/ko/api/web-contents" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

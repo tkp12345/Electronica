@@ -1,0 +1,42 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="SharedDictionaryUsageInfo"
+  subtitle="A summary of one shared compression dictionary stored by Chromium"
+  badge="API · Structure"
+/>
+
+`SharedDictionaryUsageInfo` is a plain object that describes a single shared dictionary entry in Chromium's storage. It is returned (as an array) by `session.getSharedDictionaryUsageInfo()`, which lets you inspect which dictionaries the engine is keeping and how much space they take up.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `frameOrigin` | `string` | The origin of the frame where the request originates. It is specific to the individual frame making the request and is defined by its scheme, host, and port. In practice it looks like a URL. |
+| `topFrameSite` | `string` | The site of the top-level browsing context (the main frame or tab that contains the request). It is less granular than `frameOrigin` and focuses on the broader "site" scope. |
+| `totalSizeBytes` | `number` | The number of bytes stored for this shared dictionary information object in Chromium's internal storage (usually SQLite). |
+
+```js
+const usage = {
+  frameOrigin: 'https://example.com',
+  topFrameSite: 'https://example.com',
+  totalSizeBytes: 12345
+}
+```
+
+<EasyNote>
+Think of it like a single line on a storage receipt: where the data came from, which site it belongs to, and how much room it takes up.
+</EasyNote>
+
+## In plain words
+
+Shared dictionaries help the browser compress downloads more efficiently by reusing common data. This object is how you peek at one of those saved dictionaries: it tells you which frame and site requested it and how many bytes it is using. You would mostly reach for it when auditing storage or debugging why a session is holding onto data.
+
+<Cards>
+  <Cards.Card title="session" href="/en/api/session" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

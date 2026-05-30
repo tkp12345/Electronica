@@ -1,0 +1,41 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="BluetoothDevice"
+  subtitle="Describes a single Bluetooth device the user can choose from"
+  badge="API · Structure"
+/>
+
+`BluetoothDevice` is a small object that represents one nearby Bluetooth device. Electron passes a list of these to the `select-bluetooth-device` event on `webContents` (and the corresponding `session` handler), so your app can present the choices and pick one when a page calls the Web Bluetooth API.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `deviceName` | `string` | The human-readable name of the Bluetooth device. |
+| `deviceId` | `string` | The unique identifier for the Bluetooth device. |
+
+```js
+// Example object shape received in the select-bluetooth-device event
+const device = {
+  deviceName: 'My Headphones',
+  deviceId: 'f7c1bd87-4da5-e709-d4d6-9df0c5e0e0e0'
+}
+```
+
+<EasyNote>
+Think of it as a single entry in the "available devices" list your phone shows when you open Bluetooth settings: a friendly name plus a hidden ID.
+</EasyNote>
+
+## In plain words
+
+When a web page in your app asks to connect to Bluetooth (for example, a wireless speaker), Electron hands you the devices it found, each as a `BluetoothDevice`. You read `deviceName` to show the user a label they recognize, and you send back the `deviceId` of whichever one they pick. That's all this object is for: identifying and labeling a choice.
+
+<Cards>
+  <Cards.Card title="session" href="/en/api/session" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

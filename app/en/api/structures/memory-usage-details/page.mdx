@@ -1,0 +1,43 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="MemoryUsageDetails"
+  subtitle="A snapshot of how many objects of a kind exist and how much memory they use"
+  badge="API · Structure"
+/>
+
+`MemoryUsageDetails` is a small object that reports memory statistics for a category of objects. It appears as the value side of the map returned by `webContents.getProcessMemoryInfo()` (and related memory reporting APIs), where each key is an object type and the value is one of these objects.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `count` | `number` | The number of objects of this kind currently alive. |
+| `size` | `number` | The total memory used by these objects, in bytes. |
+| `liveSize` | `number` | The memory used by the objects that are still reachable (not yet garbage-collected), in bytes. |
+
+```js
+// Example: a single entry from a memory report
+const details = {
+  count: 42,
+  size: 1048576,    // 1 MB total
+  liveSize: 786432  // 768 KB still live
+}
+```
+
+<EasyNote>
+Think of it like an inventory tag on a shelf: how many items are there (`count`), how much space they take up (`size`), and how much of that is still actually in use (`liveSize`).
+</EasyNote>
+
+## In plain words
+
+You'd reach for this object when you want to understand where your app's memory is going. A memory report gives you a bunch of these tagged by object type, so you can spot which kinds of objects are piling up (high `count`) or hogging memory (high `size`). It's mostly a diagnostics tool for tracking down leaks or bloat.
+
+<Cards>
+  <Cards.Card title="web-contents" href="/en/api/web-contents" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

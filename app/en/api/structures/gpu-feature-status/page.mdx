@@ -1,0 +1,58 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="GPUFeatureStatus"
+  subtitle="A report card for which GPU-accelerated features are turned on"
+  badge="API · Structure"
+/>
+
+`GPUFeatureStatus` is a plain object describing the status of each graphics feature on the user's machine. It is the value returned by `app.getGPUFeatureStatus()`. Every field is a string whose value is one of the documented states, such as `enabled`, `disabled`, `unavailable_software`, or `disabled_software`.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `2d_canvas` | `string` | Canvas. |
+| `flash_3d` | `string` | Flash. |
+| `flash_stage3d` | `string` | Flash Stage3D. |
+| `flash_stage3d_baseline` | `string` | Flash Stage3D Baseline profile. |
+| `gpu_compositing` | `string` | Compositing. |
+| `multiple_raster_threads` | `string` | Multiple Raster Threads. |
+| `native_gpu_memory_buffers` | `string` | Native GpuMemoryBuffers. |
+| `rasterization` | `string` | Rasterization. |
+| `video_decode` | `string` | Video Decode. |
+| `video_encode` | `string` | Video Encode. |
+| `vpx_decode` | `string` | VPx Video Decode. |
+| `webgl` | `string` | WebGL. |
+| `webgl2` | `string` | WebGL2. |
+
+```js
+const { app } = require('electron')
+
+app.whenReady().then(() => {
+  const status = app.getGPUFeatureStatus()
+  // {
+  //   '2d_canvas': 'enabled',
+  //   gpu_compositing: 'enabled',
+  //   webgl: 'enabled',
+  //   ...
+  // }
+})
+```
+
+<EasyNote>
+Think of it like a car's diagnostic readout: each row tells you whether a particular engine part is running normally, switched off, or falling back to a slower mode.
+</EasyNote>
+
+## In plain words
+
+You reach for `GPUFeatureStatus` when graphics look slow or wrong and you want to know whether the GPU is actually helping. If a feature like `webgl` or `gpu_compositing` shows `disabled` or a `software` fallback, the work is being done by the CPU instead of the graphics card, which can explain stutters or high power use. Logging this object is a quick way to debug rendering problems across different machines.
+
+<Cards>
+  <Cards.Card title="app" href="/en/api/app" arrow />
+  <Cards.Card title="web-contents" href="/en/api/web-contents" arrow />
+</Cards>

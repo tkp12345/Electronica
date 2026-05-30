@@ -1,0 +1,43 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="Rectangle"
+  subtitle="A rectangular area on the screen, given by its position and its size"
+  badge="API · Structure"
+/>
+
+`Rectangle` describes a rectangular region using an origin point (`x`, `y`) plus a `width` and `height`. It is used throughout Electron wherever a bounded area is needed — for example `BrowserWindow.getBounds()` and `setBounds()` work with it, and `screen` display objects expose their `bounds` and `workArea` as rectangles.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `x` | `number` | The x coordinate of the origin of the rectangle (must be an integer). |
+| `y` | `number` | The y coordinate of the origin of the rectangle (must be an integer). |
+| `width` | `number` | The width of the rectangle (must be an integer). |
+| `height` | `number` | The height of the rectangle (must be an integer). |
+
+<Callout type="info">
+All four values must be whole integers. When you pass a `Rectangle` into an Electron API, the values are automatically rounded to the nearest whole integer.
+</Callout>
+
+```js
+const bounds = { x: 0, y: 0, width: 800, height: 600 }
+```
+
+<EasyNote>
+A `Rectangle` is like describing a picture frame on a wall: where the top-left corner sits, then how wide and how tall it is.
+</EasyNote>
+
+## In plain words
+
+A `Rectangle` packages together everything you need to describe a box: where its top-left corner starts (`x` and `y`) and how big it is (`width` and `height`). You would use it to tell Electron exactly where to put a window and how large to make it, or to read back the area a window or display currently occupies.
+
+<Cards>
+  <Cards.Card title="browser-window" href="/en/api/browser-window" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

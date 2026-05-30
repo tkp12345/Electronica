@@ -1,0 +1,44 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="RenderProcessGoneDetails"
+  subtitle="Why a render process disappeared, and how it ended"
+  badge="API · Structure"
+/>
+
+`RenderProcessGoneDetails` describes what happened when a renderer process goes away unexpectedly. Electron hands you this object in the `render-process-gone` event of `WebContents` (and the `app` module's `render-process-gone` event), so you can react to crashes and decide whether to reload.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `reason` | `string` | The reason the render process is gone. One of: `clean-exit`, `abnormal-exit`, `killed`, `crashed`, `oom`, `launch-failed`, `integrity-failure`, `memory-eviction`. |
+| `exitCode` | `Integer` | The exit code of the process. When `reason` is `launch-failed`, this is the platform-specific launch failure error code instead. |
+
+```js
+const { app } = require('electron')
+
+app.on('render-process-gone', (event, webContents, details) => {
+  console.log(details.reason, details.exitCode)
+  if (details.reason === 'crashed' || details.reason === 'oom') {
+    webContents.reload()
+  }
+})
+```
+
+<EasyNote>
+Think of it like a doctor's note explaining why a worker suddenly left the building: it says the cause (got sick, was sent home, ran out of energy) and a code number for the details.
+</EasyNote>
+
+## In plain words
+
+Sometimes the part of your app that draws a page just dies, whether from a crash, running out of memory, or being killed by the system. `RenderProcessGoneDetails` is the short report that tells you why. You would use it to log the problem, show the user a friendly "something went wrong" screen, or automatically reload the page so they can keep going.
+
+<Cards>
+  <Cards.Card title="WebContents" href="/en/api/web-contents" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

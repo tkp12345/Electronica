@@ -1,0 +1,44 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="SharingItem"
+  subtitle="The bundle of content you hand to the system's native share menu"
+  badge="API · Structure"
+/>
+
+A `SharingItem` object describes the content you want to share through the operating system's native sharing dialog. You pass it to the macOS Share Menu (for example via the `sharingItem` option of a `Menu` popup) so the user can send it to Messages, Mail, AirDrop, and other system services.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `texts` | `string[]` | _(optional)_ An array of text snippets to share. |
+| `filePaths` | `string[]` | _(optional)_ An array of file paths to share. |
+| `urls` | `string[]` | _(optional)_ An array of URLs to share. |
+
+All three fields are optional, so you can share any combination of plain text, files, and web links.
+
+```js
+const item = {
+  texts: ['Check this out!'],
+  urls: ['https://www.electronjs.org'],
+  filePaths: ['/Users/me/Pictures/photo.png']
+}
+```
+
+<EasyNote>
+It is like the pile of things you drop onto the "Share" button: some text, a couple of links, and a file or two.
+</EasyNote>
+
+## In plain words
+
+When you want to let people send something from your app to another app, the operating system already has a polished share sheet built in. A `SharingItem` is just the package of what to share, you fill in any of the three lists (text, files, URLs) and the system shows the right destinations for it.
+
+<Cards>
+  <Cards.Card title="menu" href="/en/api/menu" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

@@ -1,0 +1,44 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ServiceWorkerInfo"
+  subtitle="Details about a single running service worker"
+  badge="API · Structure"
+/>
+
+This structure describes a service worker that is currently registered and running in a session. You get it from the `serviceWorkers` object on a `Session` (for example via `session.defaultSession.serviceWorkers.getInfoFromVersionID()`).
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `scriptUrl` | `string` | The full URL to the script that this service worker runs. |
+| `scope` | `string` | The base URL that this service worker is active for. |
+| `renderProcessId` | `number` | The virtual ID of the process that this service worker is running in. This is not an OS-level PID. It aligns with the ID used for `webContents.getProcessId()`. |
+| `versionId` | `number` | ID of the service worker version. |
+
+```js
+{
+  scriptUrl: 'https://example.com/sw.js',
+  scope: 'https://example.com/',
+  renderProcessId: 12,
+  versionId: 3
+}
+```
+
+<EasyNote>
+Think of it as an ID card for one background helper script — it tells you which file it is, which part of the site it covers, and where it is running.
+</EasyNote>
+
+## In plain words
+
+A service worker is a small script that runs in the background to handle things like caching and offline support. This object is the report card for one of those scripts: it tells you its source file, which pages it controls, and which process is hosting it. You would use it when inspecting or debugging the service workers tied to a session.
+
+<Cards>
+  <Cards.Card title="session" href="/en/api/session" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

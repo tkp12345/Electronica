@@ -1,0 +1,44 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="FilePathWithHeaders"
+  subtitle="A file path bundled with optional extra HTTP headers"
+  badge="API · Structure"
+/>
+
+The `FilePathWithHeaders` object points to a file on disk and lets you attach a few extra HTTP headers to it. You return one of these from a custom file protocol handler (for example the callback in `protocol.handle` / the older `registerFileProtocol`) when you want Electron to serve the file with headers you choose.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `path` | `string` | The path to the file to send. |
+| `headers` | `Record<string, string>` | _(optional)_ Additional headers to be sent. A plain key-value map where both the header name and value are strings. |
+
+```js
+// Inside a custom file protocol handler
+callback({
+  path: '/Users/me/site/index.html',
+  headers: {
+    'Content-Type': 'text/html',
+    'Cache-Control': 'no-cache'
+  }
+})
+```
+
+<EasyNote>
+Think of it like mailing a document in an envelope: `path` is the document you're sending, and `headers` are the notes you scribble on the envelope to tell the receiver how to handle it.
+</EasyNote>
+
+## In plain words
+
+When you build your own protocol (say `app://`) to load files from disk, Electron needs to know which file to read. `FilePathWithHeaders` is how you tell it — you hand back the file's `path`, and optionally a small set of `headers` like the content type or caching rules. If you don't need any custom headers, you can return just a plain path string instead.
+
+<Cards>
+  <Cards.Card title="protocol" href="/en/api/protocol" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

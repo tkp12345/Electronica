@@ -1,0 +1,45 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="WebRequestFilter"
+  subtitle="A set of URL and type patterns that decide which network requests you listen to"
+  badge="API · Structure"
+/>
+
+The `WebRequestFilter` object describes which web requests an interceptor should match. You pass it as the first argument to the `webRequest` listener methods on a `session` (such as `webRequest.onBeforeRequest`) so your callback only fires for the requests you care about.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `urls` | `string[]` | Array of URL patterns that will be used to include requests that match these patterns. Use the pattern `<all_urls>` to match all URLs. |
+| `excludeUrls` | `string[]` | _(optional)_ Array of URL patterns that will be used to exclude requests that match these patterns. |
+| `types` | `string[]` | _(optional)_ Array of types that will be used to filter the requests. Each entry is one of `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, or `webSocket`. When omitted, all request types match. |
+
+```js
+const filter = {
+  urls: ['https://*.github.com/*', '*://electron.github.io/*'],
+  types: ['image', 'script']
+}
+
+session.defaultSession.webRequest.onBeforeRequest(filter, (details, callback) => {
+  callback({ cancel: false })
+})
+```
+
+<EasyNote>
+A WebRequestFilter is like a guest list at a door — only the addresses (and kinds of traffic) you wrote down get your attention; everything else passes by unnoticed.
+</EasyNote>
+
+## In plain words
+
+When you want to watch or modify network traffic, listening to every single request would be noisy and slow. A `WebRequestFilter` lets you narrow it down: `urls` says which addresses to include, `excludeUrls` carves out exceptions, and `types` limits it to certain kinds of resources (just images, just scripts, and so on). Your `webRequest` callback then runs only for the requests that match.
+
+<Cards>
+  <Cards.Card title="session" href="/en/api/session" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

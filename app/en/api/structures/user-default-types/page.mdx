@@ -1,0 +1,47 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="UserDefaultTypes"
+  subtitle="A mapping from macOS user-default type names to JavaScript types"
+  badge="API · Structure"
+/>
+
+`UserDefaultTypes` is a helper type that maps the macOS `NSUserDefaults` type names (like `string`, `boolean`, `array`) to their JavaScript equivalents. It is used by `systemPreferences.getUserDefault(key, type)`, where the `type` you pass decides the return type you get back. No object of this type ever actually exists at runtime — it only exists to make the API type-safe.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `string` | `string` | The `string` user-default type maps to a JavaScript `string`. |
+| `boolean` | `boolean` | The `boolean` user-default type maps to a JavaScript `boolean`. |
+| `integer` | `number` | The `integer` user-default type maps to a JavaScript `number`. |
+| `float` | `number` | The `float` user-default type maps to a JavaScript `number`. |
+| `double` | `number` | The `double` user-default type maps to a JavaScript `number`. |
+| `url` | `string` | The `url` user-default type maps to a JavaScript `string`. |
+| `array` | `Array<unknown>` | The `array` user-default type maps to a JavaScript array. |
+| `dictionary` | `Record<string, unknown>` | The `dictionary` user-default type maps to a JavaScript object/record. |
+
+```js
+const { systemPreferences } = require('electron')
+
+// The `type` string you pass picks the matching return type.
+const name = systemPreferences.getUserDefault('AppleLocale', 'string')
+const swipe = systemPreferences.getUserDefault('AppleEnableSwipeNavigateWithScrolls', 'boolean')
+```
+
+<EasyNote>
+Think of it as a translation table: you tell macOS "give me this setting as a string (or boolean, or array)", and this table guarantees what kind of value comes back.
+</EasyNote>
+
+## In plain words
+
+macOS stores app and system settings as "user defaults," and each one has a type. When you read one with `systemPreferences.getUserDefault`, you tell Electron which type to expect. `UserDefaultTypes` is just the lookup that says "if you ask for `string`, you'll get a string back; if you ask for `array`, you'll get an array." You never build one of these yourself — it quietly makes the read API correctly typed.
+
+<Cards>
+  <Cards.Card title="systemPreferences" href="/en/api/system-preferences" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

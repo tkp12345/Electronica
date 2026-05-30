@@ -1,0 +1,40 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ResolvedEndpoint"
+  subtitle="A single network endpoint resolved from a hostname"
+  badge="API · Structure"
+/>
+
+A `ResolvedEndpoint` describes one resolved network address. It appears in the results returned by the `net` module's host resolution, where a hostname can resolve to several of these endpoints.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `address` | `string` | The IP address of the resolved endpoint. |
+| `family` | `string` | The address family. One of `ipv4` (corresponds to `AF_INET`), `ipv6` (corresponds to `AF_INET6`), or `unspec` (corresponds to `AF_UNSPEC`). |
+
+```js
+const endpoint = {
+  address: '93.184.216.34',
+  family: 'ipv4'
+}
+```
+
+<EasyNote>
+Think of it as one line in a phone book entry: it tells you the actual number (the IP address) and what kind of number it is (IPv4 or IPv6).
+</EasyNote>
+
+## In plain words
+
+When you ask the network to look up a hostname like `example.com`, you get back a list of these objects. Each one is a single place your app could actually connect to, along with whether that address is the older IPv4 style or the newer IPv6 style. You'd use this to inspect or choose which endpoint to talk to.
+
+<Cards>
+  <Cards.Card title="net" href="/en/api/net" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

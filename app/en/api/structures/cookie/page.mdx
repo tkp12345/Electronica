@@ -1,0 +1,52 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="Cookie"
+  subtitle="A single HTTP cookie with all of its attributes"
+  badge="API · Structure"
+/>
+
+The `Cookie` object describes one HTTP cookie. You receive `Cookie` objects from `session.cookies.get()` and pass cookie-shaped details to `session.cookies.set()`.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `name` | `string` | The cookie's name. |
+| `value` | `string` | The cookie's value. |
+| `domain` | `string` | _(optional)_ The domain the cookie is valid for. Normalized with a leading dot so it is valid for subdomains. |
+| `hostOnly` | `boolean` | _(optional)_ Whether the cookie is a host-only cookie. `true` only when no `domain` was passed. |
+| `path` | `string` | _(optional)_ The path the cookie is valid for. |
+| `secure` | `boolean` | _(optional)_ Whether the cookie is marked as secure (HTTPS only). |
+| `httpOnly` | `boolean` | _(optional)_ Whether the cookie is marked as HTTP only (not accessible from JavaScript). |
+| `session` | `boolean` | _(optional)_ Whether the cookie is a session cookie (vs. persistent with an expiration date). |
+| `expirationDate` | `number` | _(optional)_ The expiration date as the number of seconds since the UNIX epoch. Not provided for session cookies. |
+| `sameSite` | `string` | The `SameSite` policy: `unspecified`, `no_restriction`, `lax`, or `strict`. |
+
+```js
+const cookie = {
+  url: 'https://www.example.com',
+  name: 'session_id',
+  value: 'abc123',
+  secure: true,
+  httpOnly: true,
+  sameSite: 'lax'
+}
+```
+
+<EasyNote>
+A Cookie is like a labeled sticky note your browser keeps for a website — it has a name, a value, and rules about where and how long it sticks around.
+</EasyNote>
+
+## In plain words
+
+A cookie is a small piece of data a website asks the browser to remember — like a login token or a preference. The `Cookie` object is just that note written out in full: its name and value plus all the rules around it (which site it belongs to, whether it needs HTTPS, when it expires). You use it whenever you read or write cookies through a session.
+
+<Cards>
+  <Cards.Card title="session" href="/en/api/session" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

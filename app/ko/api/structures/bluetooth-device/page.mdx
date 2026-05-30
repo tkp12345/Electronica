@@ -1,0 +1,41 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="BluetoothDevice"
+  subtitle="사용자가 선택할 수 있는 블루투스 기기 하나를 설명합니다"
+  badge="API · Structure"
+/>
+
+`BluetoothDevice`는 주변에 있는 블루투스 기기 하나를 나타내는 작은 객체입니다. 웹 페이지가 Web Bluetooth API를 호출하면, Electron은 이 객체들의 목록을 `webContents`의 `select-bluetooth-device` 이벤트(그리고 대응되는 `session` 핸들러)로 전달합니다. 덕분에 앱에서 선택지를 보여주고 그중 하나를 고를 수 있습니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `deviceName` | `string` | 블루투스 기기의 사람이 읽을 수 있는 이름입니다. |
+| `deviceId` | `string` | 블루투스 기기의 고유 식별자입니다. |
+
+```js
+// select-bluetooth-device 이벤트에서 받게 되는 객체 형태 예시
+const device = {
+  deviceName: 'My Headphones',
+  deviceId: 'f7c1bd87-4da5-e709-d4d6-9df0c5e0e0e0'
+}
+```
+
+<EasyNote>
+휴대폰에서 블루투스 설정을 열었을 때 보이는 "사용 가능한 기기" 목록의 한 줄이라고 생각하면 됩니다. 알아보기 쉬운 이름 하나와 숨겨진 ID 하나로 이루어져 있습니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+앱 안의 웹 페이지가 블루투스 연결을 요청하면(예: 무선 스피커), Electron은 찾아낸 기기들을 각각 `BluetoothDevice` 형태로 건네줍니다. 여러분은 `deviceName`을 읽어 사용자가 알아볼 수 있는 이름을 보여주고, 사용자가 고른 기기의 `deviceId`를 되돌려 보내면 됩니다. 이 객체의 역할은 그것뿐입니다. 즉, 선택지를 식별하고 이름표를 붙이는 일입니다.
+
+<Cards>
+  <Cards.Card title="session" href="/ko/api/session" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

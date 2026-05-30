@@ -1,0 +1,43 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="MemoryInfo"
+  subtitle="A snapshot of how much memory a process is using"
+  badge="API · Structure"
+/>
+
+`MemoryInfo` is a plain object describing the memory usage of a single process. It is returned by `process.getProcessMemoryInfo()` and used inside reports like `app.getAppMetrics()`. All values are reported in kilobytes.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `workingSetSize` | `Integer` | The amount of memory currently pinned to actual physical RAM (in KB). |
+| `peakWorkingSetSize` | `Integer` | The maximum amount of memory that has ever been pinned to actual physical RAM (in KB). |
+| `privateBytes` | `Integer` | _(optional)_ _(Windows)_ The amount of memory not shared by other processes, such as JS heap or HTML content (in KB). |
+
+```js
+// Typical MemoryInfo object
+const memory = {
+  workingSetSize: 32768,
+  peakWorkingSetSize: 65536,
+  privateBytes: 16384 // Windows only
+}
+```
+
+<EasyNote>
+Think of it like a fuel gauge for a single process: it tells you how much RAM is in use right now, and the highest level it ever reached.
+</EasyNote>
+
+## In plain words
+
+You'd reach for `MemoryInfo` when you want to know how much memory your app (or one of its processes) is consuming. It is handy for spotting memory leaks, building a diagnostics panel, or logging resource usage over time. The two main numbers tell you the current usage and the all-time peak, while `privateBytes` (Windows only) shows memory that belongs to that process alone.
+
+<Cards>
+  <Cards.Card title="app" href="/en/api/app" arrow />
+  <Cards.Card title="process" href="/en/api/process" arrow />
+</Cards>

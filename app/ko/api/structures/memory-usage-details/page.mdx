@@ -1,0 +1,43 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="MemoryUsageDetails"
+  subtitle="특정 종류의 객체가 몇 개 있고 메모리를 얼마나 쓰는지 알려주는 스냅샷"
+  badge="API · Structure"
+/>
+
+`MemoryUsageDetails`는 특정 종류의 객체에 대한 메모리 통계를 담은 작은 객체입니다. `webContents.getProcessMemoryInfo()`(및 관련 메모리 리포트 API)가 반환하는 맵의 값으로 등장하며, 각 키는 객체 종류이고 값이 바로 이 객체입니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `count` | `number` | 현재 살아 있는 해당 종류 객체의 개수입니다. |
+| `size` | `number` | 이 객체들이 사용하는 전체 메모리 크기(바이트 단위)입니다. |
+| `liveSize` | `number` | 아직 도달 가능한(가비지 컬렉션되지 않은) 객체들이 사용하는 메모리 크기(바이트 단위)입니다. |
+
+```js
+// 예시: 메모리 리포트의 항목 하나
+const details = {
+  count: 42,
+  size: 1048576,    // 총 1 MB
+  liveSize: 786432  // 여전히 사용 중인 768 KB
+}
+```
+
+<EasyNote>
+선반에 붙은 재고 태그라고 생각하시면 됩니다. 물건이 몇 개 있고(`count`), 자리를 얼마나 차지하며(`size`), 그중 실제로 아직 쓰이는 게 얼마인지(`liveSize`)를 알려줍니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+앱의 메모리가 어디로 새는지 파악하고 싶을 때 이 객체를 사용하시게 됩니다. 메모리 리포트는 객체 종류별로 이런 항목들을 묶어서 보여 주므로, 어떤 종류의 객체가 자꾸 쌓이는지(`count`가 큰 경우)나 메모리를 많이 차지하는지(`size`가 큰 경우)를 한눈에 확인할 수 있습니다. 주로 메모리 누수나 과다 사용을 추적하는 진단 도구로 쓰입니다.
+
+<Cards>
+  <Cards.Card title="web-contents" href="/ko/api/web-contents" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

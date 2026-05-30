@@ -1,0 +1,53 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="CustomScheme"
+  subtitle="Describes a custom URL scheme and the privileges it should be granted"
+  badge="API · Structure"
+/>
+
+A `CustomScheme` describes one custom URL scheme (like `myapp://`) together with the special powers it should be allowed to use. You pass an array of these objects to `protocol.registerSchemesAsPrivileged()`.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `scheme` | `string` | The custom scheme to register, e.g. `"myapp"`. |
+| `privileges` | `Object` | _(optional)_ A group of flags granting special powers to the scheme. |
+| `privileges.standard` | `boolean` | _(optional)_ Treat the scheme as a standard scheme (like `http`). Enables relative paths, origins, etc. Default `false`. |
+| `privileges.secure` | `boolean` | _(optional)_ Mark the scheme as secure (treated like HTTPS). Default `false`. |
+| `privileges.bypassCSP` | `boolean` | _(optional)_ Allow the scheme to bypass Content Security Policy. Default `false`. |
+| `privileges.allowServiceWorkers` | `boolean` | _(optional)_ Permit service workers to be registered on this scheme. Default `false`. |
+| `privileges.supportFetchAPI` | `boolean` | _(optional)_ Enable the Fetch API for this scheme. Default `false`. |
+| `privileges.corsEnabled` | `boolean` | _(optional)_ Enable CORS for this scheme. Default `false`. |
+| `privileges.stream` | `boolean` | _(optional)_ Allow responses to be streamed (e.g. for media). Default `false`. |
+| `privileges.codeCache` | `boolean` | _(optional)_ Enable the V8 code cache for the scheme. Only works when `standard` is also `true`. Default `false`. |
+| `privileges.allowExtensions` | `boolean` | _(optional)_ Allow Chrome extensions to run on pages served over this scheme. Default `false`. |
+
+```js
+const { protocol } = require('electron')
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'myapp',
+    privileges: { standard: true, secure: true, supportFetchAPI: true }
+  }
+])
+```
+
+<EasyNote>
+Think of it as a VIP pass for your own URL scheme: you name the scheme, then tick the boxes for which privileges it's allowed to use.
+</EasyNote>
+
+## In plain words
+
+When your app serves content from a custom address like `myapp://`, the browser engine treats it as untrusted by default. A `CustomScheme` lets you tell Electron "this scheme is mine and it's safe," so features like `fetch`, service workers, secure-context APIs, and CORS work as they would on a normal `https://` site. You'd reach for this when building an app that loads its UI or data from a custom protocol instead of the web.
+
+<Cards>
+  <Cards.Card title="protocol" href="/en/api/protocol" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

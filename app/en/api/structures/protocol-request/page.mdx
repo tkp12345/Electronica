@@ -1,0 +1,46 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ProtocolRequest"
+  subtitle="A single network request passed to a custom protocol handler"
+  badge="API · Structure"
+/>
+
+The `ProtocolRequest` object describes one incoming request that your custom protocol handler is asked to fulfill. Electron passes it as the first argument to the callbacks you register with `protocol.handle()` (and the older `protocol.registerXxxProtocol` / `interceptXxxProtocol` methods).
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `url` | `string` | The request's target address. |
+| `referrer` | `string` | The URL of the page that triggered the request. |
+| `method` | `string` | The HTTP method, e.g. `GET` or `POST`. |
+| `uploadData` | `UploadData[]` | _(optional)_ The request body, present for methods that carry a payload (like `POST`). Each entry is an `UploadData` object. |
+| `headers` | `Record<string, string>` | The request's HTTP headers as key-value pairs. |
+
+```js
+const { protocol, net } = require('electron')
+
+protocol.handle('app', (request) => {
+  // request is a ProtocolRequest-shaped object
+  const { url, method, headers } = request
+  return net.fetch('file:///path/to/app' + new URL(url).pathname)
+})
+```
+
+<EasyNote>
+A ProtocolRequest is like an order ticket handed to you at a counter — it says what was asked for (`url`), who sent it (`referrer`), how (`method`), any attached note (`uploadData`), and extra instructions (`headers`).
+</EasyNote>
+
+## In plain words
+
+When you invent your own URL scheme (like `app://` or `myapp://`), Electron needs to know how to answer those URLs. Each time something requests one, Electron hands your handler a `ProtocolRequest` describing exactly what was asked for. You read its `url`, `method`, `headers`, and any `uploadData`, then return whatever content should be served back.
+
+<Cards>
+  <Cards.Card title="protocol" href="/en/api/protocol" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

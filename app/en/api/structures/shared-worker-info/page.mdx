@@ -1,0 +1,43 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="SharedWorkerInfo"
+  subtitle="Describes a single shared worker running in your app"
+  badge="API · Structure"
+/>
+
+A `SharedWorkerInfo` object holds basic details about one shared worker. You get these objects back from the `app` module (for example, when listing the shared workers belonging to a `ServiceWorkers` instance or a session), so you can see what is running.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `string` | The unique id of the shared worker. |
+| `url` | `string` | The url of the shared worker. |
+
+```js
+const { app } = require('electron')
+
+// Example of the shape you receive
+const info = {
+  id: '1',
+  url: 'https://example.com/worker.js'
+}
+```
+
+<EasyNote>
+It is like a name tag for a background helper: just its id and where its code lives.
+</EasyNote>
+
+## In plain words
+
+A shared worker is a small background script that several pages can talk to at once. When you ask Electron which shared workers exist, each one comes back as a `SharedWorkerInfo` so you know its unique id and the URL its code was loaded from. You would use this to inspect, log, or debug the background workers your app is running.
+
+<Cards>
+  <Cards.Card title="app" href="/en/api/app" arrow />
+  <Cards.Card title="session" href="/en/api/session" arrow />
+</Cards>

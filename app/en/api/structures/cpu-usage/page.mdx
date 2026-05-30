@@ -1,0 +1,45 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="CPUUsage"
+  subtitle="A snapshot of how much CPU a process is using"
+  badge="API · Structure"
+/>
+
+`CPUUsage` is a plain object that describes the CPU usage of a single process. It is the value returned by `app.getCPUUsage()` and by `webContents.getProcessMemoryInfo`-style process metrics APIs, letting you measure how hard a process is working.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `percentCPUUsage` | `number` | Percentage of CPU used since the last call to `getCPUUsage`. The first call returns 0. |
+| `cumulativeCPUUsage` | `number` | _(optional)_ Total seconds of CPU time used since process startup. |
+| `idleWakeupsPerSecond` | `number` | The number of average idle CPU wakeups per second since the last call to `getCPUUsage`. The first call returns 0. Will always return 0 on Windows. |
+
+```js
+const { app } = require('electron')
+
+// Poll CPU usage every few seconds
+setInterval(() => {
+  const usage = app.getCPUUsage()
+  // { percentCPUUsage: 3.2, cumulativeCPUUsage: 12.4, idleWakeupsPerSecond: 0 }
+  console.error(usage.percentCPUUsage)
+}, 5000)
+```
+
+<EasyNote>
+Think of it like a car's dashboard reading: it tells you how hard the engine is revving right now and how many total miles it has driven.
+</EasyNote>
+
+## In plain words
+
+You reach for `CPUUsage` when you want to know whether your app is being a good citizen on the user's machine. If `percentCPUUsage` keeps climbing, something might be stuck in a loop or doing too much work. Logging these numbers over time helps you spot performance problems and decide when to move heavy tasks off the main process.
+
+<Cards>
+  <Cards.Card title="web-contents" href="/en/api/web-contents" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

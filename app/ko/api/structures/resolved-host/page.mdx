@@ -1,0 +1,39 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ResolvedHost"
+  subtitle="호스트 이름을 조회한 결과로, 변환된 네트워크 주소들을 담는 객체"
+  badge="API · Structure"
+/>
+
+`ResolvedHost`는 호스트 이름을 네트워크 주소로 변환(resolve)했을 때 돌려받는 객체입니다. `net.resolveHost()`(그리고 `Session`의 `resolveHost` 메서드)를 호출하면 이 객체를 결과로 받게 됩니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `endpoints` | `ResolvedEndpoint[]` | 호스트 이름에 대해 변환된 DNS 항목들입니다. 각 항목은 `ResolvedEndpoint` 객체로, `address`(`string`, 변환된 IP 주소)와 `family`(`'ipv4'` \| `'ipv6'` \| `'unspec'`, 주소 체계)를 가집니다. |
+
+```js
+const { net } = require('electron')
+
+const result = await net.resolveHost('electronjs.org')
+// result.endpoints -> [{ address: '185.199.108.153', family: 'ipv4' }, ...]
+```
+
+<EasyNote>
+`ResolvedHost`는 이름을 찾아본 뒤 받는 전화번호부 항목과 같습니다. 이름은 웹사이트이고, 그 안에는 실제로 연결할 수 있는 번호(IP 주소)들의 목록이 들어 있습니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+컴퓨터는 `electronjs.org` 같은 사람이 읽기 쉬운 이름이 아니라 숫자로 된 주소로 서로를 찾습니다. Electron에게 호스트 이름을 변환해 달라고 요청하면, 그 조회를 대신 수행한 뒤 `ResolvedHost`를 돌려줍니다. 이 객체를 통해 어떤 IP 주소들이 그 이름에 연결되는지 확인할 수 있어, 네트워크 진단이나 직접 만든 네트워킹 처리, 또는 단순히 호스트에 도달 가능한지 확인하는 데 유용합니다.
+
+<Cards>
+  <Cards.Card title="net" href="/ko/api/net" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

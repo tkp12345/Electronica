@@ -1,0 +1,57 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="Product"
+  subtitle="Apple App Store의 앱 내 구매 상품"
+  badge="API · Structure"
+/>
+
+`Product` 객체는 Apple App Store에 등록된 하나의 앱 내 구매 항목을 나타냅니다. [`inAppPurchase.getProducts()`](/ko/api/in-app-purchase)에서 이 객체의 배열을 받게 되며, 가격·제목·구독 정보를 사용자에게 보여줄 때 각 필드를 읽어 사용합니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `productIdentifier` | `string` | Apple App Store에서 상품을 식별하는 문자열입니다. |
+| `localizedDescription` | `string` | 상품에 대한 설명입니다. |
+| `localizedTitle` | `string` | 상품의 이름입니다. |
+| `price` | `number` | 현지 통화 기준 상품의 가격입니다. |
+| `formattedPrice` | `string` | 현지 형식으로 포맷된 상품 가격입니다. |
+| `currencyCode` | `string` | ISO 4217 표준에 기반한 상품 통화를 나타내는 3자리 코드입니다. |
+| `introductoryPrice` | `ProductDiscount` | _(선택)_ 상품의 도입 가격(introductory price) 정보를 담은 객체입니다. |
+| `discounts` | `ProductDiscount[]` | 상품에 사용 가능한 할인 혜택들의 배열입니다. |
+| `subscriptionGroupIdentifier` | `string` | 해당 구독이 속한 구독 그룹의 식별자입니다. |
+| `subscriptionPeriod` | `ProductSubscriptionPeriod` | _(선택)_ 구독 상품인 경우의 기간(period) 세부 정보입니다. |
+| `isDownloadable` | `boolean` | App Store에 이 상품의 다운로드 가능한 콘텐츠가 있는지 나타내는 불리언 값입니다. |
+| `downloadContentVersion` | `string` | 콘텐츠의 버전을 식별하는 문자열입니다. |
+| `downloadContentLengths` | `number[]` | 다운로드 가능한 콘텐츠의 전체 크기(바이트 단위)입니다. |
+
+```js
+const product = {
+  productIdentifier: 'com.example.pro_upgrade',
+  localizedTitle: 'Pro Upgrade',
+  localizedDescription: 'Unlock all premium features.',
+  price: 4.99,
+  formattedPrice: '$4.99',
+  currencyCode: 'USD',
+  discounts: [],
+  isDownloadable: false
+}
+```
+
+<EasyNote>
+Product는 가게 진열대의 가격표와 같습니다. 상품의 이름, 설명, 포맷된 가격, 그리고 붙어 있는 할인 혜택까지 함께 담고 있습니다.
+</EasyNote>
+
+## 쉽게 말하면
+
+앱에서 무언가를 판매할 때 — 일회성 업그레이드, 구독, 추가 콘텐츠 등 — Apple은 각 항목의 공식 가격과 설명을 보관합니다. `Product` 객체는 Electron이 그 정보를 여러분에게 돌려주는 방식으로, 가격을 직접 코드에 박아 넣지 않고도 상점 화면을 만들 수 있게 해 줍니다. 직접 만들 필요는 없고, App Store에 상품 목록을 요청한 뒤 포맷된 가격이나 구독 여부 같은 필요한 필드를 읽어서 쓰면 됩니다.
+
+<Cards>
+  <Cards.Card title="inAppPurchase" href="/ko/api/in-app-purchase" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

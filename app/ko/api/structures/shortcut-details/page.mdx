@@ -1,0 +1,51 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ShortcutDetails"
+  subtitle="Windows 바로 가기(.lnk) 파일을 설명하는 객체"
+  badge="API · Structure"
+/>
+
+`ShortcutDetails`는 Windows 바로 가기 파일의 내용을 설명합니다. `shell.readShortcutLink()`가 이 객체를 반환하고, `shell.writeShortcutLink()`가 이 객체를 받아서 `.lnk` 파일을 읽거나 생성하는 데 사용됩니다. Windows 전용입니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `target` | `string` | 이 바로 가기로 실행할 대상 경로입니다. |
+| `cwd` | `string` | _(선택)_ 작업 디렉터리입니다. 기본값은 빈 문자열입니다. |
+| `args` | `string` | _(선택)_ 이 바로 가기로 `target`을 실행할 때 전달할 인자입니다. |
+| `description` | `string` | _(선택)_ 바로 가기에 대한 설명입니다. 기본값은 빈 문자열입니다. |
+| `icon` | `string` | _(선택)_ 아이콘 경로이며, DLL이나 EXE일 수 있습니다. `icon`과 `iconIndex`는 함께 설정해야 합니다. |
+| `iconIndex` | `number` | _(선택)_ `icon`이 DLL이나 EXE일 때 아이콘의 리소스 ID입니다. 기본값은 0입니다. |
+| `appUserModelId` | `string` | _(선택)_ Application User Model ID입니다. 기본값은 빈 문자열입니다. |
+| `toastActivatorClsid` | `string` | _(선택)_ Application Toast Activator CLSID입니다. 알림 센터(Action Center)에 참여하려면 필요합니다. |
+
+```js
+const { shell } = require('electron')
+
+shell.writeShortcutLink('C:\\Users\\me\\Desktop\\MyApp.lnk', {
+  target: 'C:\\Program Files\\MyApp\\MyApp.exe',
+  args: '--start-minimized',
+  description: 'MyApp 실행',
+  icon: 'C:\\Program Files\\MyApp\\MyApp.exe',
+  iconIndex: 0
+})
+```
+
+<EasyNote>
+Windows 바탕화면 바로 가기의 "속성" 창을 그대로 객체로 옮겨 적은 것이라고 생각하시면 됩니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+Windows에서 바탕화면 바로 가기를 만들면 어떤 프로그램을 가리키는지, 어떤 인자를 넘기는지, 어떤 아이콘을 보여줄지 같은 정보가 함께 저장됩니다. `ShortcutDetails`는 바로 그 정보를 자바스크립트 객체로 표현한 것입니다. 앱의 바로 가기를 코드로 직접 만들거나, 기존 `.lnk` 파일을 읽어 어디를 가리키는지 확인할 때 사용합니다.
+
+<Cards>
+  <Cards.Card title="shell" href="/ko/api/shell" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

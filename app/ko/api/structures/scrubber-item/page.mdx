@@ -1,0 +1,47 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ScrubberItem"
+  subtitle="터치 바 스크러버 안에 표시되는 하나의 항목"
+  badge="API · Structure"
+/>
+
+`ScrubberItem`은 `TouchBarScrubber`에 들어가는 하나의 항목을 나타냅니다. 스크러버는 macOS 터치 바에 표시되는, 가로로 스크롤되는 항목 목록입니다. 각 항목은 텍스트 라벨, 아이콘, 또는 둘 다를 보여줄 수 있습니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `label` | `string` | 이 항목에 표시될 텍스트입니다. _(선택)_ |
+| `icon` | `NativeImage` | 이 항목에 표시될 이미지입니다. _(선택)_ |
+
+```js
+const { TouchBar, nativeImage } = require('electron')
+const { TouchBarScrubber } = TouchBar
+
+const scrubber = new TouchBarScrubber({
+  items: [
+    { label: '홈' },
+    { label: '사진', icon: nativeImage.createFromPath('/path/to/icon.png') },
+    { icon: nativeImage.createFromPath('/path/to/star.png') }
+  ],
+  selectedStyle: 'outline'
+})
+```
+
+<EasyNote>
+`ScrubberItem`은 옆으로 넘겨 보는 필름 한 장이라고 생각하면 됩니다. 각 장에는 이름이나 그림, 또는 둘 다만 있으면 됩니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+스크러버는 일부 맥북의 터치 바에 나타나는, 옆으로 넘겨 선택하는 항목 줄입니다. `ScrubberItem`은 그 줄에 들어가는 하나의 선택지입니다. 각 항목에 무엇을 보여줄지 Electron에게 알려줄 때 사용합니다. `label`로 텍스트를, `icon`으로 작은 그림을, 또는 둘을 함께 넣을 수 있습니다. 두 필드 모두 선택 사항이므로 필요한 것만 채우면 됩니다.
+
+<Cards>
+  <Cards.Card title="TouchBar" href="/ko/api/touch-bar" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

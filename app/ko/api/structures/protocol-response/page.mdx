@@ -1,0 +1,52 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ProtocolResponse"
+  subtitle="커스텀 프로토콜 요청에 응답할 때 돌려주는 객체"
+  badge="API · Structure"
+/>
+
+`ProtocolResponse`는 `protocol` 핸들러(예: `protocol.handle`, 또는 기존의 `registerBufferProtocol` / `registerFileProtocol` / `registerStreamProtocol` 콜백)에서 반환하는 객체로, 가로챈 요청이나 커스텀 스킴 요청에 대해 Electron이 어떤 응답을 보낼지 설명합니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `error` | `Integer` | _(선택)_ 설정하면 요청이 Chromium의 net 오류 목록에 있는 이 오류 번호로 실패합니다. |
+| `statusCode` | `number` | _(선택)_ HTTP 응답 코드입니다. 기본값은 `200`입니다. |
+| `charset` | `string` | _(선택)_ 응답 본문의 문자 인코딩입니다. 기본값은 `"utf-8"`입니다. |
+| `mimeType` | `string` | _(선택)_ 응답 본문의 미디어 타입입니다. 기본값은 `"text/html"`이며 `content-type` 헤더를 설정합니다. |
+| `headers` | `Record<string, string \| string[]>` | _(선택)_ 키/값 쌍 형태의 응답 헤더입니다. 각 값은 문자열 또는 문자열 배열일 수 있습니다. |
+| `data` | `Buffer \| string \| ReadableStream` | _(선택)_ 응답 본문으로, 버퍼·문자열·Node.js 읽기 스트림 중 하나입니다. |
+| `path` | `string` | _(선택)_ 응답 본문으로 보낼 파일 시스템 경로입니다(파일 응답용). |
+| `url` | `string` | _(선택)_ 다운로드하여 응답 본문으로 전달할 URL입니다(URL 응답용). |
+| `referrer` | `string` | _(선택)_ 파일 및 URL 응답에 사용되는 리퍼러 URL입니다. |
+| `method` | `string` | _(선택)_ 파일 및 URL 응답에 사용되는 HTTP 메서드입니다. |
+| `session` | `Session` | _(선택)_ URL 요청에 사용되는 세션입니다. 기본적으로 현재 세션을 재사용합니다. |
+| `uploadData` | `ProtocolResponseUploadData` | _(선택)_ URL로 보내는 POST 요청에 함께 전송되는 업로드 데이터입니다. |
+
+```js
+// 프로토콜 핸들러 안에서 메모리상의 문자열로 응답하기
+callback({
+  statusCode: 200,
+  mimeType: 'application/json',
+  data: JSON.stringify({ hello: 'world' }),
+})
+```
+
+<EasyNote>
+누군가 여러분의 커스텀 URL 스킴에 "초인종을 눌렀을 때" 작성해 건네는 답장 카드라고 생각하면 됩니다. 상태 코드, 콘텐츠 타입, 그리고 실제 내용을 그 카드에 적어 보냅니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+직접 만든 URL 스킴(예: `myapp://`)을 등록하거나 기존 스킴을 가로채면, Electron이 여러분의 코드에 "그래서 뭘 돌려줄까요?"라고 묻습니다. `ProtocolResponse`가 바로 그 답입니다. 원시 데이터를 직접 반환하거나, 디스크의 파일을 가리키거나, URL로 리디렉션하거나, 오류 코드로 실패를 알릴 수 있습니다. 대부분의 필드가 선택 사항이므로 필요한 것만 채우면 됩니다.
+
+<Cards>
+  <Cards.Card title="protocol" href="/ko/api/protocol" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

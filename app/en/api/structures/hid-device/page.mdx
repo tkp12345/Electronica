@@ -1,0 +1,53 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="HIDDevice"
+  subtitle="Describes a connected HID (Human Interface Device) such as a keyboard, mouse, or game controller"
+  badge="API · Structure"
+/>
+
+The `HIDDevice` object represents a single HID hardware device that your app can talk to through the WebHID API. It is passed to the [`session`](/en/api/session) module's `select-hid-device` event and to the device permission handlers set with `session.setDevicePermissionHandler()`, so you can decide which devices the app is allowed to use.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `deviceId` | `string` | Unique identifier for the device. |
+| `name` | `string` | Name of the device. |
+| `vendorId` | `Integer` | The USB vendor ID. |
+| `productId` | `Integer` | The USB product ID. |
+| `serialNumber` | `string` | The USB device serial number. _(optional)_ |
+| `guid` | `string` | Unique identifier for the HID interface. A device may have multiple HID interfaces. _(optional)_ |
+| `collections` | `Object[]` | The report formats supported by the device. Each entry has `usage` (`Integer`), `usagePage` (`Integer`), `type` (`Integer`, 8-bit collection type), `children` (`Object[]`, nested collections), `inputReports` (`Object[]`), `outputReports` (`Object[]`), and `featureReports` (`Object[]`). |
+
+```js
+const { app } = require('electron')
+
+app.whenReady().then(() => {
+  const { session } = require('electron')
+
+  session.defaultSession.on('select-hid-device', (event, details, callback) => {
+    event.preventDefault()
+    // details.deviceList is an array of HIDDevice objects
+    const device = details.deviceList.find((d) => d.vendorId === 0x1234)
+    callback(device?.deviceId)
+  })
+})
+```
+
+<EasyNote>
+A `HIDDevice` is like an ID card for a plugged-in gadget: its name, its maker and model numbers, and what kind of signals it can send and receive.
+</EasyNote>
+
+## In plain words
+
+When your app asks the browser to connect to a HID gadget (a keyboard, a barcode scanner, a flight-sim joystick), Electron hands you `HIDDevice` objects describing each candidate. You read the `vendorId` and `productId` to recognize the device you care about, and return its `deviceId` to approve it. The `collections` field tells advanced apps exactly which reports the device can exchange, but most apps just need the name and the IDs.
+
+<Cards>
+  <Cards.Card title="session" href="/en/api/session" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

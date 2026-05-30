@@ -1,0 +1,63 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="USBDevice"
+  subtitle="Describes a connected USB device exposed through the WebUSB API"
+  badge="API · Structure"
+/>
+
+The `USBDevice` object represents a single USB hardware device that your app can talk to through the WebUSB API. It is passed to the [`session`](/en/api/session) module's `select-usb-device` event and to the USB device permission handlers, so you can decide which devices the app is allowed to use.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `deviceId` | `string` | Unique identifier for the device. |
+| `vendorId` | `Integer` | The USB vendor ID. |
+| `productId` | `Integer` | The USB product ID. |
+| `productName` | `string` | Name of the device. _(optional)_ |
+| `serialNumber` | `string` | The USB device serial number. _(optional)_ |
+| `manufacturerName` | `string` | The manufacturer name of the device. _(optional)_ |
+| `usbVersionMajor` | `Integer` | The USB protocol major version supported by the device. |
+| `usbVersionMinor` | `Integer` | The USB protocol minor version supported by the device. |
+| `usbVersionSubminor` | `Integer` | The USB protocol subminor version supported by the device. |
+| `deviceClass` | `Integer` | The device class for the communication interface supported by the device. |
+| `deviceSubclass` | `Integer` | The device subclass for the communication interface supported by the device. |
+| `deviceProtocol` | `Integer` | The device protocol for the communication interface supported by the device. |
+| `deviceVersionMajor` | `Integer` | The major version number of the device as defined by the device manufacturer. |
+| `deviceVersionMinor` | `Integer` | The minor version number of the device as defined by the device manufacturer. |
+| `deviceVersionSubminor` | `Integer` | The subminor version number of the device as defined by the device manufacturer. |
+| `configuration` | `Object` | A USBConfiguration object describing the currently selected configuration. Each has `configurationValue` (`Integer`), `configurationName` (`string`), and `interfaces` (`Object[]`). _(optional)_ |
+| `configurations` | `Object[]` | An array of USBConfiguration objects for controlling a paired USB device. |
+
+```js
+const { app } = require('electron')
+
+app.whenReady().then(() => {
+  const { session } = require('electron')
+
+  session.defaultSession.on('select-usb-device', (event, details, callback) => {
+    event.preventDefault()
+    // details.deviceList is an array of USBDevice objects
+    const device = details.deviceList.find((d) => d.vendorId === 0x1234)
+    callback(device?.deviceId)
+  })
+})
+```
+
+<EasyNote>
+A `USBDevice` is like an ID card for something plugged into a USB port: its maker and model numbers, its name, and what kind of USB device it is.
+</EasyNote>
+
+## In plain words
+
+When your app asks the browser to connect to a USB gadget (a microcontroller, a card reader, a custom peripheral), Electron hands you `USBDevice` objects describing each candidate. You read the `vendorId` and `productId` to recognize the device you care about, and return its `deviceId` to approve it. The version and class fields tell advanced apps exactly what the hardware speaks, but most apps just need the name and the IDs.
+
+<Cards>
+  <Cards.Card title="session" href="/en/api/session" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

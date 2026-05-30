@@ -1,0 +1,57 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="Task"
+  subtitle="Windows 점프 리스트의 항목 하나 — 지정한 인자로 프로그램을 실행하는 바로가기"
+  badge="API · Structure"
+/>
+
+`Task` 객체는 Windows 점프 리스트(작업 표시줄의 앱 아이콘을 마우스 오른쪽 버튼으로 클릭하면 나타나는 메뉴)의 항목 하나를 설명합니다. 이 객체들의 배열을 `app.setUserTasks(tasks)`에 전달하면 사용자에게 앱으로 빠르게 진입하는 바로가기를 제공할 수 있습니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `program` | `string` | 실행할 프로그램의 경로입니다. 보통 `process.execPath`를 지정합니다. |
+| `arguments` | `string` | `program`을 실행할 때 전달되는 명령줄 인자입니다. |
+| `title` | `string` | 점프 리스트에 표시되는 이 작업의 문자열입니다. |
+| `description` | `string` | 이 작업의 툴팁으로 표시되는 설명 텍스트입니다. |
+| `iconPath` | `string` | 점프 리스트에 표시할 아이콘의 절대 경로입니다. |
+| `iconIndex` | `number` | `iconPath`에 여러 아이콘이 들어 있을 때 사용할 아이콘의 인덱스입니다. 아이콘이 하나뿐인 파일은 기본값이 `0`입니다. |
+| `workingDirectory` | `string` | _(선택)_ 작업 디렉터리입니다. 기본값은 빈 문자열입니다. |
+
+<Callout type="info">
+`Task` 구조체는 **Windows 전용**입니다. 다른 플랫폼에서는 `app.setUserTasks`가 아무 동작도 하지 않습니다.
+</Callout>
+
+```js
+const { app } = require('electron')
+
+app.setUserTasks([
+  {
+    program: process.execPath,
+    arguments: '--new-window',
+    iconPath: process.execPath,
+    iconIndex: 0,
+    title: '새 창',
+    description: '새 창을 만듭니다',
+  },
+])
+```
+
+<EasyNote>
+Task는 제어판 위에 라벨이 붙은 버튼과 같습니다. 누르면 항상 같은 기계(`program`)를 같은 설정 모드(`arguments`)로 실행합니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+Task를 사용하면 Windows에서 앱 작업 표시줄 아이콘의 오른쪽 클릭 메뉴에 편리한 바로가기를 추가할 수 있습니다. "새 창", "메일 작성", "최근 프로젝트 열기" 같은 항목을 떠올려 보세요. 각 항목은 서로 다른 인자로 앱을 다시 실행해서 무엇을 해야 할지 앱에 알려 줍니다. 각 작업에 `title`, 선택적인 `description` 툴팁, `iconPath`를 지정한 뒤 전체 목록을 `app.setUserTasks`에 넘기면 됩니다.
+
+<Cards>
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+  <Cards.Card title="JumpListCategory" href="/ko/api/structures/jump-list-category" arrow />
+</Cards>

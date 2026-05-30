@@ -1,0 +1,46 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="IpcMainInvokeEvent"
+  subtitle="ipcMain.handle() 핸들러에 전달되는 이벤트 객체"
+  badge="API · Structure"
+/>
+
+`IpcMainInvokeEvent`는 `ipcMain.handle()` 콜백 안에서 메인 프로세스가 첫 번째 인자로 받는 이벤트 객체입니다. 누가 메시지를 보냈는지에 대한 정보를 담고 있으며, 값을 반환하여 응답할 수 있게 해줍니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `type` | `string` | 이벤트의 종류입니다. 가능한 값으로 `frame`이 있습니다. |
+| `processId` | `Integer` | 이 메시지를 보낸 렌더러 프로세스의 내부 ID입니다. |
+| `frameId` | `Integer` | 이 메시지를 보낸 렌더러 프레임의 ID입니다. |
+| `sender` | `WebContents` | 메시지를 보낸 `webContents`를 반환합니다. |
+| `senderFrame` | `WebFrameMain \| null` | _(선택)_ 이 메시지를 보낸 프레임입니다. 읽기 전용입니다. 프레임이 이동했거나 파괴된 뒤에 접근하면 `null`일 수 있습니다. |
+
+```js
+const { ipcMain } = require('electron')
+
+ipcMain.handle('get-user-data', (event, id) => {
+  // event는 IpcMainInvokeEvent입니다
+  console.info(event.sender.getURL())
+  return fetchUserData(id)
+})
+```
+
+<EasyNote>
+편지에 적힌 발신인 주소와 소인 같은 것이라고 생각하면 됩니다. 어떤 렌더러(그리고 어떤 프레임)가 요청을 보냈는지 정확히 알려주므로, 답장을 어디로 보내야 할지 알 수 있습니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+렌더러가 `ipcRenderer.invoke(...)`를 호출하면, 메인 프로세스의 핸들러는 보낸 쪽을 설명하는 이 이벤트 객체를 받습니다. 주로 누가 요청했는지(`event.sender`, `event.senderFrame`) 확인하는 데 사용하는데, 요청이 허용된 것인지 검증하거나 올바른 창으로 무언가를 돌려보낼 때 유용합니다. 핸들러에서 `return`한 값이 렌더러의 응답이 됩니다.
+
+<Cards>
+  <Cards.Card title="ipcMain" href="/ko/api/ipc-main" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

@@ -1,0 +1,44 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="DesktopCapturerSource"
+  subtitle="A single capturable screen or application window"
+  badge="API · Structure"
+/>
+
+A `DesktopCapturerSource` describes one capturable source — either a whole screen or an individual application window. The `desktopCapturer.getSources()` method returns an array of these objects so you can let the user pick what to record or share.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `string` | The identifier of a window or screen, usable as a `chromeMediaSourceId` constraint. Format is `window:XX:YY` or `screen:ZZ:0`. |
+| `name` | `string` | A descriptive name: screen sources are named `Entire Screen` or `Screen <index>`, while window sources match the window title. |
+| `thumbnail` | `NativeImage` | A visual preview image of the source. The actual size depends on the screen/window scale and is not guaranteed to match the requested size. |
+| `display_id` | `string` | A unique identifier that corresponds to the `id` of the matching `Display` returned by the Screen API. May be empty if unavailable. |
+| `appIcon` | `NativeImage` | _(optional)_ The application icon for window sources, or `null` for screen sources. Icon dimensions vary based on the data the application provides. |
+
+```js
+const { desktopCapturer } = require('electron')
+
+const sources = await desktopCapturer.getSources({ types: ['window', 'screen'] })
+const first = sources[0]
+// first => { id: 'screen:0:0', name: 'Entire Screen', thumbnail, display_id, appIcon }
+```
+
+<EasyNote>
+Think of it like a row in a "pick what to share" menu — each entry has a name, a thumbnail preview, and a hidden ID the system uses to start the capture.
+</EasyNote>
+
+## In plain words
+
+When you build a screen-sharing or screen-recording feature, you need to show the user a list of things they can capture. Each `DesktopCapturerSource` is one item in that list: it carries a friendly `name`, a `thumbnail` you can render as a preview, and an `id` you hand to the media APIs to actually start grabbing pixels. You'll mostly read these objects, not create them.
+
+<Cards>
+  <Cards.Card title="desktopCapturer" href="/en/api/desktop-capturer" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

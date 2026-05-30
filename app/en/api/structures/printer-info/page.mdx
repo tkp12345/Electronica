@@ -1,0 +1,49 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="PrinterInfo"
+  subtitle="Describes a printer available on the user's system"
+  badge="API · Structure"
+/>
+
+The `PrinterInfo` object describes a single printer the operating system knows about. It is returned by [`webContents`](/en/api/web-contents) methods such as `webContents.getPrintersAsync()`, which gives you the list of printers a user can print to.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `name` | `string` | The name of the printer as understood by the OS. |
+| `displayName` | `string` | The name of the printer as shown in Print Preview. |
+| `description` | `string` | A longer description of the printer's type. |
+| `status` | `number` | The status of the printer. The meaning of the number is platform-specific (see the Windows printer or CUPS documentation). |
+| `options` | `Object` | An object containing a variable number of platform-specific keys describing the printer. |
+
+```js
+const { BrowserWindow } = require('electron')
+
+const win = new BrowserWindow()
+const printers = await win.webContents.getPrintersAsync()
+
+const printer = printers[0]
+// printer.name        -> 'Brother_HL_L2350DW'
+// printer.displayName  -> 'Brother HL-L2350DW'
+// printer.status       -> 3
+// printer.options      -> { 'printer-location': 'Office', ... }
+```
+
+<EasyNote>
+A `PrinterInfo` is like a name tag for one printer: what it's called, what kind it is, and whether it's ready to go.
+</EasyNote>
+
+## In plain words
+
+When your app wants to print something, you first need to know which printers are available. Asking the web contents for its printers hands you a list of `PrinterInfo` objects, one per printer. You'd use them to build a printer-picker dropdown, show a friendly name to the user, or check a printer's status before sending a job.
+
+<Cards>
+  <Cards.Card title="webContents" href="/en/api/web-contents" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

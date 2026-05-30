@@ -1,0 +1,50 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="PostBody"
+  subtitle="The body of an HTTP POST request to send when loading a URL"
+  badge="API · Structure"
+/>
+
+The `PostBody` object describes the data sent with a POST request. You pass it as the `postData` option to `webContents.loadURL()` (and `<webview>.loadURL()`) when you need to load a URL with form data instead of a plain GET.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `data` | `(UploadRawData \| UploadFile)[]` | The post data to be sent to the new window. Each element is either an `UploadRawData` (a raw `Buffer` of bytes) or an `UploadFile` (a reference to a file on disk). |
+| `contentType` | `string` | The `content-type` header used for the data. One of `application/x-www-form-urlencoded` or `multipart/form-data`. |
+| `boundary` | `string` | _(optional)_ The boundary used to separate multiple parts of the message. Only valid when `contentType` is `multipart/form-data`. |
+
+The `data` array elements are themselves small structures: an `UploadRawData` has `type: 'rawData'` and `bytes: Buffer`; an `UploadFile` has `type: 'file'`, `filePath: string`, and optional `offset`, `length`, and `modificationTime` numbers.
+
+```js
+const postBody = {
+  contentType: 'application/x-www-form-urlencoded',
+  data: [
+    {
+      type: 'rawData',
+      bytes: Buffer.from('hello=world&foo=bar')
+    }
+  ]
+}
+
+webContents.loadURL('https://example.com/submit', { postData: [postBody] })
+```
+
+<EasyNote>
+A PostBody is like a sealed envelope you hand to a website: it holds the form contents (the `data`), a label saying what kind of contents they are (`contentType`), and — when you're mailing several things at once — a divider between them (`boundary`).
+</EasyNote>
+
+## In plain words
+
+When you submit a web form, the browser bundles up your input and sends it to the server in the body of a POST request. `PostBody` is how you build that bundle yourself in code: you list the pieces of data, say what format they're in, and Electron sends them along when it loads the page. You'd reach for it whenever you want to open a URL with submitted data instead of just navigating to it.
+
+<Cards>
+  <Cards.Card title="web-contents" href="/en/api/web-contents" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

@@ -1,0 +1,93 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="BaseWindowOptions"
+  subtitle="The settings object you pass when creating a window"
+  badge="API · Structure"
+/>
+
+`BaseWindowOptions` is the plain options object accepted by the `BaseWindow` constructor (and inherited by `BrowserWindow`). Every field is optional and controls how the window looks and behaves when it is created.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `width` | `Integer` | _(optional)_ Window's width in pixels. Default is `800`. |
+| `height` | `Integer` | _(optional)_ Window's height in pixels. Default is `600`. |
+| `x` | `Integer` | _(optional)_ Window's left offset from screen. Default centers the window. |
+| `y` | `Integer` | _(optional)_ Window's top offset from screen. Default centers the window. |
+| `useContentSize` | `boolean` | _(optional)_ Treat `width`/`height` as the web page size rather than the full window size. |
+| `center` | `boolean` | _(optional)_ Show window in the center of the screen. Default is `false`. |
+| `minWidth` | `Integer` | _(optional)_ Window's minimum width. Default is `0`. |
+| `minHeight` | `Integer` | _(optional)_ Window's minimum height. Default is `0`. |
+| `maxWidth` | `Integer` | _(optional)_ Window's maximum width. Default is no limit. |
+| `maxHeight` | `Integer` | _(optional)_ Window's maximum height. Default is no limit. |
+| `resizable` | `boolean` | _(optional)_ Whether the window is resizable. Default is `true`. |
+| `movable` | `boolean` | _(optional)_ _(macOS / Windows)_ Whether the window is movable. Not implemented on Linux. |
+| `minimizable` | `boolean` | _(optional)_ _(macOS / Windows)_ Whether the window is minimizable. Not implemented on Linux. |
+| `maximizable` | `boolean` | _(optional)_ _(macOS / Windows)_ Whether the window is maximizable. Not implemented on Linux. |
+| `closable` | `boolean` | _(optional)_ _(macOS / Windows)_ Whether the window is closable. Not implemented on Linux. |
+| `focusable` | `boolean` | _(optional)_ Whether the window can receive focus; affects taskbar behavior on Windows/Linux. |
+| `alwaysOnTop` | `boolean` | _(optional)_ Whether the window should always stay on top of other windows. |
+| `fullscreen` | `boolean` | _(optional)_ Display the window in fullscreen on creation. |
+| `fullscreenable` | `boolean` | _(optional)_ Whether the window can be put into fullscreen mode. |
+| `simpleFullscreen` | `boolean` | _(optional)_ _(macOS)_ Use pre-Lion fullscreen. Default is `false`. |
+| `skipTaskbar` | `boolean` | _(optional)_ _(macOS / Windows)_ Whether to show the window in the taskbar. Default is `false`. |
+| `hiddenInMissionControl` | `boolean` | _(optional)_ _(macOS)_ Hide the window when the user toggles into Mission Control. |
+| `kiosk` | `boolean` | _(optional)_ Whether the window is in kiosk mode. Default is `false`. |
+| `title` | `string` | _(optional)_ Default window title. Default is `"Electron"`. |
+| `icon` | `NativeImage \| string` | _(optional)_ Window icon. ICO is recommended on Windows. |
+| `show` | `boolean` | _(optional)_ Whether the window should be shown when created. Default is `true`. |
+| `frame` | `boolean` | _(optional)_ Set to `false` to create a frameless window. |
+| `parent` | `BaseWindow` | _(optional)_ Parent window reference. |
+| `modal` | `boolean` | _(optional)_ Whether this is a modal window. Only works when the window is a child window. |
+| `acceptFirstMouse` | `boolean` | _(optional)_ _(macOS)_ Clicking an inactive window passes the click through to web content. |
+| `disableAutoHideCursor` | `boolean` | _(optional)_ Whether to hide the cursor when typing. Default is `false`. |
+| `autoHideMenuBar` | `boolean` | _(optional)_ _(Linux / Windows)_ Hide the menu bar unless the Alt key is pressed. |
+| `enableLargerThanScreen` | `boolean` | _(optional)_ _(macOS)_ Allow the window to resize larger than the screen. |
+| `backgroundColor` | `string` | _(optional)_ Background color as Hex, RGB, RGBA, HSL, HSLA, or a named CSS color. |
+| `hasShadow` | `boolean` | _(optional)_ Whether the window should have a shadow. Default is `true`. |
+| `opacity` | `number` | _(optional)_ _(macOS / Windows)_ Initial window opacity, between `0.0` and `1.0`. |
+| `darkTheme` | `boolean` | _(optional)_ Force a dark theme for the window. Only works on some GTK+3 desktop environments. |
+| `transparent` | `boolean` | _(optional)_ Make the window transparent. Requires a frameless window on Windows. |
+| `type` | `string` | _(optional)_ Window type category (`desktop`, `dock`, `panel`, `toolbar`, etc.). |
+| `visualEffectState` | `string` | _(optional)_ _(macOS)_ Backdrop appearance state: `followWindow`, `active`, or `inactive`. |
+| `titleBarStyle` | `string` | _(optional)_ Title bar rendering: `default`, `hidden`, `hiddenInset`, or `customButtonsOnHover`. |
+| `titleBarOverlay` | `Object \| boolean` | _(optional)_ Window controls overlay config. Nested fields: `color` (`string`, Windows/Linux), `symbolColor` (`string`, Windows/Linux), `height` (`Integer`). |
+| `accentColor` | `boolean \| string` | _(optional)_ _(Windows)_ Window accent color as Hex, RGB, RGBA, HSL, HSLA, or a named CSS color. |
+| `trafficLightPosition` | `Point` | _(optional)_ _(macOS)_ Custom position for the traffic light buttons in frameless windows. |
+| `roundedCorners` | `boolean` | _(optional)_ _(macOS / Windows)_ Whether a frameless window should have rounded corners. |
+| `thickFrame` | `boolean` | _(optional)_ _(Windows)_ Use `WS_THICKFRAME` for frameless windows; affects resize behavior. |
+| `vibrancy` | `string` | _(optional)_ _(macOS)_ Vibrancy effect type (`appearance-based`, `titlebar`, `selection`, `menu`, etc.). |
+| `backgroundMaterial` | `string` | _(optional)_ _(Windows)_ System-drawn background: `auto`, `none`, `mica`, `acrylic`, or `tabbed`. |
+| `zoomToPageWidth` | `boolean` | _(optional)_ _(macOS)_ Option-clicking the green button zooms to the web page width. |
+| `tabbingIdentifier` | `string` | _(optional)_ _(macOS)_ Tab group name for native tab grouping; triggers the `new-window-for-tab` event. |
+
+```js
+const { BaseWindow } = require('electron')
+
+const win = new BaseWindow({
+  width: 1000,
+  height: 700,
+  center: true,
+  backgroundColor: '#1e1e1e',
+  titleBarStyle: 'hidden'
+})
+```
+
+<EasyNote>
+Think of it as the order form you fill out when requesting a new window: size, position, color, and which buttons it should have.
+</EasyNote>
+
+## In plain words
+
+When your app opens a window, you hand Electron this object to describe exactly what you want. Width and height set the size, `center` and `x`/`y` decide where it lands, and flags like `resizable` or `alwaysOnTop` shape how it behaves. Many fields are platform-specific, so a setting like `vibrancy` only matters on macOS. You will almost always pass a `BaseWindowOptions` (or its richer cousin used by `BrowserWindow`) when creating windows.
+
+<Cards>
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

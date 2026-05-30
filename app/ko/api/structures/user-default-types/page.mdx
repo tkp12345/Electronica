@@ -1,0 +1,47 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="UserDefaultTypes"
+  subtitle="macOS 사용자 기본값(user default) 타입 이름을 자바스크립트 타입에 연결해 주는 매핑"
+  badge="API · Structure"
+/>
+
+`UserDefaultTypes`는 macOS `NSUserDefaults`의 타입 이름(`string`, `boolean`, `array` 등)을 그에 대응하는 자바스크립트 타입으로 연결해 주는 도우미 타입입니다. `systemPreferences.getUserDefault(key, type)`에서 사용되며, 여러분이 넘긴 `type` 값에 따라 반환되는 값의 타입이 결정됩니다. 실제로 이 타입의 객체가 런타임에 존재하지는 않으며, 오직 API를 타입 안전하게 만들기 위해 존재합니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `string` | `string` | `string` 사용자 기본값 타입은 자바스크립트 `string`에 대응됩니다. |
+| `boolean` | `boolean` | `boolean` 사용자 기본값 타입은 자바스크립트 `boolean`에 대응됩니다. |
+| `integer` | `number` | `integer` 사용자 기본값 타입은 자바스크립트 `number`에 대응됩니다. |
+| `float` | `number` | `float` 사용자 기본값 타입은 자바스크립트 `number`에 대응됩니다. |
+| `double` | `number` | `double` 사용자 기본값 타입은 자바스크립트 `number`에 대응됩니다. |
+| `url` | `string` | `url` 사용자 기본값 타입은 자바스크립트 `string`에 대응됩니다. |
+| `array` | `Array<unknown>` | `array` 사용자 기본값 타입은 자바스크립트 배열에 대응됩니다. |
+| `dictionary` | `Record<string, unknown>` | `dictionary` 사용자 기본값 타입은 자바스크립트 객체/레코드에 대응됩니다. |
+
+```js
+const { systemPreferences } = require('electron')
+
+// 넘기는 `type` 문자열이 그에 맞는 반환 타입을 결정합니다.
+const name = systemPreferences.getUserDefault('AppleLocale', 'string')
+const swipe = systemPreferences.getUserDefault('AppleEnableSwipeNavigateWithScrolls', 'boolean')
+```
+
+<EasyNote>
+번역표라고 생각하시면 됩니다. macOS에게 "이 설정을 문자열(또는 불리언, 또는 배열)로 주세요"라고 말하면, 이 표가 어떤 종류의 값이 돌아올지 보장해 줍니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+macOS는 앱과 시스템 설정을 "사용자 기본값(user default)"으로 저장하며, 각 값에는 타입이 있습니다. `systemPreferences.getUserDefault`로 값을 읽을 때, 어떤 타입으로 받을지를 Electron에 알려 줍니다. `UserDefaultTypes`는 바로 그 조회표로, "`string`을 요청하면 문자열을, `array`를 요청하면 배열을 돌려준다"는 약속을 담고 있습니다. 직접 이 객체를 만들 일은 없으며, 읽기 API가 올바른 타입을 갖도록 조용히 도와줍니다.
+
+<Cards>
+  <Cards.Card title="systemPreferences" href="/ko/api/system-preferences" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

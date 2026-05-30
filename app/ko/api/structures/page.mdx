@@ -1,0 +1,28 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="Structures"
+  subtitle="Electron 이 주고받는 평범한 객체의 '모양' — 채워 넣는 인자와 돌려받는 데이터."
+  badge="API · Structures"
+/>
+
+## 무엇인가요
+
+Structures 는 호출하는 모듈이 아니라 **객체 타입 정의** 예요. 어떤 메서드가 옵션을 요구하거나 데이터(`Cookie`, `Display`, `Rectangle` 등)를 돌려줄 때, 이 섹션이 정확히 어떤 필드가 있고 각각이 무슨 뜻인지 알려줘요.
+
+<EasyNote>
+모듈이 동사(무언가를 한다)라면, 구조체는 명사(그 무언가의 모양)예요. `Cookie` 를 "실행"하지는 않아요 — 읽거나 만들 뿐이죠.
+</EasyNote>
+
+전체 목록은 사이드바에서 볼 수 있어요. 초반에 자주 만나는 것 몇 가지:
+
+<Cards>
+  <Cards.Card title="BrowserWindowOptions" href="/ko/api/structures/browser-window-options" arrow />
+  <Cards.Card title="Cookie" href="/ko/api/structures/cookie" arrow />
+  <Cards.Card title="Display" href="/ko/api/structures/display" arrow />
+  <Cards.Card title="Rectangle" href="/ko/api/structures/rectangle" arrow />
+</Cards>

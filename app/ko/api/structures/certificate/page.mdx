@@ -1,0 +1,47 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="Certificate"
+  subtitle="X.509 보안 인증서를 설명하는 객체입니다"
+  badge="API · Structure"
+/>
+
+`Certificate` 객체는 X.509 보안 인증서를 설명합니다. `app`의 `certificate-error` 이벤트나 `session.setCertificateVerifyProc` 같은 핸들러에 전달되며, 보안(HTTPS) 연결 뒤에 있는 신원을 확인해야 할 때 사용됩니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `data` | `string` | PEM 인코딩된 데이터입니다. |
+| `issuer` | `CertificatePrincipal` | 인증서를 발급한 주체입니다 (`commonName`, `organizations`, `organizationUnits`, `locality`, `state`, `country` 필드를 가진 객체). |
+| `issuerName` | `string` | 발급자의 Common Name입니다. |
+| `issuerCert` | `Certificate` | _(선택)_ 발급자 인증서입니다 (자체 서명이 아닌 경우). |
+| `subject` | `CertificatePrincipal` | 인증서가 발급된 대상 주체입니다 (`issuer`와 동일한 형태). |
+| `subjectName` | `string` | 대상의 Common Name입니다. |
+| `serialNumber` | `string` | 16진수 값을 나타내는 문자열입니다. |
+| `validStart` | `number` | 인증서 유효 시작일입니다 (초 단위). |
+| `validExpiry` | `number` | 인증서 유효 만료일입니다 (초 단위). |
+| `fingerprint` | `string` | 인증서의 지문(fingerprint)입니다. |
+
+```js
+app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
+  console.error(`${certificate.issuerName}가 발급한 ${certificate.subjectName} 인증서 실패: ${error}`)
+})
+```
+
+<EasyNote>
+웹사이트가 자신이 진짜 그 사이트임을 증명하기 위해 내미는 신분증이라고 생각하시면 됩니다. 누가 그 신분증을 발급했는지, 언제 만료되는지까지 담겨 있습니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+앱이 보안 웹사이트와 통신할 때마다 그 사이트는 자신의 신원을 증명하기 위해 인증서를 제시합니다. `Certificate` 객체는 그 신분증을 읽기 전용으로 담아 둔 스냅숏입니다. 어떤 사이트인지, 누가 그 사이트를 보증했는지, 인증서가 아직 유효한지 확인할 때 사용하며, 보통 무언가 이상해 보일 때 `certificate-error` 핸들러 안에서 활용하게 됩니다.
+
+<Cards>
+  <Cards.Card title="session" href="/ko/api/session" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

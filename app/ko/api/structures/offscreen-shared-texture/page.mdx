@@ -1,0 +1,62 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="OffscreenSharedTexture"
+  subtitle="가속 오프스크린 렌더링 중에 전달되는 GPU 텍스처"
+  badge="API · Structure"
+/>
+
+`OffscreenSharedTexture` 객체는 오프스크린으로 렌더링된 한 프레임의 GPU 텍스처와 그 메타데이터를 담고 있습니다. 공유 텍스처 모드(`useSharedTexture: true`)로 오프스크린 렌더링을 켜면 [`webContents`](/ko/api/web-contents)의 `'paint'` 이벤트로 전달됩니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `textureInfo` | `Object` | 프레임의 텍스처 메타데이터를 담는 컨테이너입니다. |
+| `textureInfo.widgetType` | `string` | 위젯 종류입니다. `popup` 또는 `frame`이 될 수 있습니다. |
+| `textureInfo.pixelFormat` | `string` | 텍스처의 픽셀 포맷입니다. `rgba`, `bgra`, `rgbaf16`이 될 수 있습니다. |
+| `textureInfo.codedSize` | `Size` | 비디오 프레임의 전체 크기입니다 (`width`, `height`). |
+| `textureInfo.colorSpace` | `ColorSpace` | 비디오 프레임의 색 공간 정보입니다. |
+| `textureInfo.visibleRect` | `Rectangle` | 코드화된 크기 중 실제로 표시되어야 하는 영역입니다 (`x`, `y`, `width`, `height`). |
+| `textureInfo.contentRect` | `Rectangle` | 캡처러가 채운 영역으로, 오프스크린 렌더링의 변경(dirty) 영역과 일치합니다. |
+| `textureInfo.metadata` | `Object` | 프레임별 추가 메타데이터입니다. |
+| `textureInfo.metadata.captureUpdateRect` | `Rectangle` | _(선택)_ 프레임에서 변경된(dirty) 영역입니다. |
+| `textureInfo.metadata.regionCaptureRect` | `Rectangle` | _(선택)_ 영역 캡처가 활성화된 경우 프레임 콘텐츠의 원점입니다. |
+| `textureInfo.metadata.sourceSize` | `Rectangle` | _(선택)_ 원본 프레임의 전체 크기입니다. |
+| `textureInfo.metadata.frameCount` | `number` | _(선택)_ 증가하는 프레임 카운터입니다. 프레임 누락으로 값에 공백이 생길 수 있습니다. |
+| `textureInfo.timestamp` | `number` | 캡처가 시작된 이후 경과한 마이크로초입니다. |
+| `textureInfo.handle` | `SharedTextureHandle` | 공유 텍스처 데이터에 대한 플랫폼 핸들입니다. |
+| `release` | `Function` | 텍스처를 해제하고 자원을 반환합니다. 동시에 존재할 수 있는 텍스처 수가 제한되어 있으므로 **반드시** 호출해야 합니다. |
+
+```js
+const { BrowserWindow } = require('electron')
+
+const win = new BrowserWindow({
+  webPreferences: { offscreen: { useSharedTexture: true } }
+})
+
+win.webContents.on('paint', (event, dirty, image) => {
+  const tex = event.texture
+  if (tex) {
+    // tex.textureInfo.handle을 GPU 파이프라인에 넘긴 뒤 해제하세요.
+    tex.release()
+  }
+})
+```
+
+<EasyNote>
+그래픽 카드에서 잠시 빌려 온 캔버스라고 생각하면 됩니다. 그 위에 그림을 그릴 수는 있지만, 다 쓰면 즉시 돌려줘야 합니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+윈도우를 메모리로 픽셀을 복사하는 대신 GPU로 오프스크린 렌더링하면, Electron이 매 프레임마다 이 객체를 건네줍니다. 안에는 실제 GPU 텍스처에 대한 핸들과 크기, 포맷, 색 공간 정보가 들어 있습니다. 이것을 사용하면 느린 복사 없이 Electron의 출력을 게임 엔진이나 비디오 파이프라인 같은 다른 GPU 시스템으로 바로 넘길 수 있습니다. 단 한 가지 규칙은, 다 쓰고 나면 항상 `release()`를 호출하는 것입니다. 그렇지 않으면 금방 텍스처가 부족해집니다.
+
+<Cards>
+  <Cards.Card title="webContents" href="/ko/api/web-contents" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

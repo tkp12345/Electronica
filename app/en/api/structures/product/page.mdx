@@ -1,0 +1,57 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="Product"
+  subtitle="An in-app purchase product from the Apple App Store"
+  badge="API · Structure"
+/>
+
+The `Product` object describes a single in-app purchase item registered in the Apple App Store. You receive an array of these from [`inAppPurchase.getProducts()`](/en/api/in-app-purchase), and you read its fields to show prices, titles, and subscription details to your users.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `productIdentifier` | `string` | The string that identifies the product to the Apple App Store. |
+| `localizedDescription` | `string` | A description of the product. |
+| `localizedTitle` | `string` | The name of the product. |
+| `price` | `number` | The cost of the product in the local currency. |
+| `formattedPrice` | `string` | The locale formatted price of the product. |
+| `currencyCode` | `string` | 3 character code presenting a product's currency based on the ISO 4217 standard. |
+| `introductoryPrice` | `ProductDiscount` | _(optional)_ The object containing introductory price information for the product. |
+| `discounts` | `ProductDiscount[]` | An array of discount offers available for the product. |
+| `subscriptionGroupIdentifier` | `string` | The identifier of the subscription group to which the subscription belongs. |
+| `subscriptionPeriod` | `ProductSubscriptionPeriod` | _(optional)_ The period details for products that are subscriptions. |
+| `isDownloadable` | `boolean` | A boolean value that indicates whether the App Store has downloadable content for this product. |
+| `downloadContentVersion` | `string` | A string that identifies the version of the content. |
+| `downloadContentLengths` | `number[]` | The total size of the downloadable content, in bytes. |
+
+```js
+const product = {
+  productIdentifier: 'com.example.pro_upgrade',
+  localizedTitle: 'Pro Upgrade',
+  localizedDescription: 'Unlock all premium features.',
+  price: 4.99,
+  formattedPrice: '$4.99',
+  currencyCode: 'USD',
+  discounts: [],
+  isDownloadable: false
+}
+```
+
+<EasyNote>
+A Product is like a price tag on a store shelf: it carries the item's name, description, formatted price, and any sale offers attached to it.
+</EasyNote>
+
+## In plain words
+
+When your app sells things — a one-time upgrade, a subscription, or extra content — Apple keeps the official price and description for each item. The `Product` object is how Electron hands that information back to you so you can build your store screen without hard-coding prices. You don't create it yourself; you ask the App Store for your products and read the fields you need, like the formatted price or whether it's a subscription.
+
+<Cards>
+  <Cards.Card title="inAppPurchase" href="/en/api/in-app-purchase" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

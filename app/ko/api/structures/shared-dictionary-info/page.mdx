@@ -1,0 +1,56 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="SharedDictionaryInfo"
+  subtitle="압축에 사용되는 공유 사전(shared dictionary)에 대한 메타데이터"
+  badge="API · Structure"
+/>
+
+`SharedDictionaryInfo` 객체는 [압축 사전 전송(Compression Dictionary Transport)](https://developer.chrome.com/blog/shared-dictionary-compression) 기능을 위해 Chromium이 저장해 둔 하나의 공유 사전을 설명합니다. 이 객체들의 배열은 `session.getSharedDictionaryUsageInfo()`와 `session.getSharedDictionaryInfo()`에서 받을 수 있습니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `match` | `string` | `use-as-dictionary` 응답 헤더의 `match` 옵션으로 선언된, 사전이 적용될 경로 패턴입니다. |
+| `matchDestinations` | `string[]` | `use-as-dictionary` 응답 헤더의 `match-dest` 옵션으로 선언된, 사전이 적용될 대상(destination) 목록입니다. |
+| `id` | `string` | `use-as-dictionary` 응답 헤더의 `id` 옵션으로 선언된 사전의 id입니다. |
+| `dictionaryUrl` | `string` | 사전 리소스를 가져온 URL입니다. |
+| `lastFetchTime` | `Date` | 네트워크 계층에서 사전을 받은 시각입니다. |
+| `responseTime` | `Date` | 서버에서 사전을 받은 시각입니다. 캐시된 응답의 경우 이 시각은 한참 과거일 수 있습니다. |
+| `expirationDuration` | `number` | `use-as-dictionary` 응답 헤더의 `expires` 옵션으로 선언된 만료 시간(초 단위)입니다. |
+| `lastUsedTime` | `Date` | 사전이 가장 최근에 사용된 시각입니다. |
+| `size` | `number` | Chromium 내부 저장소에 이 사전이 차지하는 바이트 수입니다. |
+| `hash` | `string` | 사전 바이너리의 SHA-256 체크섬입니다. |
+
+```js
+const info = {
+  match: '/product/*',
+  matchDestinations: ['document'],
+  id: 'my-dictionary',
+  dictionaryUrl: 'https://example.com/dict.bin',
+  lastFetchTime: new Date(),
+  responseTime: new Date(),
+  expirationDuration: 2592000,
+  lastUsedTime: new Date(),
+  size: 102400,
+  hash: 'e3b0c44298fc1c149afbf4c8996fb924...'
+}
+```
+
+<EasyNote>
+재사용 가능한 템플릿에 붙은 라벨이라고 생각하면 됩니다. 어떤 페이지에 적용되는지, 어디서 왔는지, 크기가 얼마인지, 언제 만료되는지를 적어 둔 것이죠.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+공유 사전은 여러 다운로드에서 공통으로 쓰이는 바이트를 재사용해서, 각 응답을 훨씬 더 작게 만들어 줍니다. 이 객체는 그런 사전 하나에 대한 기록 항목입니다. 어떤 요청에 적용되는지, 어디서 가져왔는지, 크기는 얼마이고 얼마나 최신인지를 담고 있습니다. 세션이 캐시해 둔 사전을 점검하거나 디버깅할 때 이 정보를 읽게 됩니다.
+
+<Cards>
+  <Cards.Card title="session" href="/ko/api/session" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

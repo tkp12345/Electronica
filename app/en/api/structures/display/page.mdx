@@ -1,0 +1,60 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="Display"
+  subtitle="Describes a physical monitor connected to the user's machine"
+  badge="API · Structure"
+/>
+
+The `Display` object describes a screen attached to the system, including its resolution, position, scaling, and capabilities. It is returned by the [`screen`](/en/api/screen) module methods such as `screen.getPrimaryDisplay()` and `screen.getAllDisplays()`.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `accelerometerSupport` | `string` | Whether an accelerometer is present. Can be `available`, `unavailable`, or `unknown`. |
+| `bounds` | `Rectangle` | The bounds of the display in DIP points (`x`, `y`, `width`, `height`). |
+| `colorDepth` | `number` | The number of bits per pixel. |
+| `colorSpace` | `string` | The color space (the set of all realizable color combinations) used for color conversions. |
+| `depthPerComponent` | `number` | The number of bits per color component. |
+| `detected` | `boolean` | `true` if the display is detected by the system. |
+| `displayFrequency` | `number` | The display refresh rate. |
+| `id` | `number` | Unique identifier for the display. `-1` means invalid or not yet known; `-10` means a virtual display assigned to a unified desktop. |
+| `internal` | `boolean` | `true` for an internal display and `false` for an external one. |
+| `label` | `string` | User-friendly label, determined by the platform. |
+| `maximumCursorSize` | `Size` | Maximum cursor size in native pixels (`width`, `height`). |
+| `nativeOrigin` | `Point` | The display's origin in pixel coordinates (`x`, `y`). Only available on windowing systems like X11 that position displays in pixel coordinates. |
+| `rotation` | `number` | Screen rotation in clockwise degrees. Can be `0`, `90`, `180`, or `270`. |
+| `scaleFactor` | `number` | The output device's pixel scale factor. |
+| `touchSupport` | `string` | Whether touch input is supported. Can be `available`, `unavailable`, or `unknown`. |
+| `monochrome` | `boolean` | Whether or not the display is a monochrome display. |
+| `size` | `Size` | The display dimensions (`width`, `height`). |
+| `workArea` | `Rectangle` | The work area of the display in DIP points, excluding system UI like the taskbar (`x`, `y`, `width`, `height`). |
+| `workAreaSize` | `Size` | The size of the work area (`width`, `height`). |
+
+```js
+const { screen } = require('electron')
+
+const primary = screen.getPrimaryDisplay()
+console.log(primary.id)            // e.g. 2779098405
+console.log(primary.size)          // { width: 1920, height: 1080 }
+console.log(primary.scaleFactor)   // e.g. 2 on a Retina display
+console.log(primary.workArea)      // usable area minus taskbar / menu bar
+```
+
+<EasyNote>
+A `Display` is like the spec sheet for one monitor: how big it is, how sharp it is, and where it sits on your desk.
+</EasyNote>
+
+## In plain words
+
+When you want to know about the user's screens, you ask the `screen` module and it hands you `Display` objects. Each one tells you the resolution, how it's scaled (important for Retina and HiDPI screens), and how much room is actually usable after the taskbar or menu bar. You'd use this to place a window on the right monitor, remember where the user last positioned it, or adapt your layout to the screen size.
+
+<Cards>
+  <Cards.Card title="screen" href="/en/api/screen" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

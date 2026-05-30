@@ -1,0 +1,40 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="Referrer"
+  subtitle="요청이 시작된 URL과 그 정보를 얼마나 공유할지 정하는 정책"
+  badge="API · Structure"
+/>
+
+`Referrer` 객체는 요청이 어떤 페이지에서 시작되었는지, 그리고 그 정보를 얼마나 전달할지를 나타냅니다. `webContents`의 `did-redirect-navigation`이나 `will-redirect` 같은 이벤트에서 전달받을 수 있고, `webContents.loadURL()`과 `webContents.downloadURL()`에 넘겨줄 수도 있습니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `url` | `string` | HTTP 리퍼러 URL — 요청이 시작된 페이지의 주소입니다. |
+| `policy` | `string` | URL을 얼마나 전송할지 제어하는 리퍼러 정책입니다. `default`, `unsafe-url`, `no-referrer-when-downgrade`, `no-referrer`, `origin`, `strict-origin-when-cross-origin`, `same-origin`, `strict-origin` 중 하나이며, [Referrer-Policy](https://developer.mozilla.org/ko/docs/Web/HTTP/Headers/Referrer-Policy) 명세를 따릅니다. |
+
+```js
+const referrer = {
+  url: 'https://www.example.com/page',
+  policy: 'strict-origin-when-cross-origin'
+}
+```
+
+<EasyNote>
+Referrer는 편지 봉투에 적힌 보내는 사람 주소와 같습니다. 요청이 어디서 왔는지 알려주고, 정책은 전체 주소를 적을지 아니면 도시 이름만 적을지를 정합니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+링크를 클릭하거나 페이지를 불러올 때, 브라우저는 보통 도착지에게 "어느 페이지에서 왔는지"를 알려줍니다. `Referrer` 객체가 바로 그 정보를 담습니다. `url`은 출발한 페이지이고, `policy`는 개인정보 보호를 위해 그 주소를 얼마나 공유할지를 정합니다. 주로 `webContents`로 페이지를 이동하거나 파일을 내려받을 때 만나게 되며, 이 두 값을 함께 넘겨 원하는 리퍼러를 설정할 수 있습니다.
+
+<Cards>
+  <Cards.Card title="webContents" href="/ko/api/web-contents" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

@@ -1,0 +1,44 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="TraceCategoriesAndOptions"
+  subtitle="트레이스를 시작하기 전에 트레이싱 시스템에 전달하는 기록 설정입니다."
+  badge="API · Structure"
+/>
+
+`TraceCategoriesAndOptions` 객체는 Chromium의 트레이싱 시스템이 트레이스를 어떻게 기록할지 설명합니다. 이 객체를 `contentTracing.startRecording()`에 전달하여 어떤 카테고리의 이벤트를 수집할지, 그리고 기록이 어떻게 동작할지를 지정합니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `categoryFilter` | `string` | 어떤 카테고리 그룹을 트레이싱할지 제어하는 필터입니다. 카테고리 앞에 선택적으로 `-` 접두사를 붙이면 일치하는 카테고리를 포함한 그룹을 제외할 수 있습니다(예: `test_MyTest*` 또는 `-excluded_category1,-excluded_category2`). |
+| `traceOptions` | `string` | 어떤 종류의 트레이싱을 활성화할지 제어하는, 쉼표로 구분된 옵션 문자열입니다: `record-until-full`, `record-continuously`, `trace-to-console`, `enable-sampling`, `enable-systrace`. 앞의 세 개는 서로 배타적인 기록 모드이며(마지막에 지정한 것이 우선됨), 기본값은 `record-until-full`입니다. |
+
+```js
+const options = {
+  categoryFilter: '*',
+  traceOptions: 'record-until-full,enable-sampling'
+}
+
+contentTracing.startRecording(options).then(() => {
+  console.info('트레이싱이 시작되었습니다')
+})
+```
+
+<EasyNote>
+영상 녹화 버튼을 누르기 전에 작성하는 설정표라고 생각하시면 됩니다. 어떤 채널을 담을지, 그리고 얼마나 오래 녹화를 이어갈지 정하는 것이죠.
+</EasyNote>
+
+## 쉽게 풀어 설명하면
+
+성능 문제를 들여다보고 싶을 때, Electron에게 무엇을 지켜볼지와 어떻게 기록할지를 정확히 알려 줍니다. `categoryFilter`는 "무엇을"(어떤 종류의 이벤트인지), `traceOptions`는 "어떻게"(버퍼가 가득 찰 때까지 기록할지, 계속 기록할지, 콘솔에 출력할지 등)에 해당합니다. 이 작은 객체를 한 번 만들어 트레이싱 시스템에 넘겨 주면 데이터 수집이 시작됩니다.
+
+<Cards>
+  <Cards.Card title="contentTracing" href="/ko/api/content-tracing" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

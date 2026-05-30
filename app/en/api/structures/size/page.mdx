@@ -1,0 +1,37 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="Size"
+  subtitle="A simple object describing a width and height in pixels"
+  badge="API · Structure"
+/>
+
+`Size` is a plain object that represents dimensions as a pair of numbers. It is used throughout Electron wherever a width and height are needed together — for example when sizing a window with `BrowserWindow.setSize()` or reading a display's resolution from the `screen` module.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `width` | `number` | The width dimension, in pixels. |
+| `height` | `number` | The height dimension, in pixels. |
+
+```js
+const size = { width: 800, height: 600 }
+```
+
+<EasyNote>
+Think of it like the label on a box: just two numbers telling you how wide and how tall something is.
+</EasyNote>
+
+## In plain words
+
+Whenever you need to tell Electron "how big should this be?", you hand it a `Size` object. It is one of the smallest building blocks in the API — just `width` and `height` — but you will see it everywhere: resizing windows, measuring screens, or describing thumbnails. No extra options, no surprises.
+
+<Cards>
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

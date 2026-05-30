@@ -1,0 +1,43 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="KeyboardInputEvent"
+  subtitle="A synthetic keyboard event you can send into a page"
+  badge="API · Structure"
+/>
+
+The `KeyboardInputEvent` object describes a fake keyboard event — a key press, key release, or typed character — that you want Electron to deliver to a web page as if a real user typed it. You pass one of these to `webContents.sendInputEvent` to simulate keyboard input. It extends the base `InputEvent` structure, so it also carries the shared `modifiers` field.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `type` | `string` | The type of the event. One of `rawKeyDown`, `keyDown`, `keyUp`, or `char`. |
+| `keyCode` | `string` | The character or key to send. Should be a valid [Accelerator](/en/api/accelerator) key code (for example `A`, `Enter`, `Backspace`). |
+| `modifiers` | `string[]` | _(optional)_ Inherited from `InputEvent`. Modifier keys held during the event, such as `shift`, `control`, `alt`, `meta`, `capsLock`, or `numLock`. |
+
+```js
+// Simulate typing the letter "A" with Shift held down
+webContents.sendInputEvent({
+  type: 'keyDown',
+  keyCode: 'A',
+  modifiers: ['shift']
+})
+```
+
+<EasyNote>
+Think of it like a robot finger pressing a key on the keyboard for you: `type` is whether the key goes down, comes up, or just types a character, `keyCode` is which key, and `modifiers` are the keys it holds at the same time.
+</EasyNote>
+
+## In plain words
+
+When you need to automate or test a page without a real person at the keyboard — like scripting a login form or driving a kiosk — you can hand Electron a `KeyboardInputEvent` and it will pretend a user pressed that key. You describe what happened (`type`), which key (`keyCode`), and any combo keys held down (`modifiers`), then send it through `webContents.sendInputEvent`.
+
+<Cards>
+  <Cards.Card title="web-contents" href="/en/api/web-contents" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

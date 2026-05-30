@@ -1,0 +1,40 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ProtocolResponseUploadData"
+  subtitle="The body to upload when a custom protocol issues a request"
+  badge="API · Structure"
+/>
+
+`ProtocolResponseUploadData` describes the request body that a custom protocol handler sends out. It is used as the `uploadData` field of a `ProtocolResponse`, typically when you forward a request to another URL with `protocol.registerHttpProtocol` and need to include a POST body.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `contentType` | `string` | MIME type of the content (for example `application/json`). |
+| `data` | `string \| Buffer` | Content to be sent as the request body. |
+
+```js
+const uploadData = {
+  contentType: 'application/json',
+  data: JSON.stringify({ hello: 'world' }),
+}
+```
+
+<EasyNote>
+Think of it as the envelope's contents plus a label saying what kind of letter is inside.
+</EasyNote>
+
+## In plain words
+
+When your app intercepts a URL and forwards it somewhere else, you sometimes need to attach a payload, like the body of a POST request. This object holds that payload (`data`) and tells the receiver how to read it (`contentType`). You would use it whenever a custom protocol response needs to send data along with the request, not just fetch something.
+
+<Cards>
+  <Cards.Card title="protocol" href="/en/api/protocol" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

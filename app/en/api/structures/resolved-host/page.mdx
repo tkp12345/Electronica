@@ -1,0 +1,39 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ResolvedHost"
+  subtitle="The DNS lookup result for a hostname, holding the addresses it resolved to"
+  badge="API · Structure"
+/>
+
+`ResolvedHost` is the object returned when you resolve a hostname into network addresses. It is the result you get back from `net.resolveHost()` (and from the `resolveHost` method on a `Session`).
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `endpoints` | `ResolvedEndpoint[]` | The resolved DNS entries for the hostname. Each entry is a `ResolvedEndpoint` object with an `address` (`string`, the resolved IP) and a `family` (`'ipv4'` \| `'ipv6'` \| `'unspec'`, the address family). |
+
+```js
+const { net } = require('electron')
+
+const result = await net.resolveHost('electronjs.org')
+// result.endpoints -> [{ address: '185.199.108.153', family: 'ipv4' }, ...]
+```
+
+<EasyNote>
+A `ResolvedHost` is like the phone book entry you get after looking up a name: the name is the website, and inside is the list of actual numbers (IP addresses) you can dial.
+</EasyNote>
+
+## In plain words
+
+Computers find each other using numeric addresses, not human-friendly names like `electronjs.org`. When you ask Electron to resolve a hostname, it does that lookup and hands back a `ResolvedHost`. You use it to see which IP addresses a name points to — useful for diagnostics, custom networking, or just confirming a host is reachable.
+
+<Cards>
+  <Cards.Card title="net" href="/en/api/net" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

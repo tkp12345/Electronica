@@ -1,0 +1,40 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ResolvedEndpoint"
+  subtitle="호스트 이름에서 변환된 하나의 네트워크 엔드포인트"
+  badge="API · Structure"
+/>
+
+`ResolvedEndpoint`는 변환(resolve)된 하나의 네트워크 주소를 나타냅니다. `net` 모듈의 호스트 변환 결과에 등장하며, 하나의 호스트 이름이 여러 개의 엔드포인트로 변환될 수 있습니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `address` | `string` | 변환된 엔드포인트의 IP 주소입니다. |
+| `family` | `string` | 주소 패밀리입니다. `ipv4`(`AF_INET`에 해당), `ipv6`(`AF_INET6`에 해당), `unspec`(`AF_UNSPEC`에 해당) 중 하나입니다. |
+
+```js
+const endpoint = {
+  address: '93.184.216.34',
+  family: 'ipv4'
+}
+```
+
+<EasyNote>
+전화번호부의 한 줄이라고 생각하면 됩니다. 실제 번호(IP 주소)와 그 번호의 종류(IPv4인지 IPv6인지)를 알려줍니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+`example.com` 같은 호스트 이름을 네트워크에 조회하면, 이런 객체들의 목록을 돌려받습니다. 각 객체는 앱이 실제로 연결할 수 있는 한 곳을 나타내며, 그 주소가 예전 방식인 IPv4인지 최신 방식인 IPv6인지도 함께 알려줍니다. 어떤 엔드포인트와 통신할지 확인하거나 고를 때 이 정보를 사용합니다.
+
+<Cards>
+  <Cards.Card title="net" href="/ko/api/net" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

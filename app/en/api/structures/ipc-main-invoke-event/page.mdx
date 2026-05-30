@@ -1,0 +1,46 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="IpcMainInvokeEvent"
+  subtitle="The event object passed to ipcMain.handle() handlers"
+  badge="API · Structure"
+/>
+
+`IpcMainInvokeEvent` is the event object your main process receives as the first argument inside an `ipcMain.handle()` callback. It carries information about who sent the message and lets you reply by returning a value.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `type` | `string` | The type of the event. Possible values include `frame`. |
+| `processId` | `Integer` | The internal ID of the renderer process that sent this message. |
+| `frameId` | `Integer` | The ID of the renderer frame that sent this message. |
+| `sender` | `WebContents` | Returns the `webContents` that sent the message. |
+| `senderFrame` | `WebFrameMain \| null` | _(optional)_ The frame that sent this message. Read-only. May be `null` if accessed after the frame has navigated or been destroyed. |
+
+```js
+const { ipcMain } = require('electron')
+
+ipcMain.handle('get-user-data', (event, id) => {
+  // event is an IpcMainInvokeEvent
+  console.info(event.sender.getURL())
+  return fetchUserData(id)
+})
+```
+
+<EasyNote>
+Think of it like the return address and postmark on a letter: it tells you exactly which renderer (and which frame) sent the request, so you know where the reply should go.
+</EasyNote>
+
+## In plain words
+
+When a renderer calls `ipcRenderer.invoke(...)`, your main-process handler gets this event object describing the sender. You'll mostly use it to find out who's asking (`event.sender`, `event.senderFrame`) so you can verify the request is allowed or send something back to the right window. The value you `return` from the handler becomes the renderer's answer.
+
+<Cards>
+  <Cards.Card title="ipcMain" href="/en/api/ipc-main" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

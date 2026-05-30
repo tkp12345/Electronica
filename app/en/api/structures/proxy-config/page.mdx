@@ -1,0 +1,49 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ProxyConfig"
+  subtitle="Describes how a session should route its network traffic through a proxy"
+  badge="API · Structure"
+/>
+
+`ProxyConfig` is a plain object that tells a `Session` how to connect to the network through a proxy. You pass it to `session.setProxy(config)` to control whether requests go directly out, auto-detect a proxy, use a PAC script, or use fixed proxy servers.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `mode` | `string` | _(optional)_ One of `direct`, `auto_detect`, `pac_script`, `fixed_servers`, or `system`. Determines how the proxy is chosen. |
+| `pacScript` | `string` | _(optional)_ The URL associated with the PAC (Proxy Auto-Config) file. |
+| `proxyRules` | `string` | _(optional)_ Rules indicating which proxies to use. |
+| `proxyBypassRules` | `string` | _(optional)_ Rules indicating which URLs should bypass the proxy settings. |
+
+```js
+const { session } = require('electron')
+
+session.defaultSession.setProxy({
+  mode: 'fixed_servers',
+  proxyRules: 'https=foopy:80;ftp=foopy2',
+  proxyBypassRules: '<local>'
+})
+```
+
+<Callout type="info">
+  If both `pacScript` and `proxyRules` are provided without a specified `mode`, the `pacScript` configuration is applied and `proxyRules` is ignored.
+</Callout>
+
+<EasyNote>
+Think of it as the address slip you hand to a courier, telling them whether to deliver your packages directly or to route them through a specific middleman first.
+</EasyNote>
+
+## In plain words
+
+When your app makes network requests, you sometimes want them to go through a proxy server, for example on a corporate network or for testing. `ProxyConfig` is the small settings object you give to a session to say exactly how that should work: skip the proxy entirely, let the system figure it out, follow a PAC script, or point at specific servers. You will most often use it with `session.setProxy()`.
+
+<Cards>
+  <Cards.Card title="session" href="/en/api/session" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

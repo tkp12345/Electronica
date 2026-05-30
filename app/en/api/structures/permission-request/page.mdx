@@ -1,0 +1,44 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="PermissionRequest"
+  subtitle="Details about who is asking for a privileged capability"
+  badge="API · Structure"
+/>
+
+`PermissionRequest` is a plain object that describes the frame asking for a permission. It is passed to the callbacks you register with `session.setPermissionRequestHandler` and `session.setPermissionCheckHandler`, and it is the base shape that more specific requests (like `MediaAccessPermissionRequest` and `FilesystemPermissionRequest`) extend.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `requestingUrl` | `string` | The last URL the requesting frame loaded. |
+| `isMainFrame` | `boolean` | Whether the frame making the request is the main frame. |
+
+```js
+const { session } = require('electron')
+
+session.defaultSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
+  // details is a PermissionRequest object, e.g.
+  // { requestingUrl: 'https://example.com', isMainFrame: true }
+  const allow = details.requestingUrl.startsWith('https://example.com')
+  callback(allow)
+})
+```
+
+<EasyNote>
+Think of it like the caller ID on a phone: before you decide whether to grant access, it tells you who is calling and whether it is the main page or an embedded one.
+</EasyNote>
+
+## In plain words
+
+You use `PermissionRequest` when your app needs to decide whether to allow something sensitive, like the camera, microphone, or location. It tells you the URL behind the request and whether it came from the top-level page or a nested frame, so you can approve requests from sites you trust and reject the rest.
+
+<Cards>
+  <Cards.Card title="session" href="/en/api/session" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

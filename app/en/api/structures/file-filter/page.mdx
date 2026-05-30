@@ -1,0 +1,45 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="FileFilter"
+  subtitle="Describes a group of file types a file dialog should allow"
+  badge="API · Structure"
+/>
+
+A `FileFilter` object describes one category of selectable file types. You pass an array of them to the `dialog` module's `showOpenDialog` and `showSaveDialog` methods (via the `filters` option) to control which files the user can pick.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `name` | `string` | The display name shown for this filter category in the dialog (for example, "Images"). |
+| `extensions` | `string[]` | The file extensions to allow, written without the leading dot and without wildcards (for example, `['jpg', 'png']`). Use `['*']` to allow all files. |
+
+```js
+const { dialog } = require('electron')
+
+dialog.showOpenDialog({
+  filters: [
+    { name: 'Images', extensions: ['jpg', 'png', 'gif'] },
+    { name: 'Movies', extensions: ['mkv', 'avi', 'mp4'] },
+    { name: 'All Files', extensions: ['*'] }
+  ]
+})
+```
+
+<EasyNote>
+It is like the "file type" dropdown at the bottom of a Save or Open window, with one entry per kind of file.
+</EasyNote>
+
+## In plain words
+
+When you let someone open or save a file, you usually do not want to show every file on their computer. A `FileFilter` lets you say "only show images" or "only show text files," giving each group a friendly label and a list of extensions. You build a small array of these and hand it to the file dialog.
+
+<Cards>
+  <Cards.Card title="dialog" href="/en/api/dialog" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

@@ -1,0 +1,52 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="JumpListItem"
+  subtitle="A single entry in a Windows Jump List"
+  badge="API · Structure"
+/>
+
+`JumpListItem` describes one item shown in a Windows taskbar Jump List. You build an array of these and pass them inside a `JumpListCategory` to `app.setJumpList(categories)`. It is a Windows-only structure.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `type` | `string` | _(optional)_ _(Windows)_ One of `task` (launches the app with arguments), `separator` (divides items, only valid in the standard `Tasks` category), or `file` (opens a file with the app's registered handler). |
+| `path` | `string` | _(optional)_ _(Windows)_ Path of the file to open. Used only when `type` is `file`. |
+| `program` | `string` | _(optional)_ _(Windows)_ Path of the program to execute, usually `process.execPath`. Used only when `type` is `task`. |
+| `args` | `string` | _(optional)_ _(Windows)_ Command line arguments passed when `program` is run. Used only when `type` is `task`. |
+| `title` | `string` | _(optional)_ _(Windows)_ Text shown for the item in the Jump List. Used only when `type` is `task`. |
+| `description` | `string` | _(optional)_ _(Windows)_ Tooltip text for the task (max 260 characters). Used only when `type` is `task`. |
+| `iconPath` | `string` | _(optional)_ _(Windows)_ Full path to an icon resource (`.ico`, `.exe`, or `.dll`); often `process.execPath`. |
+| `iconIndex` | `number` | _(optional)_ _(Windows)_ Zero-based index of the icon inside a multi-icon resource file; use `0` for files with a single icon. |
+| `workingDirectory` | `string` | _(optional)_ _(Windows)_ The working directory the task runs in. Defaults to an empty string. |
+
+```js
+const item = {
+  type: 'task',
+  program: process.execPath,
+  args: '--new-window',
+  title: 'New Window',
+  description: 'Open a new window',
+  iconPath: process.execPath,
+  iconIndex: 0,
+}
+```
+
+<EasyNote>
+Think of a JumpListItem as one right-click shortcut on the taskbar icon, like a sticky note that says "do this one thing."
+</EasyNote>
+
+## In plain words
+
+A Jump List is the little menu that pops up when you right-click your app's icon on the Windows taskbar. Each `JumpListItem` is one row in that menu. You'd use it to give users fast shortcuts, like "New Document" or "Recent File", without opening the app first. Most fields only matter for `task` items; `separator` and `file` items use just a couple of them.
+
+<Cards>
+  <Cards.Card title="app" href="/en/api/app" arrow />
+  <Cards.Card title="JumpListCategory" href="/en/api/structures/jump-list-category" arrow />
+</Cards>

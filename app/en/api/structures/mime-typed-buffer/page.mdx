@@ -1,0 +1,42 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="MimeTypedBuffer"
+  subtitle="A chunk of binary data bundled together with its MIME type and charset"
+  badge="API · Structure"
+/>
+
+A `MimeTypedBuffer` describes raw data together with the information needed to interpret it. It is used by APIs such as `protocol.registerBufferProtocol` and the buffer responses returned from custom protocol handlers, so the renderer knows exactly what kind of content it received.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `mimeType` | `string` | _(optional)_ MIME type of the buffer, e.g. `text/html` or `image/png`. |
+| `charset` | `string` | _(optional)_ Charset of the buffer, e.g. `utf-8`. |
+| `data` | `Buffer` | The actual Buffer content. |
+
+```js
+const response = {
+  mimeType: 'text/html',
+  charset: 'utf-8',
+  data: Buffer.from('<h1>Hello</h1>')
+}
+```
+
+<EasyNote>
+Think of it like a labeled package: the box holds the contents (`data`), and the shipping label says what's inside (`mimeType`) and what language it's written in (`charset`).
+</EasyNote>
+
+## In plain words
+
+When your app serves content through a custom protocol, the browser needs to know whether it's getting an HTML page, an image, or plain text. A `MimeTypedBuffer` lets you hand over the raw bytes while also tagging them with a MIME type and charset, so the content is rendered correctly instead of being treated as a meaningless blob.
+
+<Cards>
+  <Cards.Card title="protocol" href="/en/api/protocol" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

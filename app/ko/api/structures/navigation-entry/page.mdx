@@ -1,0 +1,43 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="NavigationEntry"
+  subtitle="웹 페이지 방문 기록에 저장된 항목 하나를 나타내는 객체"
+  badge="API · Structure"
+/>
+
+`NavigationEntry`는 `WebContents`의 방문 기록(navigation history) 중 항목 하나, 즉 여러분이 방문했던 페이지 하나를 설명합니다. `webContents.navigationHistory.getEntryAtIndex()`나 `getAllEntries()` 같은 방문 기록 메서드에서 이 객체를 돌려받습니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `url` | `string` | 이 기록 항목에 해당하는 페이지의 URL입니다. |
+| `title` | `string` | 이 항목에 표시되었던 페이지 제목입니다. |
+| `pageState` | `string` | _(선택)_ 현재 스크롤 위치나 폼 입력값 같은 Chromium 페이지 상태를 담은 base64 인코딩 문자열입니다. Chromium이 탐색 이벤트 전과 일정 주기마다 저장합니다. |
+
+```js
+// NavigationEntry는 보통 다음과 같은 모양입니다:
+const entry = {
+  url: 'https://example.com/page',
+  title: '예시 페이지',
+  pageState: 'AAAAAA...' // base64 문자열, 선택 항목
+}
+```
+
+<EasyNote>
+NavigationEntry는 브라우저 "뒤로/앞으로" 기록 속 책갈피 한 장이라고 생각하면 됩니다. 어디에 있었는지는 물론, 얼마나 스크롤했는지까지 기억해 둡니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+창의 방문 기록을 읽거나 복원하고 싶을 때 — 예를 들어 직접 만든 뒤로/앞으로 버튼을 구현하거나, 세션을 저장해 두었다가 다시 열고 싶을 때 — 방문했던 각 페이지가 `NavigationEntry` 형태로 전달됩니다. `url`과 `title`은 그 페이지가 무엇이었는지 알려 주고, `pageState`는 스크롤 위치 같은 소소한 정보를 조용히 보관해 두어 복원한 페이지가 떠났던 그 자리 그대로 느껴지게 해 줍니다.
+
+<Cards>
+  <Cards.Card title="web-contents" href="/ko/api/web-contents" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

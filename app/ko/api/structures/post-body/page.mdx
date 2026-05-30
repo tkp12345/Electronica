@@ -1,0 +1,50 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="PostBody"
+  subtitle="URL을 로드할 때 함께 보낼 HTTP POST 요청의 본문"
+  badge="API · Structure"
+/>
+
+`PostBody` 객체는 POST 요청과 함께 전송되는 데이터를 설명합니다. 단순 GET 대신 폼 데이터를 담아 URL을 로드해야 할 때, `webContents.loadURL()`(및 `<webview>.loadURL()`)의 `postData` 옵션으로 전달합니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `data` | `(UploadRawData \| UploadFile)[]` | 새 창으로 전송할 POST 데이터입니다. 각 요소는 바이트 원본 `Buffer`인 `UploadRawData`이거나, 디스크 상의 파일을 가리키는 `UploadFile`입니다. |
+| `contentType` | `string` | 데이터에 사용되는 `content-type` 헤더입니다. `application/x-www-form-urlencoded` 또는 `multipart/form-data` 중 하나입니다. |
+| `boundary` | `string` | _(선택)_ 메시지의 여러 부분을 구분하는 경계 문자열입니다. `contentType`이 `multipart/form-data`일 때만 유효합니다. |
+
+`data` 배열의 요소들도 작은 구조체입니다. `UploadRawData`는 `type: 'rawData'`와 `bytes: Buffer`를 가지며, `UploadFile`은 `type: 'file'`, `filePath: string`, 그리고 선택값인 `offset`, `length`, `modificationTime`(모두 number)을 가집니다.
+
+```js
+const postBody = {
+  contentType: 'application/x-www-form-urlencoded',
+  data: [
+    {
+      type: 'rawData',
+      bytes: Buffer.from('hello=world&foo=bar')
+    }
+  ]
+}
+
+webContents.loadURL('https://example.com/submit', { postData: [postBody] })
+```
+
+<EasyNote>
+PostBody는 웹사이트에 건네는 봉투와 같습니다. 폼 내용(`data`)을 담고, 그 내용이 어떤 종류인지 알려주는 라벨(`contentType`)을 붙이며, 여러 개를 한 번에 보낼 때는 그 사이를 나누는 칸막이(`boundary`)를 넣습니다.
+</EasyNote>
+
+## 쉽게 말하면
+
+웹 폼을 제출하면 브라우저는 입력값을 묶어서 POST 요청의 본문에 담아 서버로 보냅니다. `PostBody`는 그 묶음을 코드로 직접 만드는 방법입니다. 데이터 조각들을 나열하고, 어떤 형식인지 명시하면, Electron이 페이지를 로드할 때 함께 전송해 줍니다. 단순히 URL로 이동하는 게 아니라 제출된 데이터를 담아 URL을 열고 싶을 때 사용합니다.
+
+<Cards>
+  <Cards.Card title="web-contents" href="/ko/api/web-contents" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

@@ -1,0 +1,47 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="SerialPort"
+  subtitle="사용자의 컴퓨터에서 발견된 시리얼(COM) 포트"
+  badge="API · Structure"
+/>
+
+`SerialPort` 객체는 사용자가 연결할 수 있는 하나의 시리얼 포트를 설명합니다. 이 객체는 `session`의 `select-serial-port` 이벤트에서 전달되며, Web Serial API 요청에 대해 어떤 포트를 허용할지 선택할 때 사용합니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `portId` | `string` | 포트의 고유 식별자입니다. |
+| `portName` | `string` | 포트의 이름입니다. |
+| `displayName` | `string` | _(선택)_ 이 장치를 사용자에게 보여주기에 적합한 설명 문자열입니다. |
+| `vendorId` | `string` | _(선택)_ USB 공급업체 ID입니다. |
+| `productId` | `string` | _(선택)_ USB 제품 ID입니다. |
+| `serialNumber` | `string` | _(선택)_ USB 장치 일련번호입니다. |
+| `usbDriverName` | `string` | _(선택)_ _(macOS)_ macOS에서 하나의 시리얼 포트가 여러 드라이버로 열거될 수 있음을 나타냅니다. |
+| `deviceInstanceId` | `string` | _(선택)_ _(Windows)_ Windows에서 장치 권한에 사용할 수 있는 안정적인 식별자입니다. |
+
+```js
+session.defaultSession.on('select-serial-port', (event, portList, webContents, callback) => {
+  event.preventDefault()
+  const selected = portList.find((port) => port.vendorId === '2341')
+  callback(selected ? selected.portId : '')
+})
+```
+
+<EasyNote>
+SerialPort는 꽂혀 있는 케이블 목록의 한 항목과 같습니다. 각 항목에는 ID와 이름이 있어서 원하는 장치를 정확히 가리킬 수 있습니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+웹 페이지가 시리얼 장치(예: 아두이노나 프린터)와 통신하려고 하면, Electron은 사용 가능한 포트마다 하나씩 `SerialPort` 객체 목록을 건네줍니다. 각 객체는 어떤 장치인지(ID, 이름, 일련번호)를 알려주므로 어떤 것을 허용할지 결정할 수 있습니다. 접근을 허용하려면 해당 객체의 `portId`를 반환하면 됩니다.
+
+<Cards>
+  <Cards.Card title="session" href="/ko/api/session" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

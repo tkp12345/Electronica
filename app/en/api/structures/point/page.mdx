@@ -1,0 +1,41 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="Point"
+  subtitle="A single position on the screen, given as x and y coordinates"
+  badge="API · Structure"
+/>
+
+`Point` is a simple object with `x` and `y` coordinates. It shows up all over Electron wherever a position is needed — for example `screen.getCursorScreenPoint()` returns one, and methods like `BrowserWindow.setPosition()` work with the same kind of values.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `x` | `number` | The x (horizontal) coordinate value. |
+| `y` | `number` | The y (vertical) coordinate value. |
+
+<Callout type="info">
+Both `x` and `y` must be whole integers. When you pass a `Point` into an Electron API, the values are automatically rounded to the nearest whole integer.
+</Callout>
+
+```js
+const point = { x: 100, y: 250 }
+```
+
+<EasyNote>
+A `Point` is like an address on graph paper: one number tells you how far across, the other how far down.
+</EasyNote>
+
+## In plain words
+
+Think of your screen as a grid. `x` is how far to the right something is, and `y` is how far down. A `Point` just packages those two numbers together so Electron knows exactly where on the screen you mean — like the spot under your mouse cursor or the corner of a window.
+
+<Cards>
+  <Cards.Card title="screen" href="/en/api/screen" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

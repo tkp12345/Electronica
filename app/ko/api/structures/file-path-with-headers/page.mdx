@@ -1,0 +1,44 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="FilePathWithHeaders"
+  subtitle="추가 HTTP 헤더를 함께 담은 파일 경로"
+  badge="API · Structure"
+/>
+
+`FilePathWithHeaders` 객체는 디스크에 있는 파일을 가리키면서, 거기에 몇 가지 추가 HTTP 헤더를 붙일 수 있게 해줍니다. 커스텀 파일 프로토콜 핸들러(예: `protocol.handle` 콜백이나 예전 방식인 `registerFileProtocol`)에서 파일을 직접 고른 헤더와 함께 제공하고 싶을 때 이 객체를 반환합니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `path` | `string` | 전송할 파일의 경로입니다. |
+| `headers` | `Record<string, string>` | _(선택)_ 함께 보낼 추가 헤더입니다. 헤더 이름과 값이 모두 문자열인 단순한 키-값 맵입니다. |
+
+```js
+// 커스텀 파일 프로토콜 핸들러 안에서
+callback({
+  path: '/Users/me/site/index.html',
+  headers: {
+    'Content-Type': 'text/html',
+    'Cache-Control': 'no-cache'
+  }
+})
+```
+
+<EasyNote>
+서류를 봉투에 담아 보내는 것과 비슷합니다. `path`는 보내려는 서류 자체이고, `headers`는 받는 쪽이 어떻게 다뤄야 할지 봉투에 적어 두는 메모입니다.
+</EasyNote>
+
+## 쉽게 말하면
+
+직접 만든 프로토콜(예: `app://`)로 디스크의 파일을 불러올 때, Electron은 어떤 파일을 읽어야 할지 알아야 합니다. `FilePathWithHeaders`가 바로 그것을 알려주는 방법입니다. 파일의 `path`를 돌려주고, 필요하다면 콘텐츠 타입이나 캐싱 규칙 같은 `headers`를 함께 넘기면 됩니다. 커스텀 헤더가 필요 없다면 그냥 경로 문자열만 반환해도 됩니다.
+
+<Cards>
+  <Cards.Card title="protocol" href="/ko/api/protocol" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

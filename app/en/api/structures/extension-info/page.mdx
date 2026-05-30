@@ -1,0 +1,40 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="ExtensionInfo"
+  subtitle="A tiny snapshot describing a loaded browser extension"
+  badge="API · Structure"
+/>
+
+`ExtensionInfo` is a small object that identifies a loaded extension. You'll see it in the `details.extension` field passed to `session` extension-related events such as `extension-loaded`, `extension-ready`, and `extension-unloaded`.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `name` | `string` | The extension's identifier name. |
+| `version` | `string` | The extension's version number. |
+
+```js
+const info = {
+  name: 'My Cool Extension',
+  version: '1.2.0'
+}
+```
+
+<EasyNote>
+Think of it as the name tag on an installed extension: just the name and which version it is.
+</EasyNote>
+
+## In plain words
+
+When an extension loads or unloads, Electron hands you this little object so you know which extension it was and what version is running. It's intentionally minimal, just enough to identify the extension in your event handlers or logs without digging through the full extension manifest.
+
+<Cards>
+  <Cards.Card title="session" href="/en/api/session" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

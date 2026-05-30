@@ -1,0 +1,53 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="WindowOpenHandlerResponse"
+  subtitle="페이지가 새 창을 열려고 할 때 반환하는 결정 객체"
+  badge="API · Structure"
+/>
+
+이 구조체는 `webContents.setWindowOpenHandler`에 전달하는 콜백에서 반환하는 값입니다. 새 창을 허용할지 여부와, 선택적으로 그 창을 어떻게 커스터마이징하거나 생성할지를 Electron에 알려줍니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `action` | `string` | `allow` 또는 `deny` 가 될 수 있습니다. 새 창을 생성할지 여부를 제어합니다. |
+| `overrideBrowserWindowOptions` | `BrowserWindowConstructorOptions` | _(선택)_ 새로 생성되는 창의 설정을 수정할 수 있게 해줍니다. |
+| `outlivesOpener` | `boolean` | _(선택)_ `true` 이면 열린 창이 자신을 연 부모 창이 닫힌 뒤에도 유지됩니다. 그렇지 않으면 자식 창은 부모 창과 함께 닫힙니다. |
+| `createWindow` | `(options: BrowserWindowConstructorOptions) => WebContents` | _(선택)_ 지정하면 `new BrowserWindow` 대신 이 함수가 호출되어 자식 창을 생성하며, `did-create-window` 이벤트가 발생하지 않도록 막습니다. |
+
+```js
+const { app } = require('electron')
+
+contents.setWindowOpenHandler(({ url }) => {
+  if (isSafe(url)) {
+    return {
+      action: 'allow',
+      overrideBrowserWindowOptions: {
+        width: 800,
+        height: 600,
+        frame: false
+      }
+    }
+  }
+  return { action: 'deny' }
+})
+```
+
+<EasyNote>
+경비원의 판정 쪽지라고 생각하시면 됩니다. "들여보내" 또는 "돌려보내" — 그리고 들여보낸다면, 어떤 방을 내줄지 적어둔 메모까지 함께 건네는 셈입니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+웹 페이지가 새 창을 열려고 할 때마다 (예: `window.open` 이나 target=_blank 링크), Electron은 어떻게 처리할지 핸들러에게 물어봅니다. 여러분은 이 객체로 답합니다. `allow` 면 열어주고, `deny` 면 막습니다. 허용할 때는 새 창이 원하는 모습과 동작을 갖도록 커스텀 창 설정도 함께 넘겨줄 수 있습니다. 원치 않는 팝업을 통제하는 핵심 수단입니다.
+
+<Cards>
+  <Cards.Card title="web-contents" href="/ko/api/web-contents" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

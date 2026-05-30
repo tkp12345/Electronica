@@ -1,0 +1,51 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="MouseInputEvent"
+  subtitle="A synthetic mouse event you can feed into a web page"
+  badge="API · Structure"
+/>
+
+`MouseInputEvent` describes a single mouse action — a click, a move, a scroll — as a plain object. You pass it to [`webContents.sendInputEvent(event)`](/en/api/web-contents) to simulate mouse activity inside a page. It extends `InputEvent`, so it also carries the shared `type` and `modifiers` fields.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `type` | `string` | The kind of event: `mouseDown`, `mouseUp`, `mouseEnter`, `mouseLeave`, `contextMenu`, `mouseWheel`, or `mouseMove`. |
+| `x` | `Integer` | Horizontal coordinate of the event, relative to the page. |
+| `y` | `Integer` | Vertical coordinate of the event, relative to the page. |
+| `modifiers` | `string[]` | _(optional)_ Keys/buttons held during the event, e.g. `shift`, `control`, `alt`, `meta`. _(inherited from `InputEvent`)_ |
+| `button` | `string` | _(optional)_ The button pressed: `left`, `middle`, or `right`. |
+| `globalX` | `Integer` | _(optional)_ Horizontal coordinate relative to the whole screen. |
+| `globalY` | `Integer` | _(optional)_ Vertical coordinate relative to the whole screen. |
+| `movementX` | `Integer` | _(optional)_ Horizontal movement delta since the last event. |
+| `movementY` | `Integer` | _(optional)_ Vertical movement delta since the last event. |
+| `clickCount` | `Integer` | _(optional)_ Number of consecutive clicks (e.g. `2` for a double-click). |
+
+```js
+webContents.sendInputEvent({
+  type: 'mouseDown',
+  x: 120,
+  y: 80,
+  button: 'left',
+  clickCount: 1
+})
+```
+
+<EasyNote>
+Think of it like a note telling the page "a mouse just clicked here" — even when no real mouse moved.
+</EasyNote>
+
+## In plain words
+
+Use this object when you want your app to act as if a user clicked, moved, or scrolled the mouse — without anyone touching the trackpad. It is handy for automated testing, demos, kiosk apps, or accessibility tools that drive the interface for the user. You build the object, hand it to `sendInputEvent`, and the page reacts as though a real mouse did the work.
+
+<Cards>
+  <Cards.Card title="webContents" href="/en/api/web-contents" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

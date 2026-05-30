@@ -1,0 +1,53 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="HIDDevice"
+  subtitle="키보드, 마우스, 게임 컨트롤러 같은 연결된 HID(Human Interface Device) 장치를 설명합니다"
+  badge="API · Structure"
+/>
+
+`HIDDevice` 객체는 WebHID API를 통해 앱이 통신할 수 있는 하나의 HID 하드웨어 장치를 나타냅니다. [`session`](/ko/api/session) 모듈의 `select-hid-device` 이벤트와 `session.setDevicePermissionHandler()`로 설정하는 장치 권한 핸들러에 전달되므로, 앱이 어떤 장치를 사용하도록 허용할지 결정할 수 있습니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `deviceId` | `string` | 장치의 고유 식별자입니다. |
+| `name` | `string` | 장치의 이름입니다. |
+| `vendorId` | `Integer` | USB 공급업체(vendor) ID입니다. |
+| `productId` | `Integer` | USB 제품(product) ID입니다. |
+| `serialNumber` | `string` | USB 장치의 시리얼 번호입니다. _(선택)_ |
+| `guid` | `string` | HID 인터페이스의 고유 식별자입니다. 하나의 장치가 여러 HID 인터페이스를 가질 수 있습니다. _(선택)_ |
+| `collections` | `Object[]` | 장치가 지원하는 리포트 형식입니다. 각 항목은 `usage`(`Integer`), `usagePage`(`Integer`), `type`(`Integer`, 8비트 컬렉션 타입), `children`(`Object[]`, 중첩 컬렉션), `inputReports`(`Object[]`), `outputReports`(`Object[]`), `featureReports`(`Object[]`)를 가집니다. |
+
+```js
+const { app } = require('electron')
+
+app.whenReady().then(() => {
+  const { session } = require('electron')
+
+  session.defaultSession.on('select-hid-device', (event, details, callback) => {
+    event.preventDefault()
+    // details.deviceList 는 HIDDevice 객체의 배열입니다
+    const device = details.deviceList.find((d) => d.vendorId === 0x1234)
+    callback(device?.deviceId)
+  })
+})
+```
+
+<EasyNote>
+`HIDDevice`는 연결된 기기의 신분증과 같습니다. 이름, 제조사와 모델 번호, 그리고 어떤 종류의 신호를 주고받을 수 있는지를 담고 있습니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+앱이 브라우저에게 HID 기기(키보드, 바코드 스캐너, 비행 시뮬레이터 조이스틱 등)에 연결을 요청하면, Electron은 각 후보를 설명하는 `HIDDevice` 객체를 건네줍니다. `vendorId`와 `productId`를 읽어 원하는 장치를 식별하고, 그 장치의 `deviceId`를 반환하여 사용을 승인합니다. `collections` 필드는 장치가 주고받을 수 있는 리포트를 정확히 알려주어 고급 앱에 유용하지만, 대부분의 앱은 이름과 ID만 있으면 충분합니다.
+
+<Cards>
+  <Cards.Card title="session" href="/ko/api/session" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

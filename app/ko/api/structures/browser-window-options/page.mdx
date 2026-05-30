@@ -1,0 +1,99 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="BrowserWindowOptions"
+  subtitle="창을 만들 때 넘길 수 있는 모든 설정"
+  badge="API · Structure"
+/>
+
+`BrowserWindowOptions`는 `new BrowserWindow({ ... })`로 창을 만들 때 넘기는 옵션 객체입니다. 창의 크기, 위치, 모양, 동작을 정하고, `webPreferences`를 통해 창 안의 웹 페이지가 어떤 권한으로 실행될지까지 결정합니다. 아래의 기본 창 옵션 전부와 `BrowserWindow` 전용 필드 몇 개를 함께 포함합니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `width` | `Integer` | _(선택)_ 창 너비(픽셀). 기본값 `800`. |
+| `height` | `Integer` | _(선택)_ 창 높이(픽셀). 기본값 `600`. |
+| `x` | `Integer` | _(선택)_ 화면 기준 왼쪽 위치. `y`를 쓰면 함께 지정해야 합니다. |
+| `y` | `Integer` | _(선택)_ 화면 기준 위쪽 위치. `x`를 쓰면 함께 지정해야 합니다. |
+| `useContentSize` | `boolean` | _(선택)_ `width`/`height`를 창 크기가 아닌 웹 페이지 크기로 취급합니다. |
+| `center` | `boolean` | _(선택)_ 창을 화면 중앙에 표시합니다. |
+| `minWidth` | `Integer` | _(선택)_ 최소 창 너비. 기본값 `0`. |
+| `minHeight` | `Integer` | _(선택)_ 최소 창 높이. 기본값 `0`. |
+| `maxWidth` | `Integer` | _(선택)_ 최대 창 너비. 기본적으로 제한 없음. |
+| `maxHeight` | `Integer` | _(선택)_ 최대 창 높이. 기본적으로 제한 없음. |
+| `resizable` | `boolean` | _(선택)_ 창 크기를 조절할 수 있는지 여부. |
+| `movable` | `boolean` | _(선택)_ _(macOS, Windows)_ 창을 이동할 수 있는지 여부. |
+| `minimizable` | `boolean` | _(선택)_ _(macOS, Windows)_ 창을 최소화할 수 있는지 여부. |
+| `maximizable` | `boolean` | _(선택)_ _(macOS, Windows)_ 창을 최대화할 수 있는지 여부. |
+| `closable` | `boolean` | _(선택)_ _(macOS, Windows)_ 창을 닫을 수 있는지 여부. |
+| `focusable` | `boolean` | _(선택)_ 창이 포커스를 받을 수 있는지 여부. |
+| `alwaysOnTop` | `boolean` | _(선택)_ 창을 항상 다른 창 위에 표시합니다. |
+| `fullscreen` | `boolean` | _(선택)_ 전체 화면 상태로 시작합니다. |
+| `fullscreenable` | `boolean` | _(선택)_ 창이 전체 화면으로 전환될 수 있는지 여부. |
+| `simpleFullscreen` | `boolean` | _(선택)_ _(macOS)_ Lion 이전 방식의 전체 화면 동작을 사용합니다. |
+| `skipTaskbar` | `boolean` | _(선택)_ _(macOS, Windows)_ 작업 표시줄에서 창을 숨깁니다. |
+| `hiddenInMissionControl` | `boolean` | _(선택)_ _(macOS)_ Mission Control에서 창을 숨깁니다. |
+| `kiosk` | `boolean` | _(선택)_ 키오스크 모드로 시작합니다. |
+| `title` | `string` | _(선택)_ 기본 창 제목. 기본값 `"Electron"`. |
+| `icon` | `NativeImage \| string` | _(선택)_ 창 아이콘. Windows에서는 ICO 형식을 권장합니다. |
+| `show` | `boolean` | _(선택)_ 창을 생성할 때 바로 표시할지 여부. |
+| `frame` | `boolean` | _(선택)_ 표준 창 프레임 포함 여부. `false`로 두면 프레임 없는 창이 됩니다. |
+| `parent` | `BrowserWindow` | _(선택)_ 부모 창. |
+| `modal` | `boolean` | _(선택)_ 모달 창으로 만듭니다(`parent` 필요). |
+| `acceptFirstMouse` | `boolean` | _(선택)_ _(macOS)_ 비활성 창을 클릭할 때 활성화와 동작이 함께 일어나게 합니다. |
+| `disableAutoHideCursor` | `boolean` | _(선택)_ 입력 중에도 커서를 계속 보이게 합니다. |
+| `autoHideMenuBar` | `boolean` | _(선택)_ _(Linux, Windows)_ Alt를 누르기 전까지 메뉴 바를 숨깁니다. |
+| `enableLargerThanScreen` | `boolean` | _(선택)_ _(macOS)_ 창이 화면보다 커질 수 있게 허용합니다. |
+| `backgroundColor` | `string` | _(선택)_ CSS 색상 값으로 지정하는 창 배경색. |
+| `hasShadow` | `boolean` | _(선택)_ 창에 그림자를 줄지 여부. |
+| `opacity` | `number` | _(선택)_ _(macOS, Windows)_ 초기 불투명도(`0.0`~`1.0`). |
+| `darkTheme` | `boolean` | _(선택)_ GTK+3 데스크톱에서 다크 테마를 강제합니다. |
+| `transparent` | `boolean` | _(선택)_ 창 배경을 투명하게 만듭니다. |
+| `type` | `string` | _(선택)_ 창 유형(예: `desktop`, `dock`, `toolbar`). |
+| `visualEffectState` | `string` | _(선택)_ _(macOS)_ 창 활성 상태에 따라 vibrancy가 반응하는 방식. |
+| `titleBarStyle` | `string` | _(선택)_ 제목 표시줄 스타일: `default`, `hidden`, `hiddenInset`, `customButtonsOnHover`. |
+| `titleBarOverlay` | `Object \| boolean` | _(선택)_ Window Controls Overlay 활성화. 객체로 `color`, `symbolColor`, `height` 지정 가능. |
+| `accentColor` | `boolean \| string` | _(선택)_ _(Windows)_ 창 강조 색상, 또는 시스템 기본값 사용. |
+| `trafficLightPosition` | `Point` | _(선택)_ _(macOS)_ 신호등 버튼의 사용자 지정 위치(`{ x, y }`). |
+| `roundedCorners` | `boolean` | _(선택)_ _(macOS, Windows)_ 프레임 없는 창의 모서리를 둥글게 만듭니다. |
+| `thickFrame` | `boolean` | _(선택)_ _(Windows)_ 프레임 없는 창에 두꺼운 프레임을 사용합니다. |
+| `vibrancy` | `string` | _(선택)_ _(macOS)_ vibrancy 효과 추가(예: `appearance-based`, `sidebar`). |
+| `backgroundMaterial` | `string` | _(선택)_ _(Windows)_ 시스템 배경 재질(예: `mica`, `acrylic`). |
+| `zoomToPageWidth` | `boolean` | _(선택)_ _(macOS)_ 창을 선호하는 페이지 너비에 맞춰 확대합니다. |
+| `tabbingIdentifier` | `string` | _(선택)_ _(macOS)_ macOS 네이티브 탭을 위한 탭 그룹 이름. |
+| `paintWhenInitiallyHidden` | `boolean` | _(선택)_ 창이 숨겨진 채로 시작해도 렌더러를 계속 활성 상태로 유지합니다. |
+| `webPreferences` | `WebPreferences` | _(선택)_ 웹 페이지 기능 설정(예: `preload`, `contextIsolation`, `nodeIntegration`, `sandbox`). |
+
+```js
+const { BrowserWindow } = require('electron')
+
+const win = new BrowserWindow({
+  width: 1024,
+  height: 768,
+  center: true,
+  backgroundColor: '#1e1e1e',
+  titleBarStyle: 'hidden',
+  webPreferences: {
+    preload: '/path/to/preload.js',
+    contextIsolation: true
+  }
+})
+```
+
+<EasyNote>
+이 객체는 새 창을 "주문"할 때 제출하는 주문서라고 생각하면 쉽습니다. 얼마나 크게, 화면 어디에, 무슨 색으로, 그리고 안의 페이지가 지켜야 할 규칙은 무엇인지를 적어 넣는 거예요.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+Electron에서 창을 만들 때마다 원하는 모습을 이 객체로 설명합니다. 프레임 없이 작고 가운데에 떠 있는 어두운 로그인 창을 원하나요? 그러면 해당 필드를 여기서 설정하면 됩니다. 가장 중요한 필드는 `webPreferences`로, 창 안의 웹 페이지가 가질 권한을 결정하기 때문에 보안을 위해 신중하게 설정하는 것이 좋습니다. 신경 쓰는 필드만 채우면 되고, 나머지는 합리적인 기본값이 적용됩니다.
+
+<Cards>
+  <Cards.Card title="BrowserWindow" href="/ko/api/browser-window" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

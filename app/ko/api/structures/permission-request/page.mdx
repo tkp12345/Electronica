@@ -1,0 +1,44 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="PermissionRequest"
+  subtitle="권한을 요청하는 주체에 대한 정보"
+  badge="API · Structure"
+/>
+
+`PermissionRequest`는 권한을 요청하는 프레임에 대한 정보를 담은 일반 객체입니다. `session.setPermissionRequestHandler`와 `session.setPermissionCheckHandler`에 등록하는 콜백으로 전달되며, `MediaAccessPermissionRequest`나 `FilesystemPermissionRequest` 같은 더 구체적인 요청들이 확장하는 기본 형태이기도 합니다.
+
+## 필드
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `requestingUrl` | `string` | 요청을 보낸 프레임이 마지막으로 로드한 URL입니다. |
+| `isMainFrame` | `boolean` | 요청을 보낸 프레임이 메인 프레임인지 여부입니다. |
+
+```js
+const { session } = require('electron')
+
+session.defaultSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
+  // details가 PermissionRequest 객체입니다. 예:
+  // { requestingUrl: 'https://example.com', isMainFrame: true }
+  const allow = details.requestingUrl.startsWith('https://example.com')
+  callback(allow)
+})
+```
+
+<EasyNote>
+전화의 발신자 표시와 비슷하다고 생각하면 됩니다. 권한을 줄지 결정하기 전에, 누가 요청하는지 그리고 그것이 메인 페이지인지 아니면 안에 끼워진 페이지인지 알려 줍니다.
+</EasyNote>
+
+## 쉽게 풀어 설명
+
+카메라, 마이크, 위치 정보처럼 민감한 기능을 허용할지 결정해야 할 때 `PermissionRequest`를 사용합니다. 요청을 보낸 URL과, 그 요청이 최상위 페이지에서 왔는지 아니면 중첩된 프레임에서 왔는지 알려 주기 때문에, 신뢰하는 사이트의 요청만 허용하고 나머지는 거절할 수 있습니다.
+
+<Cards>
+  <Cards.Card title="session" href="/ko/api/session" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>

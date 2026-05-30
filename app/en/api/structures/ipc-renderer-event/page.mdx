@@ -1,0 +1,43 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="IpcRendererEvent"
+  subtitle="The event object passed to ipcRenderer listeners"
+  badge="API · Structure"
+/>
+
+The `IpcRendererEvent` object extends the standard DOM `Event` and is passed as the first argument to every callback you register with `ipcRenderer.on`, `ipcRenderer.once`, and friends. It tells you who sent the message and carries any transferred `MessagePort`s.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `sender` | `IpcRenderer` | The `IpcRenderer` instance that emitted the event originally. |
+| `ports` | `MessagePort[]` | A list of `MessagePort`s that were transferred with this message. |
+
+```js
+const { ipcRenderer } = require('electron')
+
+ipcRenderer.on('reply', (event, ...args) => {
+  // event is an IpcRendererEvent
+  console.log(event.sender) // the IpcRenderer that emitted this
+  console.log(event.ports)  // any transferred MessagePorts
+})
+```
+
+<EasyNote>
+An IpcRendererEvent is like the envelope a letter arrives in — it doesn't hold the message itself, but it tells you where it came from and includes anything clipped to it.
+</EasyNote>
+
+## In plain words
+
+Whenever the main process sends a message to a web page, your listener runs with two things: this event object and the actual data. The `IpcRendererEvent` is the "metadata" part — it lets you reach back to the `ipcRenderer` that delivered the message and grab any `MessagePort`s sent along with it (handy for setting up direct, two-way channels). Most of the time you only read the data arguments, but `event.ports` is what you reach for when wiring up `MessageChannel`-style communication.
+
+<Cards>
+  <Cards.Card title="ipcRenderer" href="/en/api/ipc-renderer" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>

@@ -1,0 +1,44 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../../components/PageHero'
+import { EasyNote } from '../../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="NotificationResponse"
+  subtitle="The user's response to an interactive notification"
+  badge="API · Structure"
+/>
+
+The `NotificationResponse` object describes how a user reacted to a notification. It is passed to the callback you register with `app.on('activate', ...)` via the `notification` activation type — specifically through the `app` module's notification activation handling on macOS.
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `actionIdentifier` | `string` | The identifier string of the action that the user selected. |
+| `date` | `number` | The delivery date of the notification. |
+| `identifier` | `string` | The unique identifier for this notification request. |
+| `userInfo` | `Record<string, any>` | A dictionary of custom information associated with the notification. |
+| `userText` | `string` | _(optional)_ The text entered or chosen by the user. |
+
+```js
+function onNotificationResponse(response) {
+  if (response.actionIdentifier === 'reply') {
+    console.log('User replied:', response.userText)
+  }
+}
+```
+
+<EasyNote>
+A NotificationResponse is like a reply slip that comes back after you hand someone a note — it tells you which button they tapped and, if there was a text box, what they wrote.
+</EasyNote>
+
+## In plain words
+
+When your app shows a notification with buttons or a reply field, the system needs a way to tell you what the user did. The `NotificationResponse` object is that report: which action they chose, any text they typed, when the notification was delivered, and the extra data you originally attached to it. You read it in the activation callback so your app can act on the user's choice.
+
+<Cards>
+  <Cards.Card title="app" href="/en/api/app" arrow />
+  <Cards.Card title="Notification" href="/en/api/notification" arrow />
+</Cards>
