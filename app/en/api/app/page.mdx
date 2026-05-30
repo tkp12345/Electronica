@@ -1,0 +1,416 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { AppApiIllustration } from '../../../components/illustrations'
+import { AppLifecycleTimeline } from '../../../components/AppLifecycleTimeline'
+
+<PageHero
+  illustration={<AppApiIllustration />}
+  title="app"
+  subtitle="Control your application's event lifecycle, file paths, and deep OS integration — all from one object."
+  badge="API · app"
+/>
+
+The `app` module lives in the **Main process**. It's the single object that knows when your program starts, when it should quit, where files belong, and how it plugs into the operating system.
+
+```js filename="main.js"
+const { app } = require('electron')
+
+app.whenReady().then(() => {
+  // your app starts here
+})
+```
+
+## The lifecycle, step by step
+
+Most of `app` is about _timing_ — doing the right thing at the right moment. Click through the stages below to see the whole journey from boot to quit.
+
+<AppLifecycleTimeline lang="en" />
+
+<EasyNote>
+`app` is the **stage manager** of your program. It doesn't draw a single pixel itself — it decides when the curtain rises (`ready`), when actors leave (`window-all-closed`), and when to turn off the lights (`will-quit`).
+</EasyNote>
+
+---
+
+## Events
+
+Listen with `app.on('event-name', handler)`. Events marked _(macOS)_ / _(Windows)_ / _(Linux)_ only fire on that platform.
+
+### Lifecycle
+
+| Event | Fires when |
+|---|---|
+| `will-finish-launching` | App is about to finish booting (set up early listeners) |
+| `ready` | Electron finished initializing — safe to create windows (gets `launchInfo` on macOS) |
+| `window-all-closed` | The last window was closed |
+| `before-quit` | Quitting started — `preventDefault()` to cancel |
+| `will-quit` | All windows closed, app will quit — final cleanup |
+| `quit` | App is terminating (gives `exitCode`) |
+
+```js filename="lifecycle.js"
+app.whenReady().then(createWindow)
+
+app.on('window-all-closed', () => {
+  // macOS apps usually stay alive with no windows open
+  if (process.platform !== 'darwin') app.quit()
+})
+
+app.on('before-quit', (event) => {
+  if (hasUnsavedWork()) {
+    event.preventDefault() // abort the quit
+    showSaveDialog()
+  }
+})
+```
+
+<Callout type="warning">
+Never create a `BrowserWindow` before `ready`/`whenReady()`. The GUI layer isn't initialized yet and your app will crash.
+</Callout>
+
+### macOS-specific
+
+| Event | Fires when |
+|---|---|
+| `open-file` _(macOS)_ | User wants to open a file with your app |
+| `open-url` _(macOS)_ | User opens a URL registered to your app |
+| `activate` _(macOS)_ | App is activated (e.g. Dock icon clicked) |
+| `did-become-active` _(macOS)_ | App became active |
+| `did-resign-active` _(macOS)_ | App lost focus / is no longer active |
+| `new-window-for-tab` _(macOS)_ | User clicked the native "new tab" button |
+| `continue-activity` _(macOS)_ | A Handoff activity from another device wants to resume here |
+| `will-continue-activity` _(macOS)_ | Before a Handoff activity resumes |
+| `continue-activity-error` _(macOS)_ | A Handoff activity failed to resume |
+| `activity-was-continued` _(macOS)_ | This device's activity resumed on another |
+| `update-activity-state` _(macOS)_ | A Handoff activity is about to resume on another device |
+
+```js filename="macos.js"
+// macOS: re-create a window when the Dock icon is clicked
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) createWindow()
+})
+
+// macOS: handle a custom protocol like myapp://
+app.on('open-url', (event, url) => {
+  event.preventDefault()
+  handleDeepLink(url)
+})
+```
+
+### Windows & WebContents
+
+| Event | Fires when |
+|---|---|
+| `browser-window-created` | A new `BrowserWindow` was created |
+| `browser-window-focus` | A window got focus |
+| `browser-window-blur` | A window lost focus |
+| `web-contents-created` | New `WebContents` was created (every page/webview) |
+| `render-process-gone` | A renderer process disappeared unexpectedly (crash/kill) |
+| `child-process-gone` | A non-renderer child process disappeared |
+
+```js filename="harden.js"
+// Lock down every page that gets created — security best practice
+app.on('web-contents-created', (event, contents) => {
+  contents.setWindowOpenHandler(() => ({ action: 'deny' }))
+})
+
+app.on('render-process-gone', (event, contents, details) => {
+  // details.reason: 'crashed' | 'killed' | 'oom' | ...
+  reloadOrNotify(contents, details.reason)
+})
+```
+
+### Security & system
+
+| Event | Fires when |
+|---|---|
+| `certificate-error` | TLS certificate verification failed for a URL |
+| `select-client-certificate` | A client certificate was requested |
+| `login` | A `WebContents` or utility process needs basic/proxy auth |
+| `gpu-info-update` | GPU info changed |
+| `accessibility-support-changed` _(macOS/Windows)_ | OS accessibility support toggled |
+| `session-created` | Electron created a new `Session` |
+| `second-instance` | Another instance launched while the single-instance lock is held |
+
+```js filename="single-instance.js"
+const gotLock = app.requestSingleInstanceLock()
+
+if (!gotLock) {
+  app.quit() // a copy is already running — exit this one
+} else {
+  app.on('second-instance', (event, argv, workingDir, extraData) => {
+    // a user tried to open a second copy — focus the existing window instead
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.focus()
+    }
+  })
+}
+```
+
+<EasyNote>
+`second-instance` is how "single-window" apps work: when you double-click the icon again, instead of opening a new copy it just brings the running window to the front.
+</EasyNote>
+
+---
+
+## Methods
+
+### Lifecycle & quitting
+
+| Method | What it does |
+|---|---|
+| `app.quit()` | Try to close all windows, then quit (cancellable via `before-quit`) |
+| `app.exit([exitCode])` | Quit **immediately**, no cleanup, with an exit code |
+| `app.relaunch([options])` | Restart the app once the current instance exits |
+| `app.isReady()` | `true` if Electron has finished initializing |
+| `app.whenReady()` | A `Promise` that resolves when Electron is ready |
+
+```js filename="relaunch.js"
+// Restart the app cleanly (e.g. after applying an update)
+app.relaunch()
+app.exit(0)
+```
+
+### Focus & visibility
+
+| Method | Platform | What it does |
+|---|---|---|
+| `app.focus([options])` | all | Bring the app to the front (`steal` option on macOS) |
+| `app.isActive()` | macOS | Is the app currently focused? |
+| `app.hide()` | macOS | Hide all windows without minimizing |
+| `app.isHidden()` | macOS | Are app and windows hidden? |
+| `app.show()` | macOS | Show windows after `hide()` |
+
+### Paths & files
+
+| Method | What it does |
+|---|---|
+| `app.getAppPath()` | Directory the app is running from |
+| `app.getPath(name)` | Path to a special dir/file (`'home'`, `'userData'`, `'temp'`, `'downloads'`, `'logs'`, ...) |
+| `app.setPath(name, path)` | Override one of those special paths |
+| `app.setAppLogsPath([path])` | Set/create the directory used for logs |
+| `app.getFileIcon(path[, options])` | Promise resolving to the OS icon for a file |
+
+```js filename="paths.js"
+// Where to store this app's own data (settings, cache, db)
+const userData = app.getPath('userData')
+// e.g. macOS: ~/Library/Application Support/<AppName>
+//      Windows: C:\Users\<you>\AppData\Roaming\<AppName>
+```
+
+<EasyNote>
+`getPath('userData')` is the one you'll use most — it's the app's private drawer where settings and databases belong, separate from your code.
+</EasyNote>
+
+### Version & name
+
+| Method | What it does |
+|---|---|
+| `app.getVersion()` | The app's version (from `package.json`) |
+| `app.getName()` | The app's name |
+| `app.setName(name)` | Override the app name |
+
+### Locale & language
+
+| Method | What it does |
+|---|---|
+| `app.getLocale()` | Current locale via Chromium (e.g. `'en-US'`) |
+| `app.getLocaleCountryCode()` | Two-letter ISO 3166 country code |
+| `app.getSystemLocale()` | The OS locale |
+| `app.getPreferredSystemLanguages()` | The user's preferred languages, in order |
+
+### Recent documents _(macOS/Windows)_
+
+| Method | What it does |
+|---|---|
+| `app.addRecentDocument(path)` | Add a file to the OS "recent" list |
+| `app.clearRecentDocuments()` | Clear the recent list |
+| `app.getRecentDocuments()` | Get the recent document paths |
+
+### Protocol handler (deep links)
+
+| Method | What it does |
+|---|---|
+| `app.setAsDefaultProtocolClient(protocol[, path, args])` | Register your app for `myapp://` links |
+| `app.removeAsDefaultProtocolClient(protocol[, path, args])` | Unregister it |
+| `app.isDefaultProtocolClient(protocol[, path, args])` | Are we the default handler? |
+| `app.getApplicationNameForProtocol(url)` | Name of the app that handles a URL |
+| `app.getApplicationInfoForProtocol(url)` | Promise with the handler's icon, path, and name |
+
+```js filename="protocol.js"
+// Make "myapp://..." links open this app
+app.setAsDefaultProtocolClient('myapp')
+```
+
+### Single instance lock
+
+| Method | What it does |
+|---|---|
+| `app.requestSingleInstanceLock([additionalData])` | Become the primary instance (`true`) or detect one already exists (`false`) |
+| `app.hasSingleInstanceLock()` | Do we currently hold the lock? |
+| `app.releaseSingleInstanceLock()` | Release the lock |
+
+### User activity & Handoff _(macOS)_
+
+| Method | What it does |
+|---|---|
+| `app.setUserActivity(type, userInfo[, webpageURL])` | Start a Handoff activity |
+| `app.getCurrentActivityType()` | Type of the running activity |
+| `app.invalidateCurrentActivity()` | Cancel the current activity |
+| `app.resignCurrentActivity()` | Mark the activity inactive (without invalidating) |
+| `app.updateCurrentActivity(type, userInfo)` | Merge data into the current activity |
+
+### GPU & hardware
+
+| Method | What it does |
+|---|---|
+| `app.disableHardwareAcceleration()` | Turn off GPU acceleration (call **before** `ready`) |
+| `app.isHardwareAccelerationEnabled()` | Is acceleration on? |
+| `app.disableDomainBlockingFor3DAPIs()` | Don't block 3D APIs per-domain after a GPU crash |
+| `app.getAppMetrics()` | Per-process memory/CPU stats |
+| `app.getGPUFeatureStatus()` | The `chrome://gpu` feature status |
+| `app.getGPUInfo(infoType)` | Promise with `'basic'` or `'complete'` GPU info |
+
+### Badge counter _(Linux/macOS)_
+
+| Method | What it does |
+|---|---|
+| `app.setBadgeCount([count])` | Set the icon badge number (`0` hides it) |
+| `app.getBadgeCount()` | Current badge value |
+| `app.isUnityRunning()` _(Linux)_ | Running under the Unity launcher? |
+
+### Jump List & tasks _(Windows)_
+
+| Method | What it does |
+|---|---|
+| `app.setUserTasks(tasks)` | Add items to the Jump List "Tasks" category |
+| `app.getJumpListSettings()` | Read Jump List settings (`minItems`, `removedItems`) |
+| `app.setJumpList(categories)` | Replace the whole Jump List |
+
+### Login items _(macOS/Windows)_
+
+| Method | What it does |
+|---|---|
+| `app.getLoginItemSettings([options])` | Read "open at login" status |
+| `app.setLoginItemSettings(settings)` | Configure launch-at-login |
+
+```js filename="login-item.js"
+// Start automatically when the user logs in
+app.setLoginItemSettings({ openAtLogin: true })
+```
+
+### Accessibility
+
+| Method | What it does |
+|---|---|
+| `app.isAccessibilitySupportEnabled()` | Is Chrome's accessibility tree on? |
+| `app.setAccessibilitySupportEnabled(enabled)` | Turn the accessibility tree on/off |
+| `app.getAccessibilitySupportFeatures()` | Which accessibility features are enabled |
+| `app.setAccessibilitySupportFeatures(features)` | Enable/disable specific features |
+
+### About panel, emoji & input
+
+| Method | What it does |
+|---|---|
+| `app.showAboutPanel()` | Show the native "About" dialog |
+| `app.setAboutPanelOptions(options)` | Configure the About dialog (name, version, copyright, ...) |
+| `app.isEmojiPanelSupported()` | Does the OS have a native emoji picker? |
+| `app.showEmojiPanel()` _(macOS/Windows)_ | Open the native emoji picker |
+
+### macOS app management
+
+| Method | What it does |
+|---|---|
+| `app.setActivationPolicy(policy)` | `'regular'` / `'accessory'` / `'prohibited'` |
+| `app.isInApplicationsFolder()` | Is the app running from `/Applications`? |
+| `app.moveToApplicationsFolder([options])` | Move the app into `/Applications` |
+| `app.startAccessingSecurityScopedResource(bookmarkData)` | Access a security-scoped (sandboxed) file |
+| `app.enableSandbox()` | Force-enable the sandbox for all renderers (before `ready`) |
+| `app.isSecureKeyboardEntryEnabled()` | Is Secure Keyboard Entry on? |
+| `app.setSecureKeyboardEntryEnabled(enabled)` | Toggle Secure Keyboard Entry |
+| `app.configureWebAuthn(options)` | Configure platform authenticators (WebAuthn) |
+
+### Windows-specific
+
+| Method | What it does |
+|---|---|
+| `app.setAppUserModelId(id)` | Set the Application User Model ID (taskbar grouping, notifications) |
+| `app.setToastActivatorCLSID(id)` | Set the Toast Activator CLSID for notifications |
+
+### Network, proxy & certificates
+
+| Method | What it does |
+|---|---|
+| `app.setProxy(config)` | Set proxy settings (Promise) |
+| `app.resolveProxy(url)` | Resolve the proxy for a URL (Promise) |
+| `app.configureHostResolver(options)` | Configure DNS / DNS-over-HTTPS |
+| `app.importCertificate(options, callback)` _(Linux)_ | Import a PKCS#12 certificate |
+| `app.setClientCertRequestPasswordHandler(handler)` _(Linux)_ | Handle client-cert password prompts |
+
+### `app.dock` _(macOS)_
+
+On macOS, `app.dock` is a sub-object for the Dock icon:
+
+| Method | What it does |
+|---|---|
+| `app.dock.bounce([type])` | Bounce the Dock icon to get attention |
+| `app.dock.cancelBounce(id)` | Stop a bounce |
+| `app.dock.setBadge(text)` / `app.dock.getBadge()` | Set/read the Dock badge text |
+| `app.dock.hide()` / `app.dock.show()` | Hide/show the Dock icon |
+| `app.dock.isVisible()` | Is the Dock icon shown? |
+| `app.dock.setMenu(menu)` / `app.dock.getMenu()` | Set/read the Dock right-click menu |
+| `app.dock.setIcon(image)` | Change the Dock icon image |
+
+```js filename="dock.js"
+// macOS: show a red "3" badge on the Dock icon
+if (process.platform === 'darwin') {
+  app.dock.setBadge('3')
+}
+```
+
+---
+
+## Properties
+
+| Property | Type | What it is |
+|---|---|---|
+| `app.isPackaged` | `boolean` (readonly) | `true` in a built app, `false` in dev — perfect for dev/prod branching |
+| `app.name` | `string` | Get/set the app name |
+| `app.commandLine` | `CommandLine` (readonly) | Read/append Chromium command-line switches |
+| `app.dock` | `Dock \| undefined` (readonly) | The Dock object _(macOS only)_ |
+| `app.applicationMenu` | `Menu \| null` | Get/set the application menu |
+| `app.badgeCount` | `Integer` | Get/set the badge count _(Linux/macOS)_ |
+| `app.userAgentFallback` | `string` | The default user-agent string |
+| `app.accessibilitySupportEnabled` | `boolean` | Accessibility tree on/off _(macOS/Windows)_ |
+| `app.runningUnderARM64Translation` | `boolean` (readonly) | `true` under Rosetta / WOW64 _(macOS/Windows)_ |
+| `app.toastActivatorCLSID` | `string` (readonly) | The Toast Activator CLSID _(Windows)_ |
+
+```js filename="is-packaged.js"
+// The single most useful property: am I in development or production?
+const url = app.isPackaged
+  ? `file://${path.join(__dirname, 'index.html')}` // production: load bundled file
+  : 'http://localhost:3000'                         // dev: load the dev server
+
+win.loadURL(url)
+```
+
+---
+
+## In plain words
+
+The `app` module is the **manager of your whole program** — not a window, not a page, but the thing that runs above all of them.
+
+Three jobs make up almost everything you'll do with it:
+
+1. **Timing.** "When can I create a window?" → wait for `ready`. "What do I do when the last window closes?" → handle `window-all-closed`. "Anything to save before we quit?" → use `before-quit`. The interactive timeline above _is_ this job.
+2. **Places.** "Where do my settings go?" → `getPath('userData')`. "Am I running the built version?" → `isPackaged`. The OS has specific folders for specific things, and `app` hands you the right path every time.
+3. **OS integration.** Deep links (`setAsDefaultProtocolClient`), one-copy-only apps (`requestSingleInstanceLock` + `second-instance`), launch-at-login, Dock badges, Jump Lists — the small touches that make a web app feel like a native one.
+
+Memorize three names and you've got 90% of it: **`whenReady()`** (start here), **`window-all-closed`** (decide when to quit), and **`getPath('userData')`** (where your data lives). The rest you look up — that's what this page is for.
+
+<Cards>
+  <Cards.Card title="Main process" href="/en/docs/processes/main" arrow />
+  <Cards.Card title="Process model" href="/en/docs/processes" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+</Cards>

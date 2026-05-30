@@ -1,0 +1,31 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../components/PageHero'
+import { EasyNote } from '../../components/EasyNote'
+import { AppApiIllustration } from '../../components/illustrations'
+
+<PageHero
+  illustration={<AppApiIllustration />}
+  title="API Reference"
+  subtitle="The exact events, methods, and properties Electron exposes — explained in plain words, with runnable code."
+  badge="API · Overview"
+/>
+
+## What lives here
+
+The guide sections teach you _how_ Electron works. This section is the _dictionary_: every name you can call, what it does, and a short example.
+
+We start with the **`app` module** — the object that controls your application's lifecycle, paths, and OS integration. It's the first thing every Electron program touches.
+
+<EasyNote>
+Think of the guides as the cooking lessons and the API reference as the recipe card. You read the lesson once; you glance at the card every time you cook.
+</EasyNote>
+
+## Modules
+
+<Cards>
+  <Cards.Card title="app" href="/en/api/app" arrow />
+</Cards>
+
+<Callout type="info">
+This reference mirrors the official [electronjs.org API docs](https://www.electronjs.org/docs/latest/api/app), but rewritten with analogies and an interactive lifecycle diagram so it's easier to learn from.
+</Callout>

@@ -1,0 +1,31 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../components/PageHero'
+import { EasyNote } from '../../components/EasyNote'
+import { AppApiIllustration } from '../../components/illustrations'
+
+<PageHero
+  illustration={<AppApiIllustration />}
+  title="API 레퍼런스"
+  subtitle="Electron 이 제공하는 이벤트·메서드·속성을 쉬운 말과 실행 가능한 코드로 정리했어요."
+  badge="API · 개요"
+/>
+
+## 여기는 무엇인가요
+
+가이드 섹션이 Electron 이 _어떻게_ 동작하는지 가르쳐 준다면, 이 섹션은 _사전_ 이에요. 호출할 수 있는 모든 이름과 그 역할, 그리고 짧은 예제를 담았어요.
+
+가장 먼저 **`app` 모듈** 부터 시작해요. 앱의 생명주기·경로·OS 연동을 담당하는 객체로, 모든 Electron 프로그램이 가장 먼저 만지는 대상이에요.
+
+<EasyNote>
+가이드가 요리 수업이라면 API 레퍼런스는 레시피 카드예요. 수업은 한 번 듣고, 카드는 요리할 때마다 슬쩍 들여다봐요.
+</EasyNote>
+
+## 모듈
+
+<Cards>
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+</Cards>
+
+<Callout type="info">
+이 레퍼런스는 공식 [electronjs.org API 문서](https://www.electronjs.org/docs/latest/api/app)를 기준으로 하되, 비유와 인터랙티브 생명주기 다이어그램을 더해 더 쉽게 배울 수 있도록 다시 썼어요.
+</Callout>

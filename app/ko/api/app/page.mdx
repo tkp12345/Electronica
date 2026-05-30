@@ -1,0 +1,416 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { AppApiIllustration } from '../../../components/illustrations'
+import { AppLifecycleTimeline } from '../../../components/AppLifecycleTimeline'
+
+<PageHero
+  illustration={<AppApiIllustration />}
+  title="app"
+  subtitle="앱의 이벤트 생명주기, 파일 경로, OS 깊은 연동을 객체 하나로 제어해요."
+  badge="API · app"
+/>
+
+`app` 모듈은 **Main 프로세스** 에 살아요. 프로그램이 언제 시작하는지, 언제 종료해야 하는지, 파일이 어디에 들어가야 하는지, OS 와 어떻게 연결되는지를 모두 아는 단 하나의 객체예요.
+
+```js filename="main.js"
+const { app } = require('electron')
+
+app.whenReady().then(() => {
+  // 앱이 여기서 시작돼요
+})
+```
+
+## 생명주기, 단계별로
+
+`app` 의 대부분은 _타이밍_ 에 관한 거예요 — 알맞은 순간에 알맞은 일을 하는 것. 아래 단계를 눌러 보며 부팅부터 종료까지의 전체 여정을 따라가 보세요.
+
+<AppLifecycleTimeline lang="ko" />
+
+<EasyNote>
+`app` 은 프로그램의 **무대 감독** 이에요. 화면에 픽셀 하나 직접 그리지 않지만, 막을 언제 올릴지(`ready`), 배우가 언제 퇴장할지(`window-all-closed`), 언제 조명을 끌지(`will-quit`)를 결정해요.
+</EasyNote>
+
+---
+
+## 이벤트(Events)
+
+`app.on('이벤트명', 핸들러)` 로 듣습니다. _(macOS)_ / _(Windows)_ / _(Linux)_ 표시는 해당 플랫폼에서만 발생해요.
+
+### 생명주기
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `will-finish-launching` | 부팅을 막 끝내려는 시점 (초기 리스너 설정) |
+| `ready` | 초기화 완료 — 창을 만들어도 됨 (macOS 는 `launchInfo` 전달) |
+| `window-all-closed` | 마지막 창이 닫힘 |
+| `before-quit` | 종료 시작 — `preventDefault()` 로 취소 가능 |
+| `will-quit` | 모든 창이 닫혔고 곧 종료 — 마지막 정리 |
+| `quit` | 앱이 종료되는 중 (`exitCode` 전달) |
+
+```js filename="lifecycle.js"
+app.whenReady().then(createWindow)
+
+app.on('window-all-closed', () => {
+  // macOS 앱은 보통 창이 없어도 살아 있어요
+  if (process.platform !== 'darwin') app.quit()
+})
+
+app.on('before-quit', (event) => {
+  if (hasUnsavedWork()) {
+    event.preventDefault() // 종료를 막아요
+    showSaveDialog()
+  }
+})
+```
+
+<Callout type="warning">
+`ready`/`whenReady()` 이전에는 절대 `BrowserWindow` 를 만들지 마세요. GUI 계층이 아직 초기화되지 않아 앱이 죽어요.
+</Callout>
+
+### macOS 전용
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `open-file` _(macOS)_ | 사용자가 앱으로 파일을 열려고 함 |
+| `open-url` _(macOS)_ | 앱에 등록된 URL 을 엶 |
+| `activate` _(macOS)_ | 앱이 활성화됨 (예: Dock 아이콘 클릭) |
+| `did-become-active` _(macOS)_ | 앱이 활성 상태가 됨 |
+| `did-resign-active` _(macOS)_ | 앱이 포커스를 잃음 |
+| `new-window-for-tab` _(macOS)_ | 네이티브 "새 탭" 버튼 클릭 |
+| `continue-activity` _(macOS)_ | 다른 기기의 Handoff 활동을 여기서 이어받으려 함 |
+| `will-continue-activity` _(macOS)_ | Handoff 활동을 이어받기 직전 |
+| `continue-activity-error` _(macOS)_ | Handoff 활동 이어받기 실패 |
+| `activity-was-continued` _(macOS)_ | 이 기기 활동이 다른 기기에서 이어짐 |
+| `update-activity-state` _(macOS)_ | Handoff 활동이 다른 기기에서 재개되려 함 |
+
+```js filename="macos.js"
+// macOS: Dock 아이콘을 누르면 창을 다시 만들어요
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) createWindow()
+})
+
+// macOS: myapp:// 같은 커스텀 프로토콜 처리
+app.on('open-url', (event, url) => {
+  event.preventDefault()
+  handleDeepLink(url)
+})
+```
+
+### 창 & WebContents
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `browser-window-created` | 새 `BrowserWindow` 생성됨 |
+| `browser-window-focus` | 창이 포커스를 얻음 |
+| `browser-window-blur` | 창이 포커스를 잃음 |
+| `web-contents-created` | 새 `WebContents` 생성됨 (모든 페이지/webview) |
+| `render-process-gone` | 렌더러 프로세스가 비정상 종료됨 (크래시/강제종료) |
+| `child-process-gone` | 렌더러가 아닌 자식 프로세스가 사라짐 |
+
+```js filename="harden.js"
+// 생성되는 모든 페이지를 안전하게 잠가요 — 보안 베스트 프랙티스
+app.on('web-contents-created', (event, contents) => {
+  contents.setWindowOpenHandler(() => ({ action: 'deny' }))
+})
+
+app.on('render-process-gone', (event, contents, details) => {
+  // details.reason: 'crashed' | 'killed' | 'oom' | ...
+  reloadOrNotify(contents, details.reason)
+})
+```
+
+### 보안 & 시스템
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `certificate-error` | URL 의 TLS 인증서 검증 실패 |
+| `select-client-certificate` | 클라이언트 인증서 요청됨 |
+| `login` | `WebContents`/유틸리티 프로세스가 기본·프록시 인증 필요 |
+| `gpu-info-update` | GPU 정보가 갱신됨 |
+| `accessibility-support-changed` _(macOS/Windows)_ | OS 접근성 지원이 토글됨 |
+| `session-created` | 새 `Session` 이 생성됨 |
+| `second-instance` | 단일 인스턴스 잠금을 쥔 상태에서 또 다른 인스턴스가 실행됨 |
+
+```js filename="single-instance.js"
+const gotLock = app.requestSingleInstanceLock()
+
+if (!gotLock) {
+  app.quit() // 이미 실행 중인 복사본이 있으니 이건 종료
+} else {
+  app.on('second-instance', (event, argv, workingDir, extraData) => {
+    // 두 번째 복사본 실행 시도 → 새로 열지 않고 기존 창을 앞으로
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.focus()
+    }
+  })
+}
+```
+
+<EasyNote>
+`second-instance` 가 바로 "한 창만 뜨는" 앱의 원리예요. 아이콘을 또 눌러도 새 복사본을 띄우는 대신 이미 떠 있는 창을 앞으로 가져와요.
+</EasyNote>
+
+---
+
+## 메서드(Methods)
+
+### 생명주기 & 종료
+
+| 메서드 | 하는 일 |
+|---|---|
+| `app.quit()` | 모든 창을 닫고 종료 시도 (`before-quit` 으로 취소 가능) |
+| `app.exit([exitCode])` | 정리 없이 **즉시** 종료, exitCode 와 함께 |
+| `app.relaunch([options])` | 현재 인스턴스 종료 후 앱 재시작 |
+| `app.isReady()` | 초기화가 끝났으면 `true` |
+| `app.whenReady()` | 준비 완료 시 resolve 되는 `Promise` |
+
+```js filename="relaunch.js"
+// 앱을 깔끔하게 재시작 (예: 업데이트 적용 후)
+app.relaunch()
+app.exit(0)
+```
+
+### 포커스 & 표시
+
+| 메서드 | 플랫폼 | 하는 일 |
+|---|---|---|
+| `app.focus([options])` | 전체 | 앱을 앞으로 (macOS 는 `steal` 옵션) |
+| `app.isActive()` | macOS | 앱이 현재 포커스 상태인가? |
+| `app.hide()` | macOS | 최소화 없이 모든 창 숨김 |
+| `app.isHidden()` | macOS | 앱·창이 숨겨졌는가? |
+| `app.show()` | macOS | `hide()` 후 다시 표시 |
+
+### 경로 & 파일
+
+| 메서드 | 하는 일 |
+|---|---|
+| `app.getAppPath()` | 앱이 실행 중인 디렉터리 |
+| `app.getPath(name)` | 특수 디렉터리/파일 경로 (`'home'`, `'userData'`, `'temp'`, `'downloads'`, `'logs'` ...) |
+| `app.setPath(name, path)` | 특수 경로 중 하나를 덮어쓰기 |
+| `app.setAppLogsPath([path])` | 로그용 디렉터리 설정/생성 |
+| `app.getFileIcon(path[, options])` | 파일의 OS 아이콘을 주는 Promise |
+
+```js filename="paths.js"
+// 이 앱의 데이터(설정·캐시·DB)를 저장할 곳
+const userData = app.getPath('userData')
+// 예: macOS  ~/Library/Application Support/<앱이름>
+//     Windows C:\Users\<나>\AppData\Roaming\<앱이름>
+```
+
+<EasyNote>
+`getPath('userData')` 는 가장 많이 쓰게 돼요. 코드와 분리된, 설정·DB 가 들어가는 앱 전용 서랍이에요.
+</EasyNote>
+
+### 버전 & 이름
+
+| 메서드 | 하는 일 |
+|---|---|
+| `app.getVersion()` | 앱 버전 (`package.json` 기준) |
+| `app.getName()` | 앱 이름 |
+| `app.setName(name)` | 앱 이름 덮어쓰기 |
+
+### 로케일 & 언어
+
+| 메서드 | 하는 일 |
+|---|---|
+| `app.getLocale()` | Chromium 기준 현재 로케일 (예: `'ko-KR'`) |
+| `app.getLocaleCountryCode()` | 두 글자 ISO 3166 국가 코드 |
+| `app.getSystemLocale()` | OS 로케일 |
+| `app.getPreferredSystemLanguages()` | 사용자 선호 언어 목록(우선순위 순) |
+
+### 최근 문서 _(macOS/Windows)_
+
+| 메서드 | 하는 일 |
+|---|---|
+| `app.addRecentDocument(path)` | OS "최근" 목록에 파일 추가 |
+| `app.clearRecentDocuments()` | 최근 목록 비우기 |
+| `app.getRecentDocuments()` | 최근 문서 경로들 가져오기 |
+
+### 프로토콜 핸들러 (딥링크)
+
+| 메서드 | 하는 일 |
+|---|---|
+| `app.setAsDefaultProtocolClient(protocol[, path, args])` | `myapp://` 링크를 이 앱으로 등록 |
+| `app.removeAsDefaultProtocolClient(protocol[, path, args])` | 등록 해제 |
+| `app.isDefaultProtocolClient(protocol[, path, args])` | 우리가 기본 핸들러인가? |
+| `app.getApplicationNameForProtocol(url)` | URL 을 처리하는 앱 이름 |
+| `app.getApplicationInfoForProtocol(url)` | 핸들러의 아이콘·경로·이름을 주는 Promise |
+
+```js filename="protocol.js"
+// "myapp://..." 링크를 이 앱이 열도록
+app.setAsDefaultProtocolClient('myapp')
+```
+
+### 단일 인스턴스 잠금
+
+| 메서드 | 하는 일 |
+|---|---|
+| `app.requestSingleInstanceLock([additionalData])` | 주 인스턴스가 되거나(`true`) 이미 있음을 감지(`false`) |
+| `app.hasSingleInstanceLock()` | 현재 잠금을 쥐고 있는가? |
+| `app.releaseSingleInstanceLock()` | 잠금 해제 |
+
+### 사용자 활동 & Handoff _(macOS)_
+
+| 메서드 | 하는 일 |
+|---|---|
+| `app.setUserActivity(type, userInfo[, webpageURL])` | Handoff 활동 시작 |
+| `app.getCurrentActivityType()` | 실행 중인 활동의 타입 |
+| `app.invalidateCurrentActivity()` | 현재 활동 취소 |
+| `app.resignCurrentActivity()` | 활동을 비활성으로 표시(무효화는 안 함) |
+| `app.updateCurrentActivity(type, userInfo)` | 현재 활동에 데이터 병합 |
+
+### GPU & 하드웨어
+
+| 메서드 | 하는 일 |
+|---|---|
+| `app.disableHardwareAcceleration()` | GPU 가속 끄기 (`ready` **이전** 호출) |
+| `app.isHardwareAccelerationEnabled()` | 가속이 켜져 있는가? |
+| `app.disableDomainBlockingFor3DAPIs()` | GPU 크래시 후 도메인별 3D API 차단 안 함 |
+| `app.getAppMetrics()` | 프로세스별 메모리/CPU 통계 |
+| `app.getGPUFeatureStatus()` | `chrome://gpu` 기능 상태 |
+| `app.getGPUInfo(infoType)` | `'basic'`/`'complete'` GPU 정보 Promise |
+
+### 배지 카운터 _(Linux/macOS)_
+
+| 메서드 | 하는 일 |
+|---|---|
+| `app.setBadgeCount([count])` | 아이콘 배지 숫자 설정 (`0` 이면 숨김) |
+| `app.getBadgeCount()` | 현재 배지 값 |
+| `app.isUnityRunning()` _(Linux)_ | Unity 런처에서 실행 중인가? |
+
+### 점프 리스트 & 작업 _(Windows)_
+
+| 메서드 | 하는 일 |
+|---|---|
+| `app.setUserTasks(tasks)` | 점프 리스트 "작업" 범주에 항목 추가 |
+| `app.getJumpListSettings()` | 점프 리스트 설정 읽기 (`minItems`, `removedItems`) |
+| `app.setJumpList(categories)` | 점프 리스트 전체 교체 |
+
+### 로그인 항목 _(macOS/Windows)_
+
+| 메서드 | 하는 일 |
+|---|---|
+| `app.getLoginItemSettings([options])` | "로그인 시 열기" 상태 읽기 |
+| `app.setLoginItemSettings(settings)` | 로그인 시 자동 실행 설정 |
+
+```js filename="login-item.js"
+// 사용자가 로그인하면 자동으로 시작
+app.setLoginItemSettings({ openAtLogin: true })
+```
+
+### 접근성
+
+| 메서드 | 하는 일 |
+|---|---|
+| `app.isAccessibilitySupportEnabled()` | Chrome 접근성 트리가 켜져 있는가? |
+| `app.setAccessibilitySupportEnabled(enabled)` | 접근성 트리 켜기/끄기 |
+| `app.getAccessibilitySupportFeatures()` | 활성화된 접근성 기능 목록 |
+| `app.setAccessibilitySupportFeatures(features)` | 특정 기능 켜기/끄기 |
+
+### 정보 패널 · 이모지 · 입력
+
+| 메서드 | 하는 일 |
+|---|---|
+| `app.showAboutPanel()` | 네이티브 "정보" 대화상자 표시 |
+| `app.setAboutPanelOptions(options)` | 정보 대화상자 설정(이름·버전·저작권 ...) |
+| `app.isEmojiPanelSupported()` | OS 에 네이티브 이모지 선택기가 있는가? |
+| `app.showEmojiPanel()` _(macOS/Windows)_ | 네이티브 이모지 선택기 열기 |
+
+### macOS 앱 관리
+
+| 메서드 | 하는 일 |
+|---|---|
+| `app.setActivationPolicy(policy)` | `'regular'` / `'accessory'` / `'prohibited'` |
+| `app.isInApplicationsFolder()` | `/Applications` 에서 실행 중인가? |
+| `app.moveToApplicationsFolder([options])` | 앱을 `/Applications` 로 이동 |
+| `app.startAccessingSecurityScopedResource(bookmarkData)` | 보안 범위(샌드박스) 파일 접근 |
+| `app.enableSandbox()` | 모든 렌더러에 샌드박스 강제 (`ready` 이전) |
+| `app.isSecureKeyboardEntryEnabled()` | Secure Keyboard Entry 가 켜졌는가? |
+| `app.setSecureKeyboardEntryEnabled(enabled)` | Secure Keyboard Entry 토글 |
+| `app.configureWebAuthn(options)` | 플랫폼 인증기(WebAuthn) 설정 |
+
+### Windows 전용
+
+| 메서드 | 하는 일 |
+|---|---|
+| `app.setAppUserModelId(id)` | Application User Model ID 설정(작업표시줄 그룹·알림) |
+| `app.setToastActivatorCLSID(id)` | 알림용 Toast Activator CLSID 설정 |
+
+### 네트워크 · 프록시 · 인증서
+
+| 메서드 | 하는 일 |
+|---|---|
+| `app.setProxy(config)` | 프록시 설정 (Promise) |
+| `app.resolveProxy(url)` | URL 의 프록시 해석 (Promise) |
+| `app.configureHostResolver(options)` | DNS / DNS-over-HTTPS 설정 |
+| `app.importCertificate(options, callback)` _(Linux)_ | PKCS#12 인증서 가져오기 |
+| `app.setClientCertRequestPasswordHandler(handler)` _(Linux)_ | 클라이언트 인증서 비밀번호 프롬프트 처리 |
+
+### `app.dock` _(macOS)_
+
+macOS 에서 `app.dock` 은 Dock 아이콘을 다루는 하위 객체예요:
+
+| 메서드 | 하는 일 |
+|---|---|
+| `app.dock.bounce([type])` | Dock 아이콘을 튕겨 주의를 끌기 |
+| `app.dock.cancelBounce(id)` | 튕김 중지 |
+| `app.dock.setBadge(text)` / `app.dock.getBadge()` | Dock 배지 텍스트 설정/읽기 |
+| `app.dock.hide()` / `app.dock.show()` | Dock 아이콘 숨김/표시 |
+| `app.dock.isVisible()` | Dock 아이콘이 보이는가? |
+| `app.dock.setMenu(menu)` / `app.dock.getMenu()` | Dock 우클릭 메뉴 설정/읽기 |
+| `app.dock.setIcon(image)` | Dock 아이콘 이미지 변경 |
+
+```js filename="dock.js"
+// macOS: Dock 아이콘에 빨간 "3" 배지 표시
+if (process.platform === 'darwin') {
+  app.dock.setBadge('3')
+}
+```
+
+---
+
+## 속성(Properties)
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `app.isPackaged` | `boolean` (읽기전용) | 빌드된 앱이면 `true`, 개발 중이면 `false` — 개발/배포 분기에 딱 |
+| `app.name` | `string` | 앱 이름 읽기/쓰기 |
+| `app.commandLine` | `CommandLine` (읽기전용) | Chromium 커맨드라인 스위치 읽기/추가 |
+| `app.dock` | `Dock \| undefined` (읽기전용) | Dock 객체 _(macOS 전용)_ |
+| `app.applicationMenu` | `Menu \| null` | 애플리케이션 메뉴 읽기/쓰기 |
+| `app.badgeCount` | `Integer` | 배지 카운트 읽기/쓰기 _(Linux/macOS)_ |
+| `app.userAgentFallback` | `string` | 기본 user-agent 문자열 |
+| `app.accessibilitySupportEnabled` | `boolean` | 접근성 트리 켜짐/꺼짐 _(macOS/Windows)_ |
+| `app.runningUnderARM64Translation` | `boolean` (읽기전용) | Rosetta / WOW64 하에서면 `true` _(macOS/Windows)_ |
+| `app.toastActivatorCLSID` | `string` (읽기전용) | Toast Activator CLSID _(Windows)_ |
+
+```js filename="is-packaged.js"
+// 가장 유용한 속성: 지금 개발 중인가 배포본인가?
+const url = app.isPackaged
+  ? `file://${path.join(__dirname, 'index.html')}` // 배포: 번들 파일 로드
+  : 'http://localhost:3000'                         // 개발: 개발 서버 로드
+
+win.loadURL(url)
+```
+
+---
+
+## 쉽게 풀어 설명
+
+`app` 모듈은 **프로그램 전체의 관리자** 예요. 창도 아니고 페이지도 아닌, 그 모든 것 위에서 돌아가는 존재죠.
+
+크게 세 가지 일이 거의 전부예요:
+
+1. **타이밍.** "언제 창을 만들 수 있지?" → `ready` 를 기다려요. "마지막 창이 닫히면 뭘 하지?" → `window-all-closed` 를 처리해요. "종료 전에 저장할 게 있나?" → `before-quit` 을 써요. 위의 인터랙티브 타임라인이 바로 이 일이에요.
+2. **장소.** "내 설정은 어디 저장하지?" → `getPath('userData')`. "지금 빌드된 버전인가?" → `isPackaged`. OS 는 용도별 폴더가 정해져 있고, `app` 이 매번 알맞은 경로를 건네줘요.
+3. **OS 연동.** 딥링크(`setAsDefaultProtocolClient`), 한 복사본만 실행(`requestSingleInstanceLock` + `second-instance`), 로그인 시 실행, Dock 배지, 점프 리스트 — 웹앱을 네이티브 앱처럼 느끼게 하는 작은 손길들이에요.
+
+세 이름만 외우면 90%는 끝나요: **`whenReady()`**(여기서 시작), **`window-all-closed`**(언제 종료할지), **`getPath('userData')`**(데이터가 사는 곳). 나머지는 찾아보면 돼요 — 이 페이지가 바로 그 용도예요.
+
+<Cards>
+  <Cards.Card title="Main 프로세스" href="/ko/docs/processes/main" arrow />
+  <Cards.Card title="프로세스 모델" href="/ko/docs/processes" arrow />
+  <Cards.Card title="보안" href="/ko/docs/best-practices/security" arrow />
+</Cards>
