@@ -32,45 +32,33 @@
 >
 > This project is **not affiliated with the OpenJS Foundation or the Electron project**. See the [Trademark notice](#trademark-notice) at the bottom for details.
 
-## Highlights
+## Why Electronica?
 
-- **42 topics × 2 languages.** The sidebar mirrors the topical layout of the official Electron docs, but every word here is written from scratch in English and Korean.
-- **A picture at the top of every page.** Original SVG illustrations in a clean, geometric style with a single red accent — no stock art, no generated noise.
-- **A robot helper next to every code block.** A small "In plain words" box paraphrases the snippet in everyday language, without jargon walls.
-- **A plain-words recap at the bottom of every page.** Two or three paragraphs aimed at a middle-school reading level, so the page closes with comprehension rather than vocabulary fatigue.
-- **Locale-aware routing.** `/en/...` and `/ko/...` paths with a navbar toggle that preserves your position when you switch languages.
-- **Statically exported.** No servers, no cookies, no analytics — the whole site is plain HTML you can host anywhere.
+The official [Electron documentation](https://www.electronjs.org/docs/latest) is excellent, but it's an _English-only reference_ — dense, text-first, and written for people who already speak the language of desktop frameworks. Electronica is built around a different question: **what would these same 42 topics look like if the goal were to make them _easy to learn_?**
 
-## Running locally
+That goal shows up in four concrete ways.
 
-The site is a [Next.js](https://nextjs.org) + [Nextra](https://nextra.site) application. To work on it locally:
+### 🇰🇷 A Korean edition the official docs don't have
 
-```sh
-npm install
-npm run dev
-```
+The biggest gap in the upstream docs is that there's effectively no first-class Korean version. Electronica rewrites all **42 topics in both English _and_ Korean** from scratch — not machine-translated, but re-explained in each language. A navbar toggle switches between `/en/...` and `/ko/...` while **preserving your exact position on the page**, so you can read a concept in one language and instantly compare it in the other.
 
-Open <http://localhost:3000/en/> or <http://localhost:3000/ko/> in your browser. Hot-reload is enabled for all MDX pages and components.
+### 🖼️ A picture before every concept
 
-## Building for production
+Every page opens with an **original SVG illustration** in a clean, geometric style with a single red accent — no stock art, no AI noise. Instead of hitting a wall of prose, you see the shape of the idea first (how the main and renderer processes talk, what the sandbox wraps, where code-signing sits in the release flow) and _then_ read the details. The image does the first 10% of the teaching.
 
-```sh
-npm run build     # static export → out/
-npm run preview   # serve out/ on http://localhost:3000
-```
+### 🤖 Interactions that turn reading into learning
 
-Production builds are statically exported and published to GitHub Pages through the workflow at [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
+Electronica is meant to be _used_, not just scrolled:
 
-## Scripts
+- **A robot helper beside every code block** — an "In plain words" box that paraphrases each snippet in everyday language, so you're never stuck decoding jargon alone.
+- **Smooth motion and transitions** that guide your eye through diagrams and steps rather than dumping everything at once.
+- **The language toggle** described above, which makes bilingual comparison a single click instead of a separate page hunt.
 
-| Command | What it does |
-| --- | --- |
-| `npm run dev` | Dev server with HMR |
-| `npm run build` | Static export → `out/` |
-| `npm run preview` | Serve the built `out/` locally |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm run lint` | ESLint (flat config) |
-| `npm run analyze` | Bundle visualizer (`ANALYZE=true next build`) |
+### 💡 A "plain words" recap on every page
+
+Each page closes with a **쉽게 풀어 설명 / "In plain words"** section — two or three paragraphs at a middle-school reading level that restate the whole topic with no new vocabulary. You leave each page with _comprehension_, not vocabulary fatigue.
+
+> In short: same 42 topics as the official docs, but with a Korean edition, an illustration on every page, friendly interactions, and a plain-language recap — built so that a newcomer can actually learn Electron, not just look things up.
 
 ## Tech stack
 
