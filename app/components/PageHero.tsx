@@ -38,11 +38,13 @@ export function PageHero({ illustration, title, subtitle, badge }: PageHeroProps
       }}
     >
       <div
+        className="hero-illustration"
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           // 일러스트는 자체적으로 빨강 액센트를 그리고, 나머지는 currentColor(=본문 컬러)
+          // (다크모드에서는 globals.css 가 뒤에 옅은 빨강 radial glow 를 깔아준다)
         }}
       >
         {illustration}
