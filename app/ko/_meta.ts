@@ -9,4 +9,8 @@ export default {
     title: '문서',
     type: 'page',
   },
+  api: {
+    title: 'API',
+    type: 'page',
+  },
 }
