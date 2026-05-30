@@ -40,6 +40,11 @@ const labels = {
   },
 } as const
 
+// next/image 는 public 이미지 src 에 basePath 를 자동으로 붙이지 않는다.
+// prod(GitHub Pages /Electronica) 에서 로고가 404(액박) 나지 않도록 직접 prefix.
+// 값은 next.config.mjs 가 단일 소스로 주입(NEXT_PUBLIC_BASE_PATH).
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? ''
+
 export async function LangLayoutShell({ lang, children }: LangLayoutShellProps) {
   // Nextra 4 i18n: 해당 lang 서브트리(/ko 또는 /en)만 사이드바에 노출
   const pageMap = await getPageMap(`/${lang}`)
@@ -56,10 +61,9 @@ export async function LangLayoutShell({ lang, children }: LangLayoutShellProps) 
             fontWeight: 700,
           }}
         >
-          {/* next/image 는 basePath(/Electronica)/assetPrefix 를 자동 적용 →
-              dev: /logo-mark.png, prod: /Electronica/logo-mark.png 로 렌더된다.
+          {/* basePath 를 직접 붙인다 → dev: /logo-mark.png, prod: /Electronica/logo-mark.png.
               26px 표시·@2x(52px) 원본이라 레티나에서도 선명. */}
-          <Image src="/logo-mark.png" alt="" width={26} height={26} priority />
+          <Image src={`${BASE_PATH}/logo-mark.png`} alt="" width={26} height={26} priority />
           {t.siteName}
         </span>
       }

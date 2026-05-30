@@ -31,6 +31,12 @@ const nextConfig = {
   // GitHub Pages는 `/Electronica/` 서브경로에 호스팅되므로 prod 빌드에만 prefix
   basePath: isProd ? repoBasePath : '',
   assetPrefix: isProd ? `${repoBasePath}/` : '',
+  // basePath 를 컴포넌트에서도 읽게 노출(단일 소스). next/image 는 public 이미지
+  // src 에 basePath 를 자동으로 붙여주지 않으므로, 직접 prefix 할 때 이 값을 쓴다.
+  // (예: LangLayoutShell 의 로고 — 미적용 시 GitHub Pages 에서 404=깨진 이미지)
+  env: {
+    NEXT_PUBLIC_BASE_PATH: isProd ? repoBasePath : '',
+  },
   // 정적 export는 Next 런타임 이미지 옵티마이저를 못 쓰므로 비활성
   images: { unoptimized: true },
   // GitHub Pages 라우팅 안정성 (모든 경로가 `/`로 끝나도록)
