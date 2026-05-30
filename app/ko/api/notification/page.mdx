@@ -65,6 +65,10 @@ if (process.platform === 'darwin') {
 }
 ```
 
+<Callout type="info">
+이 `getHistory` / `remove` / `removeAll` / `removeGroup` 메서드는 **macOS 전용** 이에요. Windows(와 Linux)에는 대응되는 게 없어요 — 크로스 플랫폼으로 믿고 쓸 수 있는 정적 메서드는 `Notification.isSupported()` 뿐이에요. Windows 에서 토스트 하나를 닫으려면 알림 객체 참조를 들고 있다가 그 객체에 `notification.close()` 를 호출하세요.
+</Callout>
+
 ---
 
 ## 생성자(Constructor)

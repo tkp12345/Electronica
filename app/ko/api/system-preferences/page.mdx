@@ -118,6 +118,10 @@ if (systemPreferences.canPromptTouchID()) {
 }
 ```
 
+<Callout type="info">
+Windows 에는 이에 대응하는 `systemPreferences` 메서드가 없어요. Windows Hello(생체 인증·PIN)는 이 모듈로 노출되지 않으니, `process.platform === 'darwin'` 으로 가드하고 Windows 에서는 네이티브 애드온이나 WebAuthn 플랫폼 인증기를 대신 사용하세요.
+</Callout>
+
 ### 사용자 기본값(`NSUserDefaults`) _(macOS)_
 
 | 메서드 | 하는 일 |
@@ -134,6 +138,10 @@ const locale = systemPreferences.getUserDefault('AppleLocale', 'string')
 // 불리언 기본값 읽기
 const collapses = systemPreferences.getUserDefault('AppleMenuBarVisibleInFullscreen', 'boolean')
 ```
+
+<Callout type="info">
+이 `*UserDefault*` 메서드들은 macOS `NSUserDefaults` 를 감싼 것이라 Windows 에서는 아무 동작도 하지 않아요. Windows 에서 가장 비슷한 개념은 `HKEY_CURRENT_USER` 아래의 레지스트리예요(`winreg` 같은 네이티브 모듈로 읽어요). 우리 앱 자체 설정이라면, 어느 OS 에서나 `app.getPath('userData')` 아래에 JSON 파일로 저장해 주는 `electron-store` 같은 크로스 플랫폼 저장소를 쓰는 게 좋아요.
+</Callout>
 
 ### 시스템 알림(`NSNotificationCenter` / `NSWorkspace`) _(macOS)_
 

@@ -108,6 +108,10 @@ const stream = await navigator.mediaDevices.getDisplayMedia({
 **macOS** 는 사용자가 시스템 설정에서 **화면 기록** 권한을 허용해야 해요. 먼저 `systemPreferences.getMediaAccessStatus('screen')` 으로 확인하세요. `'granted'` 가 아니면 캡처가 검은 화면을 반환해요. macOS 14.2+ 에서 **시스템 오디오** 를 캡처하려면 `Info.plist` 에 `NSAudioCaptureUsageDescription` 가 필요해요.
 </Callout>
 
+<Callout type="info">
+**Windows** 에는 요청해야 할 OS 수준의 화면 기록 권한이 따로 없어요 — `getSources()` 는 사전 허용 없이도 동작해요. 다만 네이티브 시스템 선택기(`useSystemPicker: true`)는 **Windows 11**(22H2 이상)이 필요해요. Windows 10 에서는 무시되니, `getSources()` 목록으로 직접 선택기 UI 를 만들어 대비하세요. 루프백 **시스템 오디오**(`audio: 'loopback'`)는 Windows 에서 지원되며, `Info.plist` 같은 별도 선언은 필요 없어요.
+</Callout>
+
 <Callout type="warning">
 **Linux (PipeWire/Wayland)** 는 OS 포털을 통해 선택된 **단 하나** 의 소스를 반환해요 — macOS·Windows 처럼 모든 창/화면을 나열할 수 없어요. 전체 목록이 아니라 하나의 소스를 받는다고 가정하고 UI 를 설계하세요.
 </Callout>

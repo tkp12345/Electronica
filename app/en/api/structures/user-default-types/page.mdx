@@ -37,6 +37,10 @@ const swipe = systemPreferences.getUserDefault('AppleEnableSwipeNavigateWithScro
 Think of it as a translation table: you tell macOS "give me this setting as a string (or boolean, or array)", and this table guarantees what kind of value comes back.
 </EasyNote>
 
+<Callout type="info">
+This type — and `systemPreferences.getUserDefault` itself — is **macOS-only**. On Windows there is no `NSUserDefaults`; app/system settings live in the registry (under `HKEY_CURRENT_USER\Software\<App>`). If you call `getUserDefault` on Windows it returns `undefined`, so guard platform-specific reads with `process.platform === 'darwin'`.
+</Callout>
+
 ## In plain words
 
 macOS stores app and system settings as "user defaults," and each one has a type. When you read one with `systemPreferences.getUserDefault`, you tell Electron which type to expect. `UserDefaultTypes` is just the lookup that says "if you ask for `string`, you'll get a string back; if you ask for `array`, you'll get an array." You never build one of these yourself — it quietly makes the read API correctly typed.

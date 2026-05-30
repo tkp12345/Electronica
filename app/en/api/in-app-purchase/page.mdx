@@ -13,7 +13,7 @@ import { NetworkApiIllustration } from '../../../components/illustrations'
 The `inAppPurchase` module lives in the **Main process** and lets a Mac App Store app sell in-app products (one-time buys, consumables, subscriptions). It's a thin bridge over Apple's StoreKit, so almost everything is asynchronous: you start a purchase, then react to transaction updates as Apple processes them.
 
 <Callout type="info">
-`inAppPurchase` is **macOS only** — it works exclusively for apps distributed through the **Mac App Store**. On Windows and Linux the module exists but the methods are no-ops.
+`inAppPurchase` is **macOS only** — it works exclusively for apps distributed through the **Mac App Store**. On Windows and Linux the module exists but the methods are no-ops. For in-app purchases on Windows, ship through the **Microsoft Store** and use its own commerce APIs instead — see [Windows Store submission](/en/docs/distribution/windows-store).
 </Callout>
 
 ```js filename="setup.js"
@@ -234,5 +234,6 @@ The two rules that trip everyone up: register the `transactions-updated` listene
 <Cards>
   <Cards.Card title="app module" href="/en/api/app" arrow />
   <Cards.Card title="Mac App Store submission" href="/en/docs/distribution/mas" arrow />
+  <Cards.Card title="Windows Store submission" href="/en/docs/distribution/windows-store" arrow />
   <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
 </Cards>

@@ -129,7 +129,7 @@ globalShortcut.setSuspended(false) // resume — registrations come back to life
 </EasyNote>
 
 <Callout type="info">
-**macOS media keys (10.14+):** to register media accelerators like `MediaPlayPause`, `MediaNextTrack`, `MediaPreviousTrack`, or `MediaStop`, your app must be a **trusted accessibility client**. Otherwise those registrations won't work.
+**macOS media keys (10.14+):** to register media accelerators like `MediaPlayPause`, `MediaNextTrack`, `MediaPreviousTrack`, or `MediaStop`, your app must be a **trusted accessibility client**. Otherwise those registrations won't work. _(Windows)_ has no such accessibility requirement — the same media accelerators register normally — but other system-reserved combos (for example `Win+L` to lock the screen) are owned by the OS and can't be claimed.
 </Callout>
 
 ---

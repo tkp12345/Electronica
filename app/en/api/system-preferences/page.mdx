@@ -118,6 +118,10 @@ if (systemPreferences.canPromptTouchID()) {
 }
 ```
 
+<Callout type="info">
+There's no `systemPreferences` equivalent on Windows. Windows Hello (biometric/PIN) isn't exposed through this module — guard these calls with `process.platform === 'darwin'` and, on Windows, reach for a native add-on or the WebAuthn platform authenticator instead.
+</Callout>
+
 ### User defaults (`NSUserDefaults`) _(macOS)_
 
 | Method | What it does |
@@ -134,6 +138,10 @@ const locale = systemPreferences.getUserDefault('AppleLocale', 'string')
 // Read whether menus collapse automatically (a boolean default)
 const collapses = systemPreferences.getUserDefault('AppleMenuBarVisibleInFullscreen', 'boolean')
 ```
+
+<Callout type="info">
+These `*UserDefault*` methods wrap macOS `NSUserDefaults` and do nothing on Windows. The closest Windows concept is the Registry under `HKEY_CURRENT_USER` (read it with a native module like `winreg`). For your own app's settings, prefer a cross-platform store such as `electron-store`, which writes a JSON file under `app.getPath('userData')` on every OS.
+</Callout>
 
 ### System notifications (`NSNotificationCenter` / `NSWorkspace`) _(macOS)_
 

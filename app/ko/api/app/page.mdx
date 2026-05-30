@@ -195,8 +195,9 @@ app.exit(0)
 ```js filename="paths.js"
 // 이 앱의 데이터(설정·캐시·DB)를 저장할 곳
 const userData = app.getPath('userData')
-// 예: macOS  ~/Library/Application Support/<앱이름>
-//     Windows C:\Users\<나>\AppData\Roaming\<앱이름>
+// 예: macOS   ~/Library/Application Support/<앱이름>
+//     Windows %APPDATA%\<앱이름>  (C:\Users\<나>\AppData\Roaming\<앱이름>)
+//     Linux   ~/.config/<앱이름>  ($XDG_CONFIG_HOME/<앱이름>)
 ```
 
 <EasyNote>

@@ -173,6 +173,7 @@ You usually don't even need `quitAndInstall()` — a downloaded update is applie
 ### Windows
 
 - Auto-detects the packaging format: **Squirrel.Windows** or **MSIX**.
+- The installer and the app **must be Authenticode code-signed** (sign with `signtool`), or Windows updates will be rejected — the same way an unsigned macOS app silently fails to update.
 - On first run, your installer launches the app with the `--squirrel-firstrun` flag — avoid checking for updates during that window (or add a ~10-second delay) so the install can settle.
 - Call [`app.setAppUserModelId()`](/en/api/app) so taskbar pinning and update detection behave correctly.
 - For MSIX you can point `url` at a direct file link and use `allowAnyVersion` to permit downgrades.

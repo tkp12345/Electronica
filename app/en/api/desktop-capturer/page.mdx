@@ -108,6 +108,10 @@ Think of `setDisplayMediaRequestHandler` as the **bouncer at the door**. The web
 **macOS** requires the user to grant **Screen Recording** permission in System Settings. Check it first with `systemPreferences.getMediaAccessStatus('screen')`; if it isn't `'granted'`, capture returns black frames. Capturing **system audio** on macOS 14.2+ needs `NSAudioCaptureUsageDescription` in your `Info.plist`.
 </Callout>
 
+<Callout type="info">
+**Windows** has no equivalent OS-level Screen Recording permission to request — `getSources()` works without a prior grant. The native system picker (`useSystemPicker: true`) needs **Windows 11** (build 22H2 or newer); on Windows 10 it's ignored, so build your own picker UI from the `getSources()` list as a fallback. Loopback **system audio** (`audio: 'loopback'`) is supported on Windows; no `Info.plist`-style declaration is required.
+</Callout>
+
 <Callout type="warning">
 **Linux (PipeWire/Wayland)** returns a **single** source chosen through the OS portal — you cannot enumerate every window/screen like on macOS or Windows. Design your UI to expect one source rather than a full list.
 </Callout>

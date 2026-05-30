@@ -195,8 +195,9 @@ app.exit(0)
 ```js filename="paths.js"
 // Where to store this app's own data (settings, cache, db)
 const userData = app.getPath('userData')
-// e.g. macOS: ~/Library/Application Support/<AppName>
-//      Windows: C:\Users\<you>\AppData\Roaming\<AppName>
+// e.g. macOS:   ~/Library/Application Support/<AppName>
+//      Windows: %APPDATA%\<AppName>  (C:\Users\<you>\AppData\Roaming\<AppName>)
+//      Linux:   ~/.config/<AppName>  ($XDG_CONFIG_HOME/<AppName>)
 ```
 
 <EasyNote>

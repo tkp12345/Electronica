@@ -65,6 +65,10 @@ if (process.platform === 'darwin') {
 }
 ```
 
+<Callout type="info">
+These `getHistory` / `remove` / `removeAll` / `removeGroup` methods are **macOS-only**. On Windows (and Linux) there's no equivalent — `Notification.isSupported()` is the only static you can rely on cross-platform. To dismiss an individual toast on Windows, keep a reference to the notification and call `notification.close()` on it instead.
+</Callout>
+
 ---
 
 ## Constructor

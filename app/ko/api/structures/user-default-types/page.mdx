@@ -37,6 +37,10 @@ const swipe = systemPreferences.getUserDefault('AppleEnableSwipeNavigateWithScro
 번역표라고 생각하시면 됩니다. macOS에게 "이 설정을 문자열(또는 불리언, 또는 배열)로 주세요"라고 말하면, 이 표가 어떤 종류의 값이 돌아올지 보장해 줍니다.
 </EasyNote>
 
+<Callout type="info">
+이 타입과 `systemPreferences.getUserDefault`는 **macOS 전용**입니다. Windows에는 `NSUserDefaults`가 없으며, 앱/시스템 설정은 레지스트리(`HKEY_CURRENT_USER\Software\<App>` 아래)에 저장됩니다. Windows에서 `getUserDefault`를 호출하면 `undefined`가 반환되므로, 플랫폼별 읽기는 `process.platform === 'darwin'`으로 분기해 주세요.
+</Callout>
+
 ## 쉽게 풀어 설명
 
 macOS는 앱과 시스템 설정을 "사용자 기본값(user default)"으로 저장하며, 각 값에는 타입이 있습니다. `systemPreferences.getUserDefault`로 값을 읽을 때, 어떤 타입으로 받을지를 Electron에 알려 줍니다. `UserDefaultTypes`는 바로 그 조회표로, "`string`을 요청하면 문자열을, `array`를 요청하면 배열을 돌려준다"는 약속을 담고 있습니다. 직접 이 객체를 만들 일은 없으며, 읽기 API가 올바른 타입을 갖도록 조용히 도와줍니다.
