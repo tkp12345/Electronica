@@ -1,0 +1,182 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { MenuApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<MenuApiIllustration />}
+  title="Menu"
+  subtitle="Build native application menus, context (right-click) menus, and the macOS menu bar — all from one class."
+  badge="API · Menu"
+/>
+
+The `Menu` module lives in the **Main process**. It's a class you instantiate with `new Menu()` (or, more often, build from a template) to create the native menus your users see: the top menu bar, the right-click context menu, and the macOS dock/app menu.
+
+```js filename="main.js"
+const { Menu } = require('electron')
+
+const menu = Menu.buildFromTemplate([
+  { label: 'File', submenu: [{ role: 'quit' }] }
+])
+
+Menu.setApplicationMenu(menu)
+```
+
+<EasyNote>
+A `Menu` is just an **ordered list of [MenuItem](/en/api/menu-item) objects**. You almost never set positions or pixels — you describe _what_ goes in the list (and which items nest a submenu), and the OS draws the real, native menu for you.
+</EasyNote>
+
+---
+
+## Events
+
+A `Menu` instance is an `EventEmitter` — listen with `menu.on('event-name', handler)`.
+
+| Event | Fires when |
+|---|---|
+| `menu-will-show` | `menu.popup()` is called and the menu is about to appear |
+| `menu-will-close` | A popup is closed, either manually by the user or via `menu.closePopup()` |
+
+```js filename="context-menu-events.js"
+const menu = Menu.buildFromTemplate([
+  { label: 'Copy', role: 'copy' },
+  { label: 'Paste', role: 'paste' }
+])
+
+menu.on('menu-will-show', () => {
+  // pause expensive background work while the menu is open
+})
+
+menu.on('menu-will-close', () => {
+  // resume when the menu goes away
+})
+```
+
+<EasyNote>
+Think of these two events as the **"doors opening" and "doors closing"** of a popup. They're handy for pausing animations or heavy work while the user is busy reading the menu.
+</EasyNote>
+
+---
+
+## Static Methods
+
+These are called on the `Menu` class itself (not on an instance).
+
+### Building & the application menu
+
+| Method | What it does |
+|---|---|
+| `Menu.buildFromTemplate(template)` | Build a `Menu` from a plain array of item objects (the usual way) |
+| `Menu.setApplicationMenu(menu)` | Set the app menu — the macOS menu bar, or each window's top menu on Windows/Linux. Pass `null` to remove it |
+| `Menu.getApplicationMenu()` | The current application `Menu`, or `null` if none is set |
+| `Menu.sendActionToFirstResponder(action)` _(macOS)_ | Send a Cocoa action (e.g. `'selectAll:'`) to the first responder, emulating default macOS menu behavior |
+
+```js filename="app-menu.js"
+const template = [
+  {
+    label: 'Edit',
+    submenu: [
+      { role: 'undo' },
+      { role: 'redo' },
+      { type: 'separator' },
+      { role: 'cut' },
+      { role: 'copy' },
+      { role: 'paste' }
+    ]
+  }
+]
+
+// On macOS the menu bar shows even with no windows open
+Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+```
+
+<Callout type="warning">
+The `Menu` returned by `Menu.getApplicationMenu()` does **not** support dynamically adding or removing items. To change the application menu, build a new one and call `Menu.setApplicationMenu()` again.
+</Callout>
+
+<Callout type="warning">
+Item labels passed to `Menu.setApplicationMenu()` support the `&` accelerator hint on Windows/Linux (e.g. `'&File'` underlines the **F**). Use a double `&&` to render a literal ampersand.
+</Callout>
+
+---
+
+## Instance Methods
+
+These are called on a `Menu` you created (`const menu = new Menu()` or via `buildFromTemplate`).
+
+### Showing as a context menu
+
+| Method | What it does |
+|---|---|
+| `menu.popup([options])` | Pop this menu up as a context menu inside a `BaseWindow`. Options include `window`, `x`, `y`, `positioningItem` _(macOS)_, `sourceType` _(Windows/Linux)_, and a `callback` that runs when the menu closes |
+| `menu.closePopup([window])` | Close the context menu in the given `window` (or the focused one) |
+
+```js filename="context-menu.js"
+const { Menu, BrowserWindow } = require('electron')
+
+const ctx = Menu.buildFromTemplate([
+  { label: 'Reload', role: 'reload' },
+  { type: 'separator' },
+  { label: 'Inspect', click: () => win.webContents.openDevTools() }
+])
+
+// Show the menu wherever the user right-clicked
+win.webContents.on('context-menu', (event, params) => {
+  ctx.popup({ window: BrowserWindow.fromWebContents(win.webContents), x: params.x, y: params.y })
+})
+```
+
+### Building the list
+
+| Method | What it does |
+|---|---|
+| `menu.append(menuItem)` | Add a `MenuItem` to the end of the menu |
+| `menu.insert(pos, menuItem)` | Insert a `MenuItem` at index `pos` |
+| `menu.getMenuItemById(id)` | Find a `MenuItem` by its `id` anywhere in the tree, or `null` |
+
+```js filename="build-imperatively.js"
+const { Menu, MenuItem } = require('electron')
+
+const menu = new Menu()
+menu.append(new MenuItem({ label: 'Open', accelerator: 'CmdOrCtrl+O', click: openFile }))
+menu.insert(0, new MenuItem({ label: 'New', accelerator: 'CmdOrCtrl+N', click: newFile }))
+
+// Later, look an item up by id to toggle it
+const save = menu.getMenuItemById('save-item')
+if (save) save.enabled = false
+```
+
+---
+
+## Instance Properties
+
+| Property | Type | What it is |
+|---|---|---|
+| `menu.items` | `MenuItem[]` | The array of `MenuItem`s in this menu. Each item may carry a nested `Menu` in its `submenu` property |
+
+```js filename="iterate-items.js"
+// Walk the menu and disable everything
+for (const item of menu.items) {
+  item.enabled = false
+}
+```
+
+---
+
+## In plain words
+
+A `Menu` is a **list, not a layout**. You hand Electron an ordered list of items — labels, separators, roles, click handlers, and sometimes a nested submenu — and the operating system draws the genuine native menu, with all the right fonts, shadows, and keyboard shortcuts.
+
+There are really only three things you'll do:
+
+1. **Build the list.** `Menu.buildFromTemplate([...])` from a plain array is the easy path; `new Menu()` + `append`/`insert` is the imperative one. Each entry is a [MenuItem](/en/api/menu-item).
+2. **Decide where it lives.** `Menu.setApplicationMenu(menu)` puts it on the macOS menu bar (or each window's top bar on Windows/Linux). `menu.popup()` makes it a right-click context menu instead.
+3. **React to it.** Each item has a `click` handler or a built-in `role`; the menu fires `menu-will-show` / `menu-will-close` around a popup.
+
+Picture a **restaurant menu**: you don't arrange the ink on the page yourself — you list the dishes (the items), group them into sections (submenus), and the printer lays it out beautifully. `setApplicationMenu` is pinning that menu to the wall for everyone; `popup` is handing it to one guest at their table.
+
+<Cards>
+  <Cards.Card title="MenuItem" href="/en/api/menu-item" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+</Cards>

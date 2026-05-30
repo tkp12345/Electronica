@@ -1,0 +1,322 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { NetworkApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<NetworkApiIllustration />}
+  title="session"
+  subtitle="앱이 불러오는 웹 콘텐츠의 쿠키·캐시·네트워크·권한·다운로드를 관리해요."
+  badge="API · session"
+/>
+
+`session` 모듈은 **Main 프로세스** 에 살아요. 앱이 불러오는 웹 페이지의 _저장소와 네트워크_ 를 제어해요 — 쿠키, 캐시, 프록시, 권한, 다운로드 등등이요. 모든 `BrowserWindow` 와 `webContents` 는 어떤 `Session` 안에서 돌아가고, 가장 흔히 쓰는 세션은 `session.defaultSession` 으로 접근해요.
+
+```js filename="main.js"
+const { session, app } = require('electron')
+
+app.whenReady().then(() => {
+  const ses = session.defaultSession
+
+  // 기본 세션의 HTTP 캐시를 모두 비워요
+  ses.clearCache()
+})
+```
+
+## 세션을 얻는 방법
+
+`new Session()` 을 직접 쓰는 일은 없어요. `Session` 은 항상 건네받아요 — 공유되는 기본 세션이거나, 직접 요청한 파티션/경로 기반 세션이죠. 각 `webContents` 도 자기만의 `webContents.session` 을 가지고 있어요.
+
+| `Session` 얻는 방법 | 무엇을 얻나 |
+|---|---|
+| `session.defaultSession` | 공유되는 기본 세션 (`app.whenReady()` 이후) |
+| `session.fromPartition(partition[, options])` | 이름 있는 세션 — `'persist:이름'` 은 재시작 후에도 유지, `'이름'` 은 메모리에만 |
+| `session.fromPath(path[, options])` | 절대 경로에 저장되는 세션 |
+| `webContents.session` | 특정 페이지/창이 속한 세션 |
+
+```js filename="partitions.js"
+// 격리된 메모리 전용 세션 ("비공개" 창에 좋아요)
+const incognito = session.fromPartition('temp-window')
+
+// 재시작 후에도 쿠키·캐시가 유지되는 지속 세션
+const account = session.fromPartition('persist:account-1')
+```
+
+<EasyNote>
+`session` 은 브라우저 탭 뒤에 있는 **프로필** 이라고 생각하세요. 프로필을 공유하는 두 탭은 로그인·기록을 공유하고, 프로필을 바꾸면 깨끗한 상태로 시작해요. `defaultSession` 은 매일 쓰는 프로필이고, `fromPartition('temp')` 는 시크릿 창이에요.
+</EasyNote>
+
+---
+
+## 정적 메서드(Static Methods)
+
+`session` 모듈 자체에 붙어 있어요.
+
+| 메서드 | 하는 일 |
+|---|---|
+| `session.fromPartition(partition[, options])` | 파티션 문자열(`'persist:이름'` 또는 `'이름'`)에 대한 세션 얻기/생성 |
+| `session.fromPath(path[, options])` | 데이터를 절대 경로에 저장하는 세션 얻기/생성 |
+
+## 정적 속성(Static Properties)
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `session.defaultSession` | `Session` | 커스텀 파티션이 없는 창들이 쓰는 기본 세션 (`app.whenReady()` 이후 사용 가능) |
+
+---
+
+## 인스턴스 이벤트(Instance Events)
+
+`ses.on('이벤트명', 핸들러)` 로 듣습니다. _(macOS)_ / _(Windows)_ / _(Linux)_ 표시는 해당 플랫폼에서만 발생해요.
+
+### 다운로드
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `will-download` | `webContents` 의 리소스를 다운로드하기 직전 — `DownloadItem` 을 전달 |
+
+```js filename="download.js"
+session.defaultSession.on('will-download', (event, item, webContents) => {
+  // 저장 대화상자 없이 모든 다운로드를 고정 폴더로
+  item.setSavePath('/tmp/downloads/' + item.getFilename())
+
+  item.on('done', (e, state) => {
+    if (state === 'completed') notifyDownloadDone(item.getSavePath())
+  })
+})
+```
+
+### 확장 프로그램
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `extension-loaded` | Chrome 확장 프로그램 로딩 완료 (`Extension` 전달) |
+| `extension-ready` | 확장 프로그램 백그라운드 페이지가 초기화되어 준비됨 |
+| `extension-unloaded` | 확장 프로그램이 언로드됨 |
+
+### 디바이스 (HID / Serial / USB)
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `select-hid-device` | 페이지가 HID 디바이스를 요청해 하나를 골라야 함 |
+| `hid-device-added` | `select-hid-device` 프롬프트 중 HID 디바이스가 추가됨 |
+| `hid-device-removed` | `select-hid-device` 프롬프트 중 HID 디바이스가 제거됨 |
+| `hid-device-revoked` | 허용했던 HID 디바이스 접근이 취소됨 |
+| `select-serial-port` | 페이지가 시리얼 포트를 요청해 하나를 골라야 함 |
+| `serial-port-added` | `select-serial-port` 프롬프트 중 시리얼 포트가 추가됨 |
+| `serial-port-removed` | `select-serial-port` 프롬프트 중 시리얼 포트가 제거됨 |
+| `serial-port-revoked` | 허용했던 시리얼 포트 접근이 취소됨 |
+| `select-usb-device` | 페이지가 USB 디바이스를 요청해 하나를 골라야 함 |
+| `usb-device-added` | `select-usb-device` 프롬프트 중 USB 디바이스가 추가됨 |
+| `usb-device-removed` | `select-usb-device` 프롬프트 중 USB 디바이스가 제거됨 |
+| `usb-device-revoked` | 허용했던 USB 디바이스 접근이 취소됨 |
+| `select-webauthn-account` | WebAuthn 계정을 선택해야 함 |
+
+```js filename="select-device.js"
+// 선택 UI 를 띄우지 않고 시리얼 포트를 자동 선택
+session.defaultSession.on('select-serial-port', (event, portList, webContents, callback) => {
+  event.preventDefault()
+  const usbStick = portList.find((p) => p.vendorId === '0x2341')
+  callback(usbStick ? usbStick.portId : '') // '' = 요청 취소
+})
+```
+
+### 맞춤법 검사기
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `spellcheck-dictionary-initialized` | 맞춤법 사전이 성공적으로 로드됨 |
+| `spellcheck-dictionary-download-begin` | 사전 다운로드 시작 |
+| `spellcheck-dictionary-download-success` | 사전 다운로드 성공 |
+| `spellcheck-dictionary-download-failure` | 사전 다운로드 실패 |
+
+### 네트워크 & 파일 시스템
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `preconnect` | 페이지가 URL 에 대한 사전 연결을 요청함 |
+| `file-system-access-restricted` | 파일 시스템 접근 요청이 정책에 의해 차단됨 |
+
+<EasyNote>
+디바이스 이벤트들(`select-usb-device`, `select-serial-port`, `select-hid-device`)은 브라우저가 _"어떤 기기와 통신할까요?"_ 라고 묻는 방식이에요. 핸들러가 없으면 사용자에게 네이티브 선택기가 보이고, 핸들러가 있으면 보안을 위해 자동 선택하거나 걸러낼 수 있어요.
+</EasyNote>
+
+---
+
+## 메서드(Methods)
+
+`Session` 인스턴스(`ses`)에서 호출해요.
+
+### 캐시 & 저장소
+
+| 메서드 | 하는 일 |
+|---|---|
+| `ses.getCacheSize()` | Promise → 세션의 HTTP 캐시 크기(바이트) |
+| `ses.clearCache()` | Promise → HTTP 캐시 비우기 |
+| `ses.clearStorageData([options])` | Promise → 저장소(쿠키, localStorage, IndexedDB ...)를 타입/origin 별로 비우기 |
+| `ses.flushStorageData()` | 아직 안 쓴 DOMStorage 데이터를 디스크에 기록 |
+| `ses.clearData([options])` | Promise → 선택한 데이터 타입을 origin 으로 필터링해 비우기 |
+| `ses.setCodeCachePath(path)` | V8 코드 캐시 디렉터리 설정 |
+| `ses.clearCodeCaches(options)` | Promise → 지정 URL 의 코드 캐시 비우기 |
+| `ses.getStoragePath()` | 이 세션 데이터의 디스크 경로, 메모리 세션이면 `null` |
+
+```js filename="clear-storage.js"
+// 사용자 로그아웃: 쿠키 + 캐시된 HTTP 인증 제거
+await session.defaultSession.clearStorageData({ storages: ['cookies'] })
+await session.defaultSession.clearAuthCache()
+```
+
+### 네트워크 & 프록시
+
+| 메서드 | 하는 일 |
+|---|---|
+| `ses.setProxy(config)` | Promise → 프록시 설정 |
+| `ses.resolveProxy(url)` | Promise → URL 에 대해 해석된 프록시 |
+| `ses.forceReloadProxyConfig()` | Promise → 프록시 서비스를 초기화해 설정 재적용 |
+| `ses.resolveHost(host[, options])` | Promise → 호스트명을 IP 주소로 해석 |
+| `ses.clearHostResolverCache()` | Promise → DNS 캐시 비우기 |
+| `ses.enableNetworkEmulation(options)` | 느린/오프라인 네트워크 상태 에뮬레이트 |
+| `ses.disableNetworkEmulation()` | 네트워크 에뮬레이션 중지 |
+| `ses.preconnect(options)` | origin 에 소켓 미리 연결 |
+| `ses.closeAllConnections()` | Promise → 열린 모든 네트워크 연결 닫기 |
+| `ses.fetch(input[, init])` | Promise → Chrome 네트워크 스택으로 URL 가져오기 |
+| `ses.setUserAgent(userAgent[, acceptLanguages])` | user-agent 와 허용 언어 설정 |
+| `ses.getUserAgent()` | 현재 user-agent 문자열 |
+| `ses.setSSLConfig(config)` | TLS 버전·암호화 정책 설정 |
+| `ses.allowNTLMCredentialsForDomains(domains)` | 이 도메인들에 NTLM/Negotiate 자격증명 전송 |
+| `ses.getBlobData(identifier)` | Promise → UUID 에 대한 blob 데이터 |
+
+```js filename="emulate.js"
+// 오류 처리를 테스트하려고 오프라인인 척하기
+session.defaultSession.enableNetworkEmulation({ offline: true })
+
+// ...나중에 정상으로 복귀
+session.defaultSession.disableNetworkEmulation()
+```
+
+<Callout type="warning">
+`setCertificateVerifyProc` 와 `setProxy` 는 **세션 전체** 에 적용돼요. `defaultSession` 에 호출하면 커스텀 파티션이 없는 모든 창이 영향을 받아요 — 위험한 동작은 전용 `fromPartition` 세션으로 범위를 좁히세요.
+</Callout>
+
+### 다운로드
+
+| 메서드 | 하는 일 |
+|---|---|
+| `ses.setDownloadPath(path)` | 다운로드 기본 폴더 설정 |
+| `ses.downloadURL(url[, options])` | 리소스 다운로드 시작 (`will-download` 발생) |
+| `ses.createInterruptedDownload(options)` | 중단됐던 다운로드 이어받기 |
+
+### 권한 & 디바이스 접근
+
+| 메서드 | 하는 일 |
+|---|---|
+| `ses.setPermissionRequestHandler(handler)` | 권한 요청 승인/거부 (카메라, 마이크, 위치 ...) |
+| `ses.setPermissionCheckHandler(handler)` | "이 권한이 허용됐나?" 를 동기적으로 응답 |
+| `ses.setDisplayMediaRequestHandler(handler[, opts])` | 화면 캡처용 화면/창 소스 선택 |
+| `ses.setDevicePermissionHandler(handler)` | 특정 디바이스에 대한 지속 접근 허용/거부 |
+| `ses.setUSBProtectedClassesHandler(handler)` | Chromium 이 기본 차단하는 USB 클래스 접근 허용 |
+| `ses.setBluetoothPairingHandler(handler)` _(Windows/Linux)_ | 블루투스 페어링 프롬프트 처리 |
+| `ses.setCertificateVerifyProc(proc)` | TLS 인증서 검증 재정의 |
+
+```js filename="permissions.js"
+// 알림만 빼고 전부 거부 — 엄격한 기본값
+session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+  callback(permission === 'notifications')
+})
+```
+
+### 맞춤법 검사기
+
+| 메서드 | 하는 일 |
+|---|---|
+| `ses.setSpellCheckerEnabled(enable)` | 맞춤법 검사기 켜기/끄기 |
+| `ses.isSpellCheckerEnabled()` | 맞춤법 검사기가 켜져 있나? |
+| `ses.setSpellCheckerLanguages(languages)` | 활성 맞춤법 검사 언어 설정 |
+| `ses.getSpellCheckerLanguages()` | 활성화된 맞춤법 검사 언어 |
+| `ses.setSpellCheckerDictionaryDownloadURL(url)` | 사전을 어디서 다운로드할지 |
+| `ses.listWordsInSpellCheckerDictionary()` | Promise → 사용자 커스텀 단어 |
+| `ses.addWordToSpellCheckerDictionary(word)` | 커스텀 사전에 단어 추가 |
+| `ses.removeWordFromSpellCheckerDictionary(word)` | 커스텀 사전에서 단어 제거 |
+
+### 프리로드 스크립트
+
+| 메서드 | 하는 일 |
+|---|---|
+| `ses.registerPreloadScript(script)` | 프리로드 스크립트 등록, id 반환 |
+| `ses.unregisterPreloadScript(id)` | 등록된 프리로드 스크립트 제거 |
+| `ses.getPreloadScripts()` | 등록된 프리로드 스크립트들 |
+| `ses.setPreloads(preloads)` _(지원 중단)_ | 프리로드 스크립트 경로 배열 설정 |
+| `ses.getPreloads()` _(지원 중단)_ | 현재 프리로드 스크립트 경로들 |
+
+### 공유 사전(압축)
+
+| 메서드 | 하는 일 |
+|---|---|
+| `ses.getSharedDictionaryUsageInfo()` | Promise → 저장된 모든 공유 사전 정보 |
+| `ses.getSharedDictionaryInfo(options)` | Promise → isolation key 에 맞는 사전 상세 |
+| `ses.clearSharedDictionaryCache()` | Promise → 모든 공유 사전 제거 |
+| `ses.clearSharedDictionaryCacheForIsolationKey(options)` | Promise → 특정 isolation key 의 사전 비우기 |
+
+### 확장 프로그램 _(지원 중단 — `ses.extensions` 사용)_
+
+| 메서드 | 하는 일 |
+|---|---|
+| `ses.loadExtension(path[, options])` _(지원 중단)_ | Promise → 압축 해제된 Chrome 확장 로드 |
+| `ses.removeExtension(extensionId)` _(지원 중단)_ | 확장 프로그램 언로드 |
+| `ses.getExtension(extensionId)` _(지원 중단)_ | id 로 로드된 확장 가져오기 (없으면 `null`) |
+| `ses.getAllExtensions()` _(지원 중단)_ | 로드된 모든 확장 목록 |
+
+### 인증 & 기타
+
+| 메서드 | 하는 일 |
+|---|---|
+| `ses.clearAuthCache()` | Promise → HTTP 인증 캐시 비우기 |
+| `ses.isPersistent()` | 이 세션이 디스크에 데이터를 쓰면 `true` |
+
+---
+
+## 속성(Properties)
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `ses.availableSpellCheckerLanguages` | `string[]` (읽기전용) | 맞춤법 검사기가 지원하는 모든 언어 |
+| `ses.spellCheckerEnabled` | `boolean` | 맞춤법 검사기 켜짐 여부 읽기/쓰기 |
+| `ses.storagePath` | `string \| null` (읽기전용) | 디스크 저장 경로, 메모리 세션이면 `null` |
+| `ses.cookies` | `Cookies` (읽기전용) | 이 세션의 쿠키 관리 객체 |
+| `ses.extensions` | `Extensions` (읽기전용) | 이 세션의 확장 프로그램 관리 객체 |
+| `ses.serviceWorkers` | `ServiceWorkers` (읽기전용) | 이 세션의 서비스 워커 관리 객체 |
+| `ses.webRequest` | `WebRequest` (읽기전용) | 네트워크 요청 가로채기·수정 |
+| `ses.protocol` | `Protocol` (읽기전용) | 커스텀 프로토콜 등록 (`app://` ...) |
+| `ses.netLog` | `NetLog` (읽기전용) | 네트워크 이벤트를 로그 파일로 기록 |
+
+```js filename="cookies.js"
+// cookies 하위 객체로 도메인의 모든 쿠키 읽기
+const cookies = await session.defaultSession.cookies.get({ domain: 'example.com' })
+
+// 쿠키 설정
+await session.defaultSession.cookies.set({
+  url: 'https://example.com',
+  name: 'token',
+  value: 'abc123'
+})
+```
+
+---
+
+## 쉽게 풀어 설명
+
+`session` 은 앱이 불러오는 모든 페이지 뒤에 있는 **프로필** 이에요. 브라우저 프로필이 가진 것들을 그대로 소유하죠 — 쿠키(로그인), 캐시(속도), 권한(카메라/마이크), 다운로드, 네트워크 규칙(프록시·user-agent) 까지요.
+
+크게 세 가지 개념이면 거의 다 돼요:
+
+1. **어떤 프로필?** 대부분 앱은 그냥 `session.defaultSession` 을 써요. 격리된 일회용 프로필이 필요하면 `session.fromPartition('temp')`, 재시작 후에도 유지하려면 `session.fromPartition('persist:이름')` 이에요.
+2. **하위 객체들이 무거운 일을 해요.** 쿠키는 `ses.cookies`, 요청 가로채기는 `ses.webRequest`, 커스텀 URL 스킴은 `ses.protocol` 에 있어요. 세션은 허브이고, 이들은 바퀴살이에요.
+3. **보안 핸들러가 여기서 돌아가요.** `setPermissionRequestHandler`, `setCertificateVerifyProc`, `select-usb-device` 계열 — 웹 콘텐츠가 무엇을 만질 수 있고 없는지를 여기서 결정해요.
+
+세 이름만 기억하면 일상은 끝나요: **`defaultSession`**(보통 원하는 그 프로필), **`ses.cookies`**(로그인 읽기/쓰기), **`setPermissionRequestHandler`**(페이지가 할 수 있는 일 잠그기). 나머지는 찾아보면 돼요 — 이 페이지가 바로 그 용도예요.
+
+<Cards>
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+  <Cards.Card title="보안" href="/ko/docs/best-practices/security" arrow />
+  <Cards.Card title="Main 프로세스" href="/ko/docs/processes/main" arrow />
+</Cards>

@@ -1,0 +1,442 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { WindowApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<WindowApiIllustration />}
+  title="webContents"
+  subtitle="창 안에 들어 있는 실제 웹 페이지의 리모컨이에요 — 이동, 스크립트 실행, 이벤트 청취, 인쇄, 캡처까지."
+  badge="API · webContents"
+/>
+
+`webContents` 모듈은 **Main 프로세스** 에 살지만, 제어 대상은 _렌더러_ 예요 — `BrowserWindow`, `BrowserView`, `<webview>` 안에 그려지는 살아 있는 웹 페이지죠. 모듈 자체는 작은 공장이에요. **`WebContents` 인스턴스** 를 돌려주고, 그 인스턴스 하나하나가 페이지 한 개를 위한 완전한 리모컨이에요.
+
+```js filename="main.js"
+const { BrowserWindow, webContents } = require('electron')
+
+const win = new BrowserWindow()
+const contents = win.webContents // 페이지의 리모컨
+
+contents.loadURL('https://electronjs.org')
+contents.on('did-finish-load', () => {
+  // 페이지 로딩이 끝났어요 — 이제 페이지와 대화해도 안전해요
+})
+```
+
+<EasyNote>
+`BrowserWindow` 는 **액자** 이고, `WebContents` 는 그 안의 **사진** 이에요. 창은 액자·제목 표시줄·닫기 버튼을 주지만, _페이지 자체에 관한 것_(URL, 스크립트, 스크롤 위치)은 모두 `webContents` 에 들어 있어요.
+</EasyNote>
+
+---
+
+## 모듈 메서드(Module methods)
+
+`webContents` 는 `new` 로 만들지 **않아요**. 항상 창에서, 아래 공장 메서드에서, 또는 `app` 의 `web-contents-created` 이벤트에서 인스턴스를 받아요.
+
+| 메서드 | 돌려주는 값 |
+|---|---|
+| `webContents.getAllWebContents()` | 살아 있는 모든 `WebContents` 배열 (모든 창·뷰·webview·devtools) |
+| `webContents.getFocusedWebContents()` | 현재 포커스를 가진 `WebContents`, 없으면 `null` |
+| `webContents.fromId(id)` | 해당 `id` 의 `WebContents`, 없으면 `undefined` |
+| `webContents.fromFrame(frame)` | 주어진 `WebFrameMain` 을 가진 `WebContents`, 없으면 `undefined` |
+| `webContents.fromDevToolsTargetId(targetId)` | DevTools 프로토콜 target id 의 `WebContents`, 없으면 `undefined` |
+
+```js filename="find-contents.js"
+// 앱 전체의 모든 페이지를 한 번에 음소거
+for (const contents of webContents.getAllWebContents()) {
+  contents.setAudioMuted(true)
+}
+```
+
+---
+
+## 인스턴스 이벤트(Instance Events)
+
+`contents.on('이벤트명', 핸들러)` 로 듣습니다. _(macOS)_ / _(Windows)_ / _(Linux)_ 표시는 해당 플랫폼에서만 발생해요.
+
+### 로딩 & 이동
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `did-start-loading` | 탭 스피너가 돌기 시작함 |
+| `did-stop-loading` | 탭 스피너가 멈춤 |
+| `dom-ready` | 최상위 프레임의 문서가 로드됨 |
+| `did-finish-load` | 이동이 끝나고 페이지 `onload` 까지 발생함 |
+| `did-fail-load` | 로드 실패 (`errorCode`, `errorDescription`, URL 전달) |
+| `did-fail-provisional-load` | 로드가 취소됨 (예: `window.stop()`) |
+| `did-frame-finish-load` | 프레임 로드 완료 |
+| `page-title-updated` | 이동 중 페이지 제목이 바뀜 |
+| `page-favicon-updated` | 새 파비콘 URL 을 받음 |
+| `did-create-window` | `window.open()` 으로 새 창이 생성됨 |
+| `will-navigate` | **메인 프레임** 이동 직전 — `preventDefault()` 로 차단 가능 |
+| `will-frame-navigate` | **모든** 프레임에서 이동이 시작되려 함 |
+| `did-start-navigation` | 어떤 프레임이 이동을 시작함 |
+| `will-redirect` | 서버 측 리다이렉트 직전 |
+| `did-redirect-navigation` | 서버 측 리다이렉트 완료 |
+| `did-navigate` | 메인 프레임 이동 완료 |
+| `did-frame-navigate` | 어떤 프레임 이동 완료 |
+| `did-navigate-in-page` | 페이지 내 이동 발생 (앵커/해시 변경) |
+| `will-prevent-unload` | `beforeunload` 핸들러가 언로드를 취소하려 함 |
+
+```js filename="navigation.js"
+contents.on('did-finish-load', () => {
+  // 페이지가 완전히 로드되어 상호작용 가능해요
+})
+
+contents.on('did-fail-load', (event, errorCode, errorDescription, url) => {
+  // 빈 창 대신 오프라인/오류 페이지를 보여줘요
+})
+
+// 보안: 신뢰할 수 없는 사이트로의 이동을 막아요
+contents.on('will-navigate', (event, url) => {
+  if (!url.startsWith('https://my-trusted-app.com')) event.preventDefault()
+})
+```
+
+<Callout type="warning">
+"페이지 준비 완료" 신호는 `did-finish-load` 가 맞아요 — `dom-ready` 가 **아니에요**. `dom-ready` 는 DOM 만 생겼을 뿐 이미지/스타일은 아직 로딩 중일 수 있어요. 완전히 렌더된 페이지에 의존하는 `executeJavaScript` 는 `did-finish-load` 를 기다린 뒤 호출하세요.
+</Callout>
+
+### 프로세스 & 응답성
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `render-process-gone` | 렌더러 프로세스가 사라짐 (`details.reason` 전달) |
+| `unresponsive` | 페이지가 멈춰 응답하지 않음 |
+| `responsive` | 멈췄던 페이지가 다시 응답함 |
+| `destroyed` | 이 `WebContents` 가 파괴됨 |
+| `preload-error` | 프리로드 스크립트가 처리되지 않은 예외를 던짐 |
+
+```js filename="crash-recovery.js"
+contents.on('render-process-gone', (event, details) => {
+  // details.reason: 'crashed' | 'killed' | 'oom' | 'launch-failed' | ...
+  if (details.reason !== 'clean-exit') contents.reload()
+})
+
+contents.on('unresponsive', () => {
+  // 사용자에게 기다릴지/강제 새로고침할지 제안해요
+})
+```
+
+### 입력 & 포커스
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `input-event` | 입력 이벤트가 페이지로 전달됨 |
+| `before-input-event` | 키보드 keydown/keyup 직전 — `preventDefault()` 로 삼킬 수 있음 |
+| `before-mouse-event` | 페이지 내 마우스 이벤트 직전 |
+| `enter-html-full-screen` | HTML API 로 전체화면에 들어감 |
+| `leave-html-full-screen` | HTML 전체화면에서 나옴 |
+| `zoom-changed` | 사용자가 마우스 휠로 확대/축소를 요청함 |
+| `blur` | `WebContents` 가 포커스를 잃음 |
+| `focus` | `WebContents` 가 포커스를 얻음 |
+| `cursor-changed` | 마우스 커서 종류가 바뀜 |
+| `update-target-url` | 마우스가 링크 위로 가거나 포커스가 링크에 닿음 |
+| `context-menu` | 컨텍스트 메뉴를 표시해야 함 (`params` 전달) |
+
+```js filename="shortcuts.js"
+// 페이지가 보기 전에 전역 단축키를 가로채요
+contents.on('before-input-event', (event, input) => {
+  if (input.control && input.key.toLowerCase() === 'r') {
+    event.preventDefault() // Ctrl+R 새로고침 비활성화
+  }
+})
+```
+
+### 미디어 & 외형
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `media-started-playing` | 미디어 재생이 시작됨 |
+| `media-paused` | 미디어가 멈추거나 끝남 |
+| `audio-state-changed` | 페이지가 들리거나 들리지 않게 됨 |
+| `did-change-theme-color` | 페이지의 `<meta theme-color>` 가 바뀜 |
+| `found-in-page` | `findInPage` 결과가 준비됨 |
+| `paint` | 새 프레임이 생성됨 (오프스크린 렌더링 전용) |
+| `content-bounds-updated` | 페이지가 `window.moveTo` / `window.resizeTo` 를 호출함 |
+| `preferred-size-changed` | 콘텐츠의 선호 크기가 바뀜 |
+
+### DevTools
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `devtools-opened` | DevTools 가 열림 |
+| `devtools-closed` | DevTools 가 닫힘 |
+| `devtools-focused` | DevTools 가 포커스됨/열림 |
+| `devtools-reload-page` | DevTools 가 페이지에 새로고침을 요청함 |
+| `devtools-open-url` | DevTools 에서 링크가 클릭됨 |
+| `devtools-search-query` | DevTools 컨텍스트 메뉴에서 텍스트를 검색함 |
+
+### 보안 · IPC · 임베딩
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `certificate-error` | URL 의 TLS 인증서 검증 실패 |
+| `select-client-certificate` | 클라이언트 인증서 요청됨 |
+| `login` | 페이지가 기본·프록시 인증을 요구함 |
+| `select-bluetooth-device` | 페이지가 블루투스 기기를 고르는 중 |
+| `console-message` | 페이지가 콘솔에 로그를 남김 |
+| `ipc-message` | 렌더러가 **비동기** IPC 메시지를 보냄 |
+| `ipc-message-sync` | 렌더러가 **동기** IPC 메시지를 보냄 |
+| `will-attach-webview` | `<webview>` 가 부착되려 함 |
+| `did-attach-webview` | `<webview>` 가 부착됨 |
+| `frame-created` | 프레임(메인/iframe/중첩)이 생성됨 |
+
+```js filename="ipc.js"
+// 프리로드가 ipcRenderer.send('count', 5) 로 보낸 메시지를 받아요
+contents.on('ipc-message', (event, channel, ...args) => {
+  if (channel === 'count') updateBadge(args[0])
+})
+```
+
+<EasyNote>
+이벤트가 _아주 많지만_ 이야기 단위로 묶여요: "페이지가 로딩 중"(`did-start-loading` → `dom-ready` → `did-finish-load`), "페이지가 이동 중"(`will-navigate` → `did-navigate`), "뭔가 잘못됨"(`render-process-gone`, `unresponsive`). 지금 필요한 한 묶음만 익히고 나머지는 필요할 때 찾아보면 돼요.
+</EasyNote>
+
+---
+
+## 인스턴스 메서드(Instance Methods)
+
+### 로딩 & 이동
+
+| 메서드 | 하는 일 |
+|---|---|
+| `contents.loadURL(url[, options])` | URL 로드 (`Promise` 반환); 헤더·postData·userAgent 지정 가능 |
+| `contents.loadFile(filePath[, options])` | 로컬 HTML 파일 로드 (`Promise` 반환) |
+| `contents.downloadURL(url[, options])` | 페이지 이동 없이 다운로드 시작 |
+| `contents.getURL()` | 페이지의 현재 URL |
+| `contents.getTitle()` | 페이지의 현재 제목 |
+| `contents.stop()` | 대기 중인 이동을 중지 |
+| `contents.reload()` | 페이지 새로고침 |
+| `contents.reloadIgnoringCache()` | 캐시를 무시하고 새로고침 |
+| `contents.isLoading()` | 아직 리소스를 로딩 중인가? |
+| `contents.isLoadingMainFrame()` | 메인 프레임이 아직 로딩 중인가? |
+| `contents.isWaitingForResponse()` | 첫 응답을 아직 기다리는가? |
+
+```js filename="load.js"
+// loadURL / loadFile 은 Promise 를 반환해요 — await 하세요
+await contents.loadFile('index.html')
+await contents.loadURL('https://example.com', {
+  userAgent: 'MyApp/1.0',
+})
+```
+
+<Callout type="warning">
+예전 히스토리 메서드 — `goBack()`, `goForward()`, `canGoBack()`, `canGoForward()`, `goToIndex()`, `goToOffset()`, `canGoToOffset()`, `clearHistory()` — 는 **사용 중단(deprecated)** 되었어요. 대신 `contents.navigationHistory` 객체를 쓰세요 (예: `contents.navigationHistory.goBack()`).
+</Callout>
+
+### 생명주기 & 상태
+
+| 메서드 | 하는 일 |
+|---|---|
+| `contents.close([opts])` | `window.close()` 가 호출된 것처럼 페이지를 닫음 |
+| `contents.focus()` | 페이지에 포커스 |
+| `contents.isFocused()` | 페이지가 포커스 상태인가? |
+| `contents.isDestroyed()` | 페이지가 파괴되었는가? |
+| `contents.isCrashed()` | 렌더러 프로세스가 크래시됐는가? |
+| `contents.forcefullyCrashRenderer()` | 렌더러 프로세스를 강제 종료 |
+| `contents.getType()` | `'window'` / `'webview'` / `'browserView'` / `'remote'` |
+| `contents.isOffscreen()` | 오프스크린 렌더링이 켜져 있는가? |
+
+### 스크립트 & 스타일
+
+| 메서드 | 하는 일 |
+|---|---|
+| `contents.executeJavaScript(code[, userGesture])` | 페이지에서 JS 실행; 결과의 `Promise` 반환 |
+| `contents.executeJavaScriptInIsolatedWorld(worldId, scripts[, userGesture])` | 격리된 월드에서 JS 실행 |
+| `contents.insertCSS(css[, options])` | CSS 주입; 나중에 제거할 key 반환 |
+| `contents.removeInsertedCSS(key)` | `insertCSS` 로 주입한 CSS 제거 |
+| `contents.insertText(text)` | 포커스된 요소에 텍스트 삽입 |
+
+```js filename="inject.js"
+// executeJavaScript 는 평가된 값의 Promise 를 반환해요
+const title = await contents.executeJavaScript('document.title')
+
+// insertCSS 는 나중에 제거할 수 있도록 key 를 반환해요
+const key = await contents.insertCSS('body { background: #111 }')
+await contents.removeInsertedCSS(key)
+```
+
+<Callout type="warning">
+신뢰할 수 없는 문자열을 `executeJavaScript` 에 넘기지 마세요 — 페이지 권한으로 임의 코드를 실행하게 돼요. 코드는 직접 작성하고, 끼워 넣는 데이터는 반드시 `JSON.stringify` 하세요.
+</Callout>
+
+### 편집 & 선택
+
+| 메서드 | 하는 일 |
+|---|---|
+| `contents.undo()` / `contents.redo()` | 실행 취소 / 다시 실행 |
+| `contents.cut()` / `contents.copy()` / `contents.paste()` | 잘라내기 / 복사 / 붙여넣기 |
+| `contents.pasteAndMatchStyle()` | 서식 없이 붙여넣기 |
+| `contents.delete()` | 선택 삭제 |
+| `contents.selectAll()` / `contents.unselect()` | 전체 선택 / 선택 해제 |
+| `contents.replace(text)` | 선택을 교체 |
+| `contents.replaceMisspelling(text)` | 맞춤법 틀린 단어 교체 |
+| `contents.copyImageAt(x, y)` | 좌표의 이미지를 클립보드에 복사 |
+| `contents.centerSelection()` | 선택을 가운데로 스크롤 |
+| `contents.adjustSelection(options)` | 선택의 시작/끝 지점 이동 |
+| `contents.scrollToTop()` / `contents.scrollToBottom()` | 맨 위 / 맨 아래로 스크롤 |
+
+### 페이지 내 검색
+
+| 메서드 | 하는 일 |
+|---|---|
+| `contents.findInPage(text[, options])` | 페이지 검색; 요청 id 반환 (결과는 `found-in-page` 로) |
+| `contents.stopFindInPage(action)` | 검색 중지 (`'clearSelection'`, `'keepSelection'`, `'activateSelection'`) |
+
+### 확대/축소
+
+| 메서드 | 하는 일 |
+|---|---|
+| `contents.setZoomFactor(factor)` / `contents.getZoomFactor()` | 배율로 확대 (`1.0` = 100%) |
+| `contents.setZoomLevel(level)` / `contents.getZoomLevel()` | 레벨로 확대 (`0` = 기본) |
+| `contents.setVisualZoomLevelLimits(min, max)` | 핀치 줌 한계 설정 |
+
+### 오디오
+
+| 메서드 | 하는 일 |
+|---|---|
+| `contents.setAudioMuted(muted)` / `contents.isAudioMuted()` | 음소거 / 음소거 상태 읽기 |
+| `contents.isCurrentlyAudible()` | 지금 오디오가 재생 중인가? |
+
+### IPC (렌더러와 대화)
+
+| 메서드 | 하는 일 |
+|---|---|
+| `contents.send(channel, ...args)` | 렌더러에 비동기 메시지 전송 |
+| `contents.sendToFrame(frameId, channel, ...args)` | 특정 프레임에 전송 |
+| `contents.postMessage(channel, message, [transfer])` | 메시지 전송 + `MessagePort` 전달 |
+
+```js filename="send.js"
+// Main → 렌더러; 프리로드에서 ipcRenderer.on('update', ...) 로 받아요
+contents.send('update', { progress: 0.5 })
+```
+
+### 창 열기 & 유저 에이전트
+
+| 메서드 | 하는 일 |
+|---|---|
+| `contents.setWindowOpenHandler(handler)` | `window.open()` 동작 결정 (허용/거부 + 옵션 재정의) |
+| `contents.setUserAgent(userAgent)` / `contents.getUserAgent()` | 유저 에이전트 재정의 / 읽기 |
+| `contents.setIgnoreMenuShortcuts(ignore)` | 포커스 중 앱 메뉴 단축키 무시 |
+
+```js filename="window-open.js"
+// 외부 링크는 OS 브라우저로, 앱 내 팝업은 거부 (보안)
+contents.setWindowOpenHandler(({ url }) => {
+  require('electron').shell.openExternal(url)
+  return { action: 'deny' }
+})
+```
+
+### 인쇄 & 캡처
+
+| 메서드 | 하는 일 |
+|---|---|
+| `contents.print([options], [callback])` | 페이지 인쇄 |
+| `contents.printToPDF(options)` | 페이지를 PDF 로 렌더 (`Promise<Buffer>`) |
+| `contents.getPrintersAsync()` | 시스템 프린터 목록 (`Promise`) |
+| `contents.capturePage([rect, opts])` | 페이지 스크린샷 (`Promise<NativeImage>`) |
+| `contents.isBeingCaptured()` | 캡처가 진행 중인가? |
+| `contents.savePage(fullPath, saveType)` | 페이지를 디스크에 저장 (`Promise`) |
+
+```js filename="pdf.js"
+// 현재 페이지를 PDF 버퍼로 렌더해 디스크에 저장
+const fs = require('node:fs/promises')
+const pdf = await contents.printToPDF({ landscape: false })
+await fs.writeFile('out.pdf', pdf)
+```
+
+### DevTools
+
+| 메서드 | 하는 일 |
+|---|---|
+| `contents.openDevTools([options])` / `contents.closeDevTools()` | DevTools 열기 / 닫기 |
+| `contents.toggleDevTools()` | DevTools 토글 |
+| `contents.isDevToolsOpened()` / `contents.isDevToolsFocused()` | DevTools 열림/포커스 상태 읽기 |
+| `contents.setDevToolsWebContents(devToolsWebContents)` | DevTools 를 커스텀 `WebContents` 에 렌더 |
+| `contents.getDevToolsTitle()` / `contents.setDevToolsTitle(title)` | DevTools 창 제목 읽기 / 설정 |
+| `contents.inspectElement(x, y)` | 좌표의 요소를 검사 |
+| `contents.inspectSharedWorker()` / `contents.inspectSharedWorkerById(workerId)` | 공유 워커 검사 |
+| `contents.getAllSharedWorkers()` | 모든 공유 워커 정보 |
+| `contents.inspectServiceWorker()` | 서비스 워커 검사 |
+| `contents.addWorkSpace(path)` / `contents.removeWorkSpace(path)` | DevTools 워크스페이스 폴더 추가 / 제거 |
+
+### 입력 에뮬레이션 & 오프스크린 렌더링
+
+| 메서드 | 하는 일 |
+|---|---|
+| `contents.sendInputEvent(inputEvent)` | 키보드/마우스/터치 이벤트 합성 |
+| `contents.enableDeviceEmulation(parameters)` / `contents.disableDeviceEmulation()` | 기기 에뮬레이션 (크기·배율 등) |
+| `contents.beginFrameSubscription([onlyDirty,] callback)` / `contents.endFrameSubscription()` | 원시 프레임 구독 / 해제 |
+| `contents.startPainting()` / `contents.stopPainting()` / `contents.isPainting()` | 오프스크린 페인팅 제어 |
+| `contents.setFrameRate(fps)` / `contents.getFrameRate()` | 오프스크린 프레임 속도 설정 / 읽기 |
+| `contents.invalidate()` | 전체 다시 그리기 강제 |
+| `contents.startDrag(item)` | 네이티브 드래그 앤 드롭 시작 |
+
+### 프로세스 · WebRTC · 진단
+
+| 메서드 | 하는 일 |
+|---|---|
+| `contents.getOSProcessId()` | 렌더러의 OS 프로세스 id |
+| `contents.getProcessId()` | Chromium 내부 프로세스 id |
+| `contents.getMediaSourceId()` | 이 페이지의 미디어 소스 id |
+| `contents.takeHeapSnapshot(filePath)` | V8 힙 스냅샷을 파일에 기록 (`Promise`) |
+| `contents.getBackgroundThrottling()` / `contents.setBackgroundThrottling(allowed)` | 비활성 시 CPU/네트워크 throttling 읽기 / 설정 |
+| `contents.setImageAnimationPolicy(policy)` | `'animate'` / `'animateOnce'` / `'noAnimation'` |
+| `contents.getWebRTCIPHandlingPolicy()` / `contents.setWebRTCIPHandlingPolicy(policy)` | WebRTC 가 IP 를 노출하는 방식 읽기 / 설정 |
+| `contents.getWebRTCUDPPortRange()` / `contents.setWebRTCUDPPortRange(min, max)` | WebRTC UDP 포트 범위 읽기 / 제한 |
+| `contents.showDefinitionForSelection()` _(macOS)_ | 선택에 대한 사전 팝업 표시 |
+
+---
+
+## 인스턴스 속성(Instance Properties)
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `contents.id` | `Integer` (읽기전용) | 이 페이지의 고유 숫자 id |
+| `contents.audioMuted` | `boolean` | 음소거 여부 읽기/쓰기 |
+| `contents.userAgent` | `string` | 요청용 유저 에이전트 읽기/쓰기 |
+| `contents.zoomLevel` | `number` | 확대 레벨 읽기/쓰기 (`0` = 기본) |
+| `contents.zoomFactor` | `number` | 확대 배율 읽기/쓰기 (`1.0` = 100%) |
+| `contents.frameRate` | `Integer` | 오프스크린 프레임 속도 읽기/쓰기 |
+| `contents.backgroundThrottling` | `boolean` | 탭 비활성 시 throttling 읽기/쓰기 |
+| `contents.session` | `Session` (읽기전용) | 이 페이지가 쓰는 `Session` |
+| `contents.mainFrame` | `WebFrameMain` (읽기전용) | 최상위 프레임 |
+| `contents.focusedFrame` | `WebFrameMain \| null` (읽기전용) | 현재 포커스된 프레임 |
+| `contents.opener` | `WebFrameMain \| null` (읽기전용) | 이 페이지를 연 프레임 |
+| `contents.hostWebContents` | `WebContents \| null` (읽기전용) | 게스트/webview 일 때 호스트 페이지 |
+| `contents.devToolsWebContents` | `WebContents \| null` (읽기전용) | 부착되어 있으면 DevTools 페이지 |
+| `contents.debugger` | `Debugger` (읽기전용) | Chrome DevTools 프로토콜 접근 |
+| `contents.navigationHistory` | `NavigationHistory` (읽기전용) | 뒤로/앞으로 히스토리 (사용 중단된 `goBack`/`goForward` 대체) |
+| `contents.ipc` | `IpcMain` (읽기전용) | **이 페이지** 에 한정된 `ipcMain` 같은 인터페이스 |
+
+```js filename="ipc-scoped.js"
+// contents.ipc 는 이 페이지의 메시지만 처리해요 — 전역 ipcMain 보다 깔끔해요
+contents.ipc.handle('get-config', () => loadConfig())
+```
+
+---
+
+## 쉽게 풀어 설명
+
+창에는 두 겹이 있는데, 입문자가 늘 헷갈려 해요:
+
+1. **`BrowserWindow`** 은 _액자_ 예요 — 제목 표시줄, 최소화 버튼, 데스크톱 위 위치를 가진 OS 수준의 상자.
+2. **`webContents`** 는 _페이지_ 예요 — 그 액자 안에 살아 있는 웹 문서로, URL·스크립트·스크롤 위치·콘솔을 가져요.
+
+실제로 _하고 싶은 일_ 의 거의 전부 — "이 URL 로드", "이 스크립트 실행", "페이지 스크린샷", "로딩 끝났을 때 듣기", "페이지에 메시지 보내기" — 는 창이 아니라 `webContents` 에서 일어나요.
+
+세 가지 패턴이면 실무의 대부분이 끝나요:
+
+1. **기다린 뒤 행동.** `did-finish-load` 를 듣고 나서 `executeJavaScript` 하거나 `send` 로 데이터를 넣어요. (`dom-ready` 는 너무 일찍 발생하는 함정이에요.)
+2. **단단히 잠그기.** `setWindowOpenHandler`(팝업 거부)와 `will-navigate`(신뢰 못 할 이동 차단)가 두 개의 안전벨트예요.
+3. **페이지와 대화.** 나갈 땐 `contents.send(...)`, 들어올 땐 `contents.ipc.handle(...)` 와 `ipc-message` 이벤트예요.
+
+기억하세요: `new WebContents()` 는 거의 쓰지 않아요. `win.webContents`, `webContents.fromId(id)`, 또는 `web-contents-created` 이벤트로 인스턴스를 받고 — 그 다음엔 그저 그 페이지 한 개의 리모컨일 뿐이에요.
+
+<Cards>
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+  <Cards.Card title="프로세스 모델" href="/ko/docs/processes" arrow />
+  <Cards.Card title="보안" href="/ko/docs/best-practices/security" arrow />
+</Cards>

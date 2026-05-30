@@ -1,0 +1,147 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="shell"
+  subtitle="파일·폴더·링크를 운영체제에 넘겨서 열고, 보여 주고, 휴지통에 버리고, 비프음을 내요 — 플랫폼별 코드 없이요."
+  badge="API · shell"
+/>
+
+`shell` 모듈은 앱이 **사용자의 데스크톱 환경** 으로 손을 뻗을 수 있게 해 줘요. 파일을 기본 앱으로 열거나, Finder/탐색기에서 파일 위치를 보여 주거나, 링크를 기본 브라우저로 띄우거나, 무언가를 휴지통으로 옮기거나, 시스템 비프음을 낼 수 있어요. **Main** 과 **Renderer** 프로세스 모두에서 동작해요.
+
+```js filename="main.js"
+const { shell } = require('electron')
+
+// URL 을 사용자의 기본 브라우저로 열어요 (앱 안에서 여는 게 아니에요!)
+shell.openExternal('https://electronjs.org')
+```
+
+## 이벤트(Events)
+
+`shell` 모듈은 함수들이 모인 평범한 객체예요 — 어떤 이벤트도 **발생시키지 않고**, `new` 로 만들지도 않아요. 구독할 게 없어요. 필요할 때 메서드를 그냥 호출하면 돼요.
+
+<EasyNote>
+`shell` 은 "무슨 일이 일어났어요!" 하고 외치는 살아 있는 존재라기보다는 **컨시어지 데스크** 에 가까워요. 먼저 연락 오는 일은 없어요 — 여러분이 다가가 파일이나 링크를 건네면서 나머지를 부탁하는 거예요.
+</EasyNote>
+
+---
+
+## 메서드(Methods)
+
+아래 모든 메서드는 모듈에서 직접 호출해요. 예: `shell.openExternal(url)`. _(Windows)_ / _(macOS)_ 표시는 해당 플랫폼에서만 동작해요.
+
+### 파일 & 폴더 열기
+
+| 메서드 | 하는 일 |
+|---|---|
+| `shell.showItemInFolder(fullPath)` | OS 파일 관리자에서 파일을 보여 주고 선택하려 시도 |
+| `shell.openPath(path)` | 파일/폴더를 시스템 기본 앱으로 열기 — `Promise<string>` 반환 (성공 시 빈 문자열, 실패 시 에러 메시지) |
+| `shell.openExternal(url[, options])` | URL/외부 프로토콜(`https:`, `mailto:` ...)을 기본 핸들러로 열기 — `Promise<void>` 반환 |
+
+```js filename="open-files.js"
+// 다운로드한 파일을 Finder / 탐색기에서 보여 줘요
+shell.showItemInFolder('/Users/me/Downloads/report.pdf')
+
+// 사용자가 기본 뷰어로 지정한 앱으로 PDF 를 열어요
+const errorMessage = await shell.openPath('/Users/me/Downloads/report.pdf')
+if (errorMessage) {
+  // openPath 는 실패하면 비어 있지 않은 문자열로 resolve 돼요
+  reportProblem(errorMessage)
+}
+```
+
+`shell.openExternal` 은 선택적 `options` 객체를 받아요:
+
+| 옵션 | 플랫폼 | 하는 일 |
+|---|---|---|
+| `activate` | macOS | 열린 앱을 앞으로 가져오기 (기본값 `true`) |
+| `workingDirectory` | Windows | 실행되는 프로세스의 작업 디렉터리 |
+| `logUsage` | Windows | 이 실행을 사용자가 시작한 동작으로 기록 (기본값 `false`) |
+
+```js filename="open-external.js"
+// 사용자의 기본 브라우저로 열기 — 링크를 따라가는 안전한 방법
+await shell.openExternal('https://electronjs.org/docs')
+
+// 기본 메일 클라이언트로 이메일 작성 시작
+await shell.openExternal('mailto:hello@example.com?subject=Hi')
+```
+
+<Callout type="warning">
+**신뢰할 수 없는 입력값** 을 `shell.openExternal` 에 그대로 넘기지 마세요. 악성 문자열이 예상치 못한 프로토콜이나 프로그램을 실행시킬 수 있어요. 열기 전에 URL 스킴을 검증하고 허용 목록(allow-list)으로 제한하세요 (예: `https:` 와 `mailto:` 만 허용).
+</Callout>
+
+### 휴지통 & 시스템 피드백
+
+| 메서드 | 하는 일 |
+|---|---|
+| `shell.trashItem(path)` | 파일/폴더를 OS 휴지통/재활용 휴지통으로 이동 — `Promise<void>` 반환 |
+| `shell.beep()` | 시스템 기본 비프음 재생 |
+
+```js filename="trash-and-beep.js"
+// 영구 삭제 대신 휴지통으로 옮겨요 —
+// 사용자가 Trash / Recycle Bin 에서 다시 복구할 수 있어요
+await shell.trashItem('/Users/me/Documents/old-draft.txt')
+
+// 무언가 주의가 필요할 때 짧은 소리로 알려요
+shell.beep()
+```
+
+<EasyNote>
+`trashItem` 은 "삭제" 의 다정한 버전이에요. 파일을 영원히 없애는 대신, 사용자가 이미 잘 아는 그 휴지통/재활용 휴지통으로 떨어뜨려요 — 실수로 지워도 드래그 한 번이면 되돌릴 수 있죠.
+</EasyNote>
+
+### 바로가기 링크 _(Windows)_
+
+이 두 메서드는 Windows `.lnk` 바로가기 파일을 읽고 써요. **동기(synchronous)** 이고 Windows 전용이에요.
+
+| 메서드 | 하는 일 |
+|---|---|
+| `shell.writeShortcutLink(shortcutPath[, operation], options)` | `.lnk` 바로가기 생성/수정 — `operation` 은 `'create'`(기본), `'update'`, `'replace'`; `boolean` 반환 |
+| `shell.readShortcutLink(shortcutPath)` | `.lnk` 바로가기 읽고 해석 — `ShortcutDetails` 객체 반환 (실패 시 예외 발생) |
+
+```js filename="shortcut.js"
+// Windows 전용: 우리 앱을 가리키는 시작 메뉴 바로가기 생성
+const ok = shell.writeShortcutLink('C:\\Users\\me\\Desktop\\MyApp.lnk', 'create', {
+  target: 'C:\\Program Files\\MyApp\\MyApp.exe',
+  description: 'Launch MyApp'
+})
+
+// 나중에 다시 읽어 오기
+const details = shell.readShortcutLink('C:\\Users\\me\\Desktop\\MyApp.lnk')
+// details.target, details.args, details.icon, ...
+```
+
+<Callout type="warning">
+`writeShortcutLink` 와 `readShortcutLink` 는 **Windows 에서만** 존재해요. `process.platform === 'win32'` 로 감싸지 않으면 macOS·Linux 에서 예외가 나요.
+</Callout>
+
+---
+
+## 속성(Properties)
+
+`shell` 모듈은 어떤 속성도 노출하지 않아요 — 순수하게 메서드의 모음이에요. (제공하는 모든 것은 위 표에 있어요.)
+
+---
+
+## 쉽게 풀어 설명
+
+`shell` 모듈은 앱이 **데스크톱의 나머지 세계로 나가는 문** 이에요. 앱이 사용자의 브라우저·파일 관리자·메일 클라이언트·휴지통을 직접 다시 만들 수도 없고 그래서도 안 되죠 — 그래서 그런 게 필요하면 그 일을 OS 에게 정중히 넘기는 거예요.
+
+호텔 **컨시어지** 를 떠올려 보세요:
+
+- "이 문서 좀 열어 주세요." → `openPath` (컨시어지가 알맞은 앱을 골라 줘요).
+- "그 파일이 어디 있는지 보여 주세요." → `showItemInFolder` (알맞은 서랍까지 안내해 줘요).
+- "이 웹사이트로 데려다 주세요." → `openExternal` (기본 브라우저로 택시를 불러 줘요).
+- "이거 버려 주세요 — 단, 되살릴 수 있게요." → `trashItem` (소각장이 아니라 휴지통으로).
+- "벨 좀 울려 주세요." → `beep`.
+
+컨시어지는 `new` 로 만들지 않고, 기다릴 이벤트도 없고, 읽을 속성도 없어요. 메서드를 호출하면 나머지는 데스크톱이 해 줘요. 기억할 단 하나의 규칙: **직접 만들지 않은 URL·경로는 모두 의심하고**, `openExternal` 하기 전에 허용 목록으로 걸러 주세요.
+
+<Cards>
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+  <Cards.Card title="보안" href="/ko/docs/best-practices/security" arrow />
+  <Cards.Card title="Main 프로세스" href="/ko/docs/processes/main" arrow />
+</Cards>

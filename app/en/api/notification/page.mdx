@@ -1,0 +1,246 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="Notification"
+  subtitle="Show native desktop notifications — the little banners that slide in from the corner of the screen."
+  badge="API · Notification"
+/>
+
+The `Notification` class lives in the **Main process**. Each notification is an object you create with `new`, configure with a title and body, and then `show()` to pop it up using the operating system's own notification system.
+
+```js filename="main.js"
+const { Notification } = require('electron')
+
+const notification = new Notification({
+  title: 'Download complete',
+  body: 'report.pdf is ready in your Downloads folder.',
+})
+
+notification.show()
+```
+
+<Callout type="info">
+On the renderer side you'd use the web `Notification` API instead. This page is about the **Main process** `Notification` class, which gives you native options like reply fields, action buttons, and sounds.
+</Callout>
+
+## Is it even supported?
+
+Before showing anything, check that the current system can display notifications.
+
+```js filename="support.js"
+const { Notification } = require('electron')
+
+if (Notification.isSupported()) {
+  new Notification({ title: 'Hello', body: 'Notifications work here.' }).show()
+}
+```
+
+<EasyNote>
+A `Notification` is like a **sticky note a courier hands to the OS**. You write the note (title + body), then `show()` hands it off — the operating system decides exactly how and where it appears on screen.
+</EasyNote>
+
+---
+
+## Static Methods
+
+Call these on the class itself, not on an instance.
+
+| Method | Platform | What it does |
+|---|---|---|
+| `Notification.isSupported()` | all | Returns `true` if desktop notifications are supported on this system |
+| `Notification.handleActivation(callback)` _(Windows)_ | Windows | Register one central handler for **all** notification activations (click, reply, action) |
+| `Notification.getHistory()` _(macOS)_ | macOS | `Promise<Notification[]>` of delivered notifications still in Notification Center (the returned objects are live and re-fire interaction events) |
+| `Notification.remove(id)` _(macOS)_ | macOS | Remove delivered notification(s) by `id` (a `string` or `string[]`) |
+| `Notification.removeAll()` _(macOS)_ | macOS | Remove **all** delivered notifications from Notification Center |
+| `Notification.removeGroup(groupId)` _(macOS)_ | macOS | Remove every delivered notification sharing a `groupId` |
+
+```js filename="cleanup.js"
+// macOS: clear everything this app put in Notification Center
+if (process.platform === 'darwin') {
+  Notification.removeAll()
+}
+```
+
+---
+
+## Constructor
+
+```js filename="construct.js"
+const notification = new Notification([options])
+```
+
+The `options` object configures the notification. Every field is optional, and many are platform-specific — set one that isn't supported on the current OS and it's simply ignored.
+
+| Option | Type | Platform | What it is |
+|---|---|---|---|
+| `title` | `string` | all | The bold text at the top of the notification |
+| `body` | `string` | all | The main message text below the title |
+| `subtitle` | `string` | macOS | A line shown between the title and body |
+| `silent` | `boolean` | all | Suppress the OS notification sound |
+| `icon` | `string \| NativeImage` | all | An icon path or `NativeImage` to show |
+| `id` | `string` | macOS/Windows | Unique identifier (defaults to a random UUID) |
+| `groupId` | `string` | macOS/Windows | Visually groups related notifications together |
+| `groupTitle` | `string` | Windows | Header title shown for a notification group |
+| `hasReply` | `boolean` | macOS/Windows | Add an inline text reply field |
+| `replyPlaceholder` | `string` | macOS/Windows | Placeholder text inside the reply field |
+| `sound` | `string` | macOS | Name of a sound file to play when shown |
+| `urgency` | `string` | Linux/Windows | `'normal'`, `'critical'`, or `'low'` |
+| `timeoutType` | `string` | Linux/Windows | `'default'` or `'never'` (whether it auto-dismisses) |
+| `actions` | `NotificationAction[]` | macOS/Windows | Action buttons / selection items |
+| `closeButtonText` | `string` | macOS | Custom label for the close button |
+| `toastXml` | `string` | Windows | Raw XML for full control over the toast design |
+
+```js filename="rich.js"
+// A notification with an inline reply field (macOS / Windows)
+const notification = new Notification({
+  title: 'New message from Alex',
+  body: 'Are we still on for lunch?',
+  hasReply: true,
+  replyPlaceholder: 'Type your reply…',
+})
+
+notification.show()
+```
+
+<Callout type="warning">
+Creating a `Notification` does **not** display it. You must call `notification.show()` explicitly — and you can call `show()` again later to re-display the same object.
+</Callout>
+
+---
+
+## Instance Events
+
+Listen with `notification.on('event-name', handler)`.
+
+| Event | Platform | Fires when |
+|---|---|---|
+| `show` | all | The notification was shown to the user |
+| `click` | all | The user clicked the notification body |
+| `close` | all | The notification closed (gives `reason: 'userCanceled' \| 'applicationHidden' \| 'timedOut'` on Windows) |
+| `reply` _(macOS/Windows)_ | macOS/Windows | The user submitted an inline reply (gives the `reply` string) |
+| `action` _(macOS/Windows)_ | macOS/Windows | The user pressed an action button (gives `actionIndex`, plus `selectionIndex` on Windows) |
+| `failed` _(macOS/Windows)_ | macOS/Windows | The notification failed to be created or shown (gives an `error` string) |
+
+```js filename="events.js"
+const notification = new Notification({
+  title: 'Reply to comment',
+  body: 'Jamie commented on your photo.',
+  hasReply: true,
+})
+
+notification.on('click', () => {
+  // bring the relevant window to the front
+  openCommentThread()
+})
+
+notification.on('reply', (event, reply) => {
+  // the user typed a reply right inside the notification
+  postComment(reply)
+})
+
+notification.on('close', () => {
+  // user dismissed it without acting
+})
+
+notification.show()
+```
+
+```js filename="actions.js"
+// Action buttons (macOS / Windows)
+const notification = new Notification({
+  title: 'Calendar reminder',
+  body: 'Stand-up in 5 minutes.',
+  actions: [
+    { type: 'button', text: 'Join' },
+    { type: 'button', text: 'Snooze' },
+  ],
+})
+
+notification.on('action', (event, index) => {
+  if (index === 0) joinCall()
+  else snooze()
+})
+
+notification.show()
+```
+
+<EasyNote>
+Think of the events as the **reply card that comes back** from the courier. `show` means "delivered", `click` means "they tapped it", `reply` means "they wrote something back", and `close` means "they threw the note away".
+</EasyNote>
+
+---
+
+## Instance Methods
+
+| Method | What it does |
+|---|---|
+| `notification.show()` | Immediately display the notification (call again to re-display) |
+| `notification.close()` | Dismiss the notification and remove it from the Action Center |
+
+```js filename="show-close.js"
+const notification = new Notification({ title: 'Saving…', body: 'Please wait.' })
+notification.show()
+
+// later, once the work is done
+notification.close()
+```
+
+---
+
+## Instance Properties
+
+Most properties are readable and writable — change them before the next `show()`. A few set at construction (`id`, `groupId`, `groupTitle`) are read-only.
+
+| Property | Type | Platform | What it is |
+|---|---|---|---|
+| `notification.title` | `string` | all | The notification's title |
+| `notification.subtitle` | `string` | all | The subtitle line |
+| `notification.body` | `string` | all | The body text |
+| `notification.silent` | `boolean` | all | Whether the OS sound is suppressed |
+| `notification.hasReply` | `boolean` | all | Whether an inline reply field is shown |
+| `notification.replyPlaceholder` | `string` | all | Placeholder text in the reply field |
+| `notification.sound` | `string` | all | The sound file to play |
+| `notification.closeButtonText` | `string` | all | Custom close-button label |
+| `notification.actions` | `NotificationAction[]` | all | The action buttons / selections |
+| `notification.id` | `string` (readonly) | macOS/Windows | The unique identifier set at construction |
+| `notification.groupId` | `string` (readonly) | macOS/Windows | The group this notification belongs to |
+| `notification.groupTitle` | `string` (readonly) | Windows | The group's header title |
+| `notification.urgency` | `string` | Linux | `'normal'` / `'critical'` / `'low'` (default `'low'`) |
+| `notification.timeoutType` | `string` | Linux/Windows | `'default'` or `'never'` |
+| `notification.toastXml` | `string` | Windows | The raw toast XML |
+
+```js filename="update.js"
+const notification = new Notification({ title: 'Uploading…' })
+notification.show()
+
+// reuse the same object: change the text and show again
+notification.title = 'Upload complete'
+notification.body = 'All files were synced.'
+notification.show()
+```
+
+---
+
+## In plain words
+
+A `Notification` is the **little banner that slides in from the edge of your screen** — "Download finished", "New message", "Meeting in 5 minutes". Electron lets your desktop app post those using the operating system's own notification system, so they look and behave exactly like notifications from any other native app.
+
+The whole flow is three steps:
+
+1. **Check.** `Notification.isSupported()` — can this machine show notifications at all?
+2. **Build.** `new Notification({ title, body, … })` — write what the note says. Add a reply field (`hasReply`) or buttons (`actions`) for the fancy ones.
+3. **Show & listen.** `notification.show()` puts it on screen; then you react to `click`, `reply`, or `action` to actually do something when the user engages.
+
+A lot of the options are platform-specific because each OS has its own notification style — macOS has subtitles and Notification Center history, Windows has groups and custom toast XML, Linux has urgency levels. Set what makes sense; anything unsupported is quietly ignored, so the same code runs everywhere.
+
+Remember two names and you've got it: **`new Notification({ title, body })`** to make one, and **`.show()`** to fire it. Everything else is polish.
+
+<Cards>
+  <Cards.Card title="app" href="/en/api/app" arrow />
+  <Cards.Card title="Main process" href="/en/docs/processes/main" arrow />
+  <Cards.Card title="Notifications guide" href="/en/docs/tutorial/notifications" arrow />
+</Cards>

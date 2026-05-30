@@ -1,0 +1,246 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="Notification"
+  subtitle="네이티브 데스크톱 알림을 띄워요 — 화면 구석에서 스르륵 나타나는 그 작은 배너예요."
+  badge="API · Notification"
+/>
+
+`Notification` 클래스는 **Main 프로세스** 에 살아요. 알림 하나하나가 `new` 로 만드는 객체이고, 제목과 본문을 설정한 뒤 `show()` 를 호출하면 운영체제 자체의 알림 시스템을 통해 화면에 떠요.
+
+```js filename="main.js"
+const { Notification } = require('electron')
+
+const notification = new Notification({
+  title: '다운로드 완료',
+  body: 'report.pdf 가 다운로드 폴더에 준비됐어요.',
+})
+
+notification.show()
+```
+
+<Callout type="info">
+렌더러 쪽에서는 웹 표준 `Notification` API 를 대신 써요. 이 페이지는 **Main 프로세스** 의 `Notification` 클래스에 관한 거예요. 답장 입력칸, 액션 버튼, 사운드 같은 네이티브 옵션을 쓸 수 있어요.
+</Callout>
+
+## 지원되는지부터 확인
+
+뭔가를 띄우기 전에, 현재 시스템이 알림을 표시할 수 있는지 먼저 확인하세요.
+
+```js filename="support.js"
+const { Notification } = require('electron')
+
+if (Notification.isSupported()) {
+  new Notification({ title: '안녕하세요', body: '여기선 알림이 동작해요.' }).show()
+}
+```
+
+<EasyNote>
+`Notification` 은 **택배 기사에게 건네는 포스트잇** 같은 거예요. 메모(제목 + 본문)를 적은 뒤 `show()` 로 넘기면 — 화면 어디에 어떻게 보일지는 운영체제가 결정해요.
+</EasyNote>
+
+---
+
+## 정적 메서드(Static Methods)
+
+인스턴스가 아니라 클래스 자체에서 호출해요.
+
+| 메서드 | 플랫폼 | 하는 일 |
+|---|---|---|
+| `Notification.isSupported()` | 전체 | 이 시스템이 데스크톱 알림을 지원하면 `true` |
+| `Notification.handleActivation(callback)` _(Windows)_ | Windows | **모든** 알림 활성화(클릭·답장·액션)를 한 곳에서 처리하는 중앙 핸들러 등록 |
+| `Notification.getHistory()` _(macOS)_ | macOS | 알림 센터에 남아 있는 전달된 알림들의 `Promise<Notification[]>` (반환된 객체는 살아 있어 상호작용 이벤트를 다시 발생시켜요) |
+| `Notification.remove(id)` _(macOS)_ | macOS | `id`(`string` 또는 `string[]`)로 전달된 알림 제거 |
+| `Notification.removeAll()` _(macOS)_ | macOS | 알림 센터의 **모든** 전달된 알림 제거 |
+| `Notification.removeGroup(groupId)` _(macOS)_ | macOS | 같은 `groupId` 를 가진 전달된 알림 전부 제거 |
+
+```js filename="cleanup.js"
+// macOS: 이 앱이 알림 센터에 넣은 것을 전부 비워요
+if (process.platform === 'darwin') {
+  Notification.removeAll()
+}
+```
+
+---
+
+## 생성자(Constructor)
+
+```js filename="construct.js"
+const notification = new Notification([options])
+```
+
+`options` 객체로 알림을 설정해요. 모든 필드는 선택이고, 다수가 플랫폼별이에요 — 현재 OS 가 지원하지 않는 필드를 설정하면 그냥 무시돼요.
+
+| 옵션 | 타입 | 플랫폼 | 무엇인가 |
+|---|---|---|---|
+| `title` | `string` | 전체 | 알림 맨 위의 굵은 글씨 |
+| `body` | `string` | 전체 | 제목 아래의 본문 텍스트 |
+| `subtitle` | `string` | macOS | 제목과 본문 사이에 표시되는 줄 |
+| `silent` | `boolean` | 전체 | OS 알림 사운드를 끔 |
+| `icon` | `string \| NativeImage` | 전체 | 표시할 아이콘 경로 또는 `NativeImage` |
+| `id` | `string` | macOS/Windows | 고유 식별자 (기본값은 무작위 UUID) |
+| `groupId` | `string` | macOS/Windows | 관련 알림들을 시각적으로 묶음 |
+| `groupTitle` | `string` | Windows | 알림 그룹에 표시되는 머리 제목 |
+| `hasReply` | `boolean` | macOS/Windows | 인라인 텍스트 답장 칸 추가 |
+| `replyPlaceholder` | `string` | macOS/Windows | 답장 칸 안의 플레이스홀더 텍스트 |
+| `sound` | `string` | macOS | 표시될 때 재생할 사운드 파일 이름 |
+| `urgency` | `string` | Linux/Windows | `'normal'`, `'critical'`, `'low'` |
+| `timeoutType` | `string` | Linux/Windows | `'default'` 또는 `'never'` (자동으로 사라질지) |
+| `actions` | `NotificationAction[]` | macOS/Windows | 액션 버튼 / 선택 항목 |
+| `closeButtonText` | `string` | macOS | 닫기 버튼의 커스텀 라벨 |
+| `toastXml` | `string` | Windows | 토스트 디자인을 완전히 제어하는 원시 XML |
+
+```js filename="rich.js"
+// 인라인 답장 칸이 있는 알림 (macOS / Windows)
+const notification = new Notification({
+  title: 'Alex 의 새 메시지',
+  body: '점심 약속 그대로지?',
+  hasReply: true,
+  replyPlaceholder: '답장을 입력하세요…',
+})
+
+notification.show()
+```
+
+<Callout type="warning">
+`Notification` 을 만든다고 **표시되지는 않아요**. 반드시 `notification.show()` 를 직접 호출해야 해요 — 나중에 같은 객체로 `show()` 를 다시 불러 재표시할 수도 있어요.
+</Callout>
+
+---
+
+## 인스턴스 이벤트(Instance Events)
+
+`notification.on('이벤트명', 핸들러)` 로 들어요.
+
+| 이벤트 | 플랫폼 | 발생 시점 |
+|---|---|---|
+| `show` | 전체 | 알림이 사용자에게 표시됨 |
+| `click` | 전체 | 사용자가 알림 본문을 클릭함 |
+| `close` | 전체 | 알림이 닫힘 (Windows 는 `reason: 'userCanceled' \| 'applicationHidden' \| 'timedOut'` 전달) |
+| `reply` _(macOS/Windows)_ | macOS/Windows | 사용자가 인라인 답장을 제출함 (`reply` 문자열 전달) |
+| `action` _(macOS/Windows)_ | macOS/Windows | 사용자가 액션 버튼을 누름 (`actionIndex`, Windows 는 `selectionIndex` 추가 전달) |
+| `failed` _(macOS/Windows)_ | macOS/Windows | 알림 생성·표시 실패 (`error` 문자열 전달) |
+
+```js filename="events.js"
+const notification = new Notification({
+  title: '댓글에 답하기',
+  body: 'Jamie 가 회원님 사진에 댓글을 남겼어요.',
+  hasReply: true,
+})
+
+notification.on('click', () => {
+  // 관련 창을 앞으로 가져와요
+  openCommentThread()
+})
+
+notification.on('reply', (event, reply) => {
+  // 사용자가 알림 안에서 바로 답장을 입력했어요
+  postComment(reply)
+})
+
+notification.on('close', () => {
+  // 사용자가 아무 동작 없이 닫았어요
+})
+
+notification.show()
+```
+
+```js filename="actions.js"
+// 액션 버튼 (macOS / Windows)
+const notification = new Notification({
+  title: '캘린더 알림',
+  body: '5분 뒤 스탠드업이 있어요.',
+  actions: [
+    { type: 'button', text: '참여' },
+    { type: 'button', text: '나중에' },
+  ],
+})
+
+notification.on('action', (event, index) => {
+  if (index === 0) joinCall()
+  else snooze()
+})
+
+notification.show()
+```
+
+<EasyNote>
+이벤트들은 택배 기사가 **다시 들고 오는 회신 카드** 라고 생각하세요. `show` 는 "배달 완료", `click` 은 "눌렀음", `reply` 는 "답을 적어 보냈음", `close` 는 "메모를 버렸음" 이에요.
+</EasyNote>
+
+---
+
+## 인스턴스 메서드(Instance Methods)
+
+| 메서드 | 하는 일 |
+|---|---|
+| `notification.show()` | 알림을 즉시 표시 (다시 부르면 재표시) |
+| `notification.close()` | 알림을 닫고 알림 센터에서 제거 |
+
+```js filename="show-close.js"
+const notification = new Notification({ title: '저장 중…', body: '잠시만요.' })
+notification.show()
+
+// 나중에 작업이 끝나면
+notification.close()
+```
+
+---
+
+## 인스턴스 속성(Instance Properties)
+
+대부분의 속성은 읽고 쓸 수 있어요 — 다음 `show()` 전에 바꾸면 돼요. 생성 시 정해지는 일부(`id`, `groupId`, `groupTitle`)는 읽기 전용이에요.
+
+| 속성 | 타입 | 플랫폼 | 무엇인가 |
+|---|---|---|---|
+| `notification.title` | `string` | 전체 | 알림 제목 |
+| `notification.subtitle` | `string` | 전체 | 부제 줄 |
+| `notification.body` | `string` | 전체 | 본문 텍스트 |
+| `notification.silent` | `boolean` | 전체 | OS 사운드를 끌지 여부 |
+| `notification.hasReply` | `boolean` | 전체 | 인라인 답장 칸 표시 여부 |
+| `notification.replyPlaceholder` | `string` | 전체 | 답장 칸의 플레이스홀더 텍스트 |
+| `notification.sound` | `string` | 전체 | 재생할 사운드 파일 |
+| `notification.closeButtonText` | `string` | 전체 | 커스텀 닫기 버튼 라벨 |
+| `notification.actions` | `NotificationAction[]` | 전체 | 액션 버튼 / 선택 항목 |
+| `notification.id` | `string` (읽기전용) | macOS/Windows | 생성 시 정해진 고유 식별자 |
+| `notification.groupId` | `string` (읽기전용) | macOS/Windows | 이 알림이 속한 그룹 |
+| `notification.groupTitle` | `string` (읽기전용) | Windows | 그룹의 머리 제목 |
+| `notification.urgency` | `string` | Linux | `'normal'` / `'critical'` / `'low'` (기본값 `'low'`) |
+| `notification.timeoutType` | `string` | Linux/Windows | `'default'` 또는 `'never'` |
+| `notification.toastXml` | `string` | Windows | 원시 토스트 XML |
+
+```js filename="update.js"
+const notification = new Notification({ title: '업로드 중…' })
+notification.show()
+
+// 같은 객체를 재사용: 텍스트를 바꿔 다시 표시
+notification.title = '업로드 완료'
+notification.body = '모든 파일이 동기화됐어요.'
+notification.show()
+```
+
+---
+
+## 쉽게 풀어 설명
+
+`Notification` 은 **화면 가장자리에서 스르륵 나타나는 작은 배너** 예요 — "다운로드 완료", "새 메시지", "5분 뒤 회의". Electron 은 데스크톱 앱이 운영체제 자체의 알림 시스템으로 이런 배너를 띄우게 해줘요. 그래서 다른 네이티브 앱의 알림과 똑같이 보이고 똑같이 동작해요.
+
+전체 흐름은 세 단계예요:
+
+1. **확인.** `Notification.isSupported()` — 이 기기가 알림을 띄울 수 있긴 한가?
+2. **만들기.** `new Notification({ title, body, … })` — 메모에 무슨 내용을 적을지 정해요. 답장 칸(`hasReply`) 이나 버튼(`actions`) 을 더하면 좀 더 화려해져요.
+3. **표시 & 듣기.** `notification.show()` 로 화면에 띄우고, `click`·`reply`·`action` 에 반응해 사용자가 실제로 무언가 했을 때 동작을 처리해요.
+
+옵션이 플랫폼별로 갈리는 이유는 OS 마다 알림 스타일이 다르기 때문이에요 — macOS 는 부제와 알림 센터 기록, Windows 는 그룹과 커스텀 토스트 XML, Linux 는 긴급도 단계를 가져요. 의미 있는 것만 설정하면 돼요. 지원되지 않는 건 조용히 무시되니, 같은 코드가 어디서든 돌아가요.
+
+이름 둘만 기억하면 끝이에요: 만들 땐 **`new Notification({ title, body })`**, 띄울 땐 **`.show()`**. 나머지는 다 양념이에요.
+
+<Cards>
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+  <Cards.Card title="Main 프로세스" href="/ko/docs/processes/main" arrow />
+  <Cards.Card title="알림 가이드" href="/ko/docs/tutorial/notifications" arrow />
+</Cards>

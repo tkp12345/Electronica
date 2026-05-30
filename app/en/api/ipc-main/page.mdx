@@ -1,0 +1,172 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { IpcApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<IpcApiIllustration />}
+  title="ipcMain"
+  subtitle="The main process's switchboard — it listens for messages from your windows and answers their requests."
+  badge="API · ipcMain"
+/>
+
+The `ipcMain` module lives in the **Main process**. It's an `EventEmitter` that receives messages sent from renderer processes (your web pages) over named **channels**, and lets the main process answer back. It is a single shared object — you never create one with `new`.
+
+```js filename="main.js"
+const { ipcMain } = require('electron')
+
+// Listen for a fire-and-forget message from a window
+ipcMain.on('save-file', (event, contents) => {
+  writeToDisk(contents)
+})
+
+// Answer a request and return a value back to the window
+ipcMain.handle('read-settings', async (event) => {
+  return await loadSettings()
+})
+```
+
+<EasyNote>
+`ipcMain` is the **front desk** of the main process. Renderer windows (the guests) ring a bell on a specific channel; `ipcMain` is the receptionist that hears the bell and decides what to do — sometimes just taking a note (`on`), sometimes handing back an answer (`handle`).
+</EasyNote>
+
+---
+
+## The two patterns
+
+There are two ways a window can talk to `ipcMain`, and picking the right one is most of the battle:
+
+| Pattern | Renderer calls | Main responds with | Use when |
+|---|---|---|---|
+| **One-way** | `ipcRenderer.send(channel, ...)` | `ipcMain.on(channel, listener)` | You just want to _notify_ the main process (logging, "save this", "I clicked X") |
+| **Request/response** | `ipcRenderer.invoke(channel, ...)` | `ipcMain.handle(channel, listener)` | You need a _value back_ (read a file, query a DB, ask a dialog result) |
+
+<Callout type="info">
+There are no standalone events or properties on `ipcMain` — its entire surface is the set of methods below. The "events" it deals with are the **channels you name yourself** when wiring up `on`/`handle`.
+</Callout>
+
+---
+
+## Methods
+
+### Listening (one-way messages)
+
+These wire up handlers for messages sent via `ipcRenderer.send`. The listener is called as `listener(event, ...args)`.
+
+| Method | What it does |
+|---|---|
+| `ipcMain.on(channel, listener)` | Listen on `channel`; the listener runs for **every** message |
+| `ipcMain.once(channel, listener)` | Like `on`, but the listener is removed after firing **once** |
+| `ipcMain.addListener(channel, listener)` | Alias for `ipcMain.on` |
+| `ipcMain.off(channel, listener)` | Remove a specific `listener` from `channel` |
+| `ipcMain.removeListener(channel, listener)` | Alias for `ipcMain.off` |
+| `ipcMain.removeAllListeners([channel])` | Remove all listeners on `channel` (or **every** channel if omitted) |
+
+```js filename="listen.js"
+const { ipcMain } = require('electron')
+
+// One-way: the renderer notifies us, we don't reply through a return value
+ipcMain.on('counter:increment', (event, amount) => {
+  // event.sender is the WebContents that sent the message
+  total += amount
+  // Push an update back to that same window if you want
+  event.sender.send('counter:updated', total)
+})
+
+// Auto-cleanup: only care about the very first ping
+ipcMain.once('app:first-paint', (event) => {
+  markStartupComplete()
+})
+```
+
+<EasyNote>
+The listener's first argument is always the `event`, **not** your data — your arguments come after it. A classic beginner bug is writing `(amount) => ...` and wondering why `amount` is a weird object: that object is the `event`.
+</EasyNote>
+
+### Request / response (invoke handlers)
+
+These answer `ipcRenderer.invoke` calls. Whatever the listener returns (a value or a `Promise`) is sent back to the renderer as the resolved value of its `invoke` promise.
+
+| Method | What it does |
+|---|---|
+| `ipcMain.handle(channel, listener)` | Register a handler that **returns a value** for `ipcRenderer.invoke(channel)` |
+| `ipcMain.handleOnce(channel, listener)` | Like `handle`, but the handler is removed after a **single** call |
+| `ipcMain.removeHandler(channel)` | Remove the handler registered on `channel` |
+
+```js filename="handle.js"
+const { ipcMain, dialog } = require('electron')
+
+// Request/response: the renderer awaits a value back
+ipcMain.handle('dialog:openFile', async (event) => {
+  const { canceled, filePaths } = await dialog.showOpenDialog({
+    properties: ['openFile'],
+  })
+  if (canceled) return null
+  return filePaths[0] // resolves the renderer's `await ipcRenderer.invoke('dialog:openFile')`
+})
+
+// One-time handshake — auto-removes after the first invoke
+ipcMain.handleOnce('app:get-token', () => generateOneTimeToken())
+```
+
+<Callout type="warning">
+Only **one** handler can be registered per channel with `handle`/`handleOnce`. Calling `handle` again on the same channel throws — call `removeHandler(channel)` first if you need to re-register.
+</Callout>
+
+<Callout type="warning">
+If a `handle` listener throws, only the error's **message** crosses to the renderer — stack traces and custom properties are stripped during serialization. Wrap handlers in try/catch and return a structured error shape if the renderer needs details.
+</Callout>
+
+---
+
+## The event object
+
+Every listener receives an `event` as its first argument. For `on`/`once` it is an `IpcMainEvent`; for `handle`/`handleOnce` it is an `IpcMainInvokeEvent`. The most useful members:
+
+| Member | What it is |
+|---|---|
+| `event.sender` | The `WebContents` that sent the message — use `event.sender.send(channel, ...)` to push data back |
+| `event.senderFrame` | The `WebFrameMain` that sent it (handy with iframes) |
+| `event.reply(channel, ...args)` _(IpcMainEvent only)_ | Reply safely to the **exact frame** that sent the message (preferred over `sender.send` across frames) |
+| `event.returnValue` _(IpcMainEvent only)_ | Set this to answer a **synchronous** `ipcRenderer.sendSync` call |
+| `event.ports` | Any transferred `MessagePortMain` objects |
+| `event.processId` / `event.frameId` | IDs identifying the sending process and frame |
+
+```js filename="reply.js"
+const { ipcMain } = require('electron')
+
+// Synchronous reply (blocks the renderer — use sparingly!)
+ipcMain.on('get-app-version', (event) => {
+  event.returnValue = app.getVersion()
+})
+
+// Frame-safe async reply: answers the precise frame that asked
+ipcMain.on('ping', (event) => {
+  event.reply('pong', Date.now())
+})
+```
+
+<Callout type="warning">
+`event.sender.send()` targets a window's **main frame** only. If the message came from an `<iframe>` or sub-frame, use `event.reply()` (or `event.senderFrame.send()`) so the answer reaches the frame that actually asked.
+</Callout>
+
+---
+
+## In plain words
+
+Think of the main process as the **back office** of a hotel, and each window as a guest in a room. The guests can't walk into the back office themselves — that would be chaos (and a security hole). Instead they use the phone, and `ipcMain` is the operator who picks up.
+
+There are two kinds of calls:
+
+1. **"Just letting you know..."** — the guest says "I turned off my lights" and hangs up. No answer needed. That's `ipcRenderer.send` → `ipcMain.on`. One-way, fire and forget.
+2. **"Could you check something for me?"** — the guest asks "what's tomorrow's weather?" and waits on the line for the answer. That's `ipcRenderer.invoke` → `ipcMain.handle`. The operator looks it up and reads the answer back; the guest's `await` finishes the moment they hear it.
+
+Two rules keep you out of trouble. First: **the operator's notepad always lists the call itself before the message** — that's why the listener's first argument is `event`, and your real data comes after. Second: **only one operator per topic for `handle`** — register a second handler on the same channel and Electron throws, because it wouldn't know whose answer to read back.
+
+Memorize three names and you've got it: **`on`** (hear a message), **`handle`** (answer a request), and **`event.sender`** (who's calling). The rest is just channel names you invent yourself.
+
+<Cards>
+  <Cards.Card title="ipcRenderer (the other side)" href="/en/api/ipc-renderer" arrow />
+  <Cards.Card title="app" href="/en/api/app" arrow />
+  <Cards.Card title="Inter-Process Communication" href="/en/docs/processes/ipc" arrow />
+</Cards>

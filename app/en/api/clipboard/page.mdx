@@ -1,0 +1,193 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="clipboard"
+  subtitle="Read from and write to the system clipboard — text, HTML, images, RTF, and more."
+  badge="API · clipboard"
+/>
+
+The `clipboard` module gives you copy-and-paste superpowers. It reads from and writes to the **system clipboard** — the same one you use with Cmd/Ctrl+C and Cmd/Ctrl+V. It works in **both** the Main and Renderer processes.
+
+```js filename="clipboard.js"
+const { clipboard } = require('electron')
+
+clipboard.writeText('Hello from Electron!')
+const text = clipboard.readText() // 'Hello from Electron!'
+```
+
+<EasyNote>
+The clipboard is the OS's **shared sticky note**. Any program can write a value onto it, and any program can read what's there. `clipboard` is your app's pen and eyes for that one shared note.
+</EasyNote>
+
+---
+
+## Events
+
+The `clipboard` module is a plain object, not a class — it has **no events** and you don't create it with `new`. You just call its methods directly.
+
+<Callout type="info">
+There's no "clipboard changed" event in Electron. If you need to react to changes, you have to **poll** — read the clipboard on a timer and compare to the last value you saw.
+</Callout>
+
+```js filename="watch.js"
+// Poor man's "clipboard changed" — poll every 500ms and compare
+let last = clipboard.readText()
+
+setInterval(() => {
+  const now = clipboard.readText()
+  if (now !== last) {
+    last = now
+    onClipboardChanged(now) // your handler
+  }
+}, 500)
+```
+
+---
+
+## Methods
+
+Every read/write comes in a pair: `readX()` to pull a value out, `writeX()` to push one in. Methods marked _(macOS)_ / _(Windows)_ only work on that platform; the optional `type` argument is `'selection'` on Linux (the X11 primary selection) and is ignored elsewhere.
+
+### Plain text
+
+| Method | What it does |
+|---|---|
+| `clipboard.readText([type])` | Read the clipboard's contents as plain text |
+| `clipboard.writeText(text[, type])` | Write a plain string to the clipboard |
+
+```js filename="text.js"
+clipboard.writeText('user@example.com')
+const email = clipboard.readText() // 'user@example.com'
+```
+
+### HTML & RTF
+
+| Method | What it does |
+|---|---|
+| `clipboard.readHTML([type])` | Read the clipboard's contents as HTML markup |
+| `clipboard.writeHTML(markup[, type])` | Write an HTML string to the clipboard |
+| `clipboard.readRTF([type])` | Read the clipboard's contents as Rich Text Format |
+| `clipboard.writeRTF(text[, type])` | Write an RTF string to the clipboard |
+
+```js filename="rich.js"
+// Write styled content that pastes as formatted text into editors
+clipboard.writeHTML('<b>Bold</b> and <i>italic</i>')
+const markup = clipboard.readHTML()
+```
+
+<Callout type="warning">
+`readHTML()` returns whatever HTML the source app put on the clipboard — it can contain scripts or unexpected markup. **Never** drop it straight into the DOM via `innerHTML`/`dangerouslySetInnerHTML`. Sanitize it first.
+</Callout>
+
+### Images
+
+| Method | What it does |
+|---|---|
+| `clipboard.readImage([type])` | Read the clipboard as a `NativeImage` |
+| `clipboard.writeImage(image[, type])` | Write a `NativeImage` to the clipboard |
+
+```js filename="image.js"
+const { clipboard, nativeImage } = require('electron')
+
+// Copy a file as an image onto the clipboard
+const img = nativeImage.createFromPath('/path/to/logo.png')
+clipboard.writeImage(img)
+
+// Read it back (empty image if the clipboard has no picture)
+const pasted = clipboard.readImage()
+```
+
+### Bookmarks _(macOS/Windows)_
+
+| Method | What it does |
+|---|---|
+| `clipboard.readBookmark()` _(macOS/Windows)_ | Read `{ title, url }` of a bookmark on the clipboard |
+| `clipboard.writeBookmark(title, url[, type])` _(macOS/Windows)_ | Write a bookmark (title + URL) to the clipboard |
+
+```js filename="bookmark.js"
+clipboard.writeBookmark('Electron', 'https://electronjs.org')
+const { title, url } = clipboard.readBookmark()
+```
+
+### Find pasteboard _(macOS)_
+
+| Method | What it does |
+|---|---|
+| `clipboard.readFindText()` _(macOS)_ | Read the text in the macOS **find pasteboard** |
+| `clipboard.writeFindText(text)` _(macOS)_ | Write text to the macOS find pasteboard |
+
+<EasyNote>
+The find pasteboard is macOS's _separate_ clipboard just for "Find" boxes. Type a search term in one app, switch to another, and Cmd+F already has it filled in — that's the find pasteboard at work.
+</EasyNote>
+
+### Inspecting & clearing
+
+| Method | What it does |
+|---|---|
+| `clipboard.availableFormats([type])` | Get an array of format strings currently on the clipboard |
+| `clipboard.clear([type])` | Erase everything on the clipboard |
+
+```js filename="inspect.js"
+clipboard.writeText('hi')
+clipboard.availableFormats() // e.g. ['text/plain']
+
+clipboard.clear()
+clipboard.readText() // ''
+```
+
+### Custom formats _(Experimental)_
+
+| Method | What it does |
+|---|---|
+| `clipboard.has(format[, type])` _(Experimental)_ | Whether the clipboard supports a given format |
+| `clipboard.read(format)` _(Experimental)_ | Read a custom format as a string |
+| `clipboard.readBuffer(format)` _(Experimental)_ | Read a custom format as a `Buffer` |
+| `clipboard.writeBuffer(format, buffer[, type])` _(Experimental)_ | Write a `Buffer` under a custom format |
+| `clipboard.write(data[, type])` | Write several formats at once (`{ text, html, image, rtf, bookmark }`) |
+
+```js filename="multi.js"
+// Put text AND html on the clipboard in one shot, so every app
+// gets the richest format it can understand
+clipboard.write({
+  text: 'Bold and italic',
+  html: '<b>Bold</b> and <i>italic</i>'
+})
+```
+
+<Callout type="warning">
+`has`, `read`, `readBuffer`, and `writeBuffer` are marked **Experimental** — their behavior can change between Electron versions. Stick to the typed `readX`/`writeX` pairs for everyday work.
+</Callout>
+
+---
+
+## Properties
+
+The `clipboard` module exposes **no properties** — it's purely a set of methods. There's nothing to read or set as a field; everything happens through `readX()` / `writeX()` calls.
+
+---
+
+## In plain words
+
+Think of the system clipboard as a **single shared sticky note** that every app on your computer can see. The `clipboard` module is your app's hand for that note:
+
+- **Writing** (`writeText`, `writeHTML`, `writeImage`, ...) puts something on the note. Whatever was there before gets covered up.
+- **Reading** (`readText`, `readHTML`, `readImage`, ...) looks at the note and tells you what's written, _in the format you ask for_. Ask for text on an image and you'll get an empty string — the note can't translate itself.
+- **Clearing** (`clear`) wipes the note blank.
+
+A few things to remember:
+
+1. **It's global and shared.** You're not the only writer — the user (and other apps) can change it at any moment. Don't assume what you wrote is still there a second later.
+2. **There's no change event.** Want to know when the clipboard changes? Read it on a timer and compare (see the polling example above).
+3. **Treat read content as untrusted.** Anything could be on that note. Sanitize HTML before rendering, and validate text before acting on it.
+
+Memorize two names — **`writeText`** and **`readText`** — and you've covered the vast majority of real-world clipboard use. The image, HTML, and bookmark variants are there for the day you need them.
+
+<Cards>
+  <Cards.Card title="app" href="/en/api/app" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+  <Cards.Card title="Process model" href="/en/docs/processes" arrow />
+</Cards>

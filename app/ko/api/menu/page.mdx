@@ -1,0 +1,182 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { MenuApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<MenuApiIllustration />}
+  title="Menu"
+  subtitle="네이티브 애플리케이션 메뉴, 컨텍스트(우클릭) 메뉴, macOS 메뉴 막대를 클래스 하나로 만들어요."
+  badge="API · Menu"
+/>
+
+`Menu` 모듈은 **Main 프로세스** 에 살아요. `new Menu()` 로 인스턴스를 만들거나(보통은 템플릿으로 만들어요) 사용자에게 보이는 네이티브 메뉴를 만드는 클래스예요: 상단 메뉴 막대, 우클릭 컨텍스트 메뉴, macOS Dock/앱 메뉴까지요.
+
+```js filename="main.js"
+const { Menu } = require('electron')
+
+const menu = Menu.buildFromTemplate([
+  { label: 'File', submenu: [{ role: 'quit' }] }
+])
+
+Menu.setApplicationMenu(menu)
+```
+
+<EasyNote>
+`Menu` 는 그저 **순서가 있는 [MenuItem](/ko/api/menu-item) 목록** 이에요. 위치나 픽셀을 직접 지정할 일은 거의 없어요 — 목록에 _무엇이_ 들어가는지(그리고 어떤 항목이 하위 메뉴를 품는지)만 설명하면, OS 가 진짜 네이티브 메뉴를 대신 그려 줘요.
+</EasyNote>
+
+---
+
+## 이벤트(Events)
+
+`Menu` 인스턴스는 `EventEmitter` 예요 — `menu.on('이벤트명', 핸들러)` 로 듣습니다.
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `menu-will-show` | `menu.popup()` 이 호출되어 메뉴가 막 나타나려는 시점 |
+| `menu-will-close` | 사용자가 직접 닫거나 `menu.closePopup()` 으로 팝업이 닫힐 때 |
+
+```js filename="context-menu-events.js"
+const menu = Menu.buildFromTemplate([
+  { label: 'Copy', role: 'copy' },
+  { label: 'Paste', role: 'paste' }
+])
+
+menu.on('menu-will-show', () => {
+  // 메뉴가 열린 동안 무거운 백그라운드 작업을 잠시 멈춰요
+})
+
+menu.on('menu-will-close', () => {
+  // 메뉴가 사라지면 다시 재개해요
+})
+```
+
+<EasyNote>
+이 두 이벤트는 팝업의 **"문 열림"과 "문 닫힘"** 이라고 생각하면 돼요. 사용자가 메뉴를 읽는 동안 애니메이션이나 무거운 작업을 멈추기에 딱이에요.
+</EasyNote>
+
+---
+
+## 정적 메서드(Static Methods)
+
+인스턴스가 아니라 `Menu` 클래스 자체에서 호출해요.
+
+### 메뉴 만들기 & 애플리케이션 메뉴
+
+| 메서드 | 하는 일 |
+|---|---|
+| `Menu.buildFromTemplate(template)` | 일반 항목 객체 배열로 `Menu` 를 만들기 (가장 흔한 방법) |
+| `Menu.setApplicationMenu(menu)` | 앱 메뉴 설정 — macOS 메뉴 막대, Windows/Linux 에서는 각 창의 상단 메뉴. `null` 을 넘기면 제거 |
+| `Menu.getApplicationMenu()` | 현재 애플리케이션 `Menu`, 설정된 게 없으면 `null` |
+| `Menu.sendActionToFirstResponder(action)` _(macOS)_ | Cocoa 액션(예: `'selectAll:'`)을 first responder 에게 보내 기본 macOS 메뉴 동작을 흉내 |
+
+```js filename="app-menu.js"
+const template = [
+  {
+    label: 'Edit',
+    submenu: [
+      { role: 'undo' },
+      { role: 'redo' },
+      { type: 'separator' },
+      { role: 'cut' },
+      { role: 'copy' },
+      { role: 'paste' }
+    ]
+  }
+]
+
+// macOS 에서는 창이 하나도 없어도 메뉴 막대가 보여요
+Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+```
+
+<Callout type="warning">
+`Menu.getApplicationMenu()` 가 돌려주는 `Menu` 는 항목을 동적으로 추가/제거할 수 **없어요**. 애플리케이션 메뉴를 바꾸려면 새 메뉴를 만들어서 `Menu.setApplicationMenu()` 를 다시 호출하세요.
+</Callout>
+
+<Callout type="warning">
+`Menu.setApplicationMenu()` 에 넘기는 항목 라벨은 Windows/Linux 에서 `&` 가속기 힌트를 지원해요(예: `'&File'` 은 **F** 에 밑줄). 실제 앰퍼샌드를 표시하려면 `&&` 처럼 두 번 쓰세요.
+</Callout>
+
+---
+
+## 인스턴스 메서드(Instance Methods)
+
+직접 만든 `Menu`(`const menu = new Menu()` 또는 `buildFromTemplate`)에서 호출해요.
+
+### 컨텍스트 메뉴로 띄우기
+
+| 메서드 | 하는 일 |
+|---|---|
+| `menu.popup([options])` | 이 메뉴를 `BaseWindow` 안에서 컨텍스트 메뉴로 띄우기. 옵션: `window`, `x`, `y`, `positioningItem` _(macOS)_, `sourceType` _(Windows/Linux)_, 그리고 메뉴가 닫힐 때 실행되는 `callback` |
+| `menu.closePopup([window])` | 지정한 `window`(또는 포커스된 창)의 컨텍스트 메뉴를 닫기 |
+
+```js filename="context-menu.js"
+const { Menu, BrowserWindow } = require('electron')
+
+const ctx = Menu.buildFromTemplate([
+  { label: 'Reload', role: 'reload' },
+  { type: 'separator' },
+  { label: 'Inspect', click: () => win.webContents.openDevTools() }
+])
+
+// 사용자가 우클릭한 위치에 메뉴를 띄워요
+win.webContents.on('context-menu', (event, params) => {
+  ctx.popup({ window: BrowserWindow.fromWebContents(win.webContents), x: params.x, y: params.y })
+})
+```
+
+### 목록 구성하기
+
+| 메서드 | 하는 일 |
+|---|---|
+| `menu.append(menuItem)` | 메뉴 끝에 `MenuItem` 추가 |
+| `menu.insert(pos, menuItem)` | `pos` 인덱스에 `MenuItem` 삽입 |
+| `menu.getMenuItemById(id)` | 트리 어디에서든 `id` 로 `MenuItem` 찾기, 없으면 `null` |
+
+```js filename="build-imperatively.js"
+const { Menu, MenuItem } = require('electron')
+
+const menu = new Menu()
+menu.append(new MenuItem({ label: 'Open', accelerator: 'CmdOrCtrl+O', click: openFile }))
+menu.insert(0, new MenuItem({ label: 'New', accelerator: 'CmdOrCtrl+N', click: newFile }))
+
+// 나중에 id 로 항목을 찾아 토글해요
+const save = menu.getMenuItemById('save-item')
+if (save) save.enabled = false
+```
+
+---
+
+## 속성(Properties)
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `menu.items` | `MenuItem[]` | 이 메뉴에 담긴 `MenuItem` 배열. 각 항목은 `submenu` 속성에 중첩된 `Menu` 를 가질 수 있어요 |
+
+```js filename="iterate-items.js"
+// 메뉴를 순회하며 전부 비활성화해요
+for (const item of menu.items) {
+  item.enabled = false
+}
+```
+
+---
+
+## 쉽게 풀어 설명
+
+`Menu` 는 **레이아웃이 아니라 목록** 이에요. Electron 에게 순서가 있는 항목 목록 — 라벨, 구분선, 역할(role), 클릭 핸들러, 때로는 중첩된 하위 메뉴 — 을 건네주면, 운영체제가 알맞은 글꼴·그림자·단축키까지 갖춘 진짜 네이티브 메뉴를 그려 줘요.
+
+실제로 할 일은 딱 세 가지예요:
+
+1. **목록 만들기.** `Menu.buildFromTemplate([...])` 로 배열에서 만드는 게 쉬운 길이고, `new Menu()` + `append`/`insert` 가 직접 쌓는 길이에요. 각 항목은 [MenuItem](/ko/api/menu-item) 이에요.
+2. **어디에 둘지 정하기.** `Menu.setApplicationMenu(menu)` 는 macOS 메뉴 막대(또는 Windows/Linux 의 각 창 상단)에 붙여요. `menu.popup()` 은 대신 우클릭 컨텍스트 메뉴로 만들어요.
+3. **반응하기.** 각 항목은 `click` 핸들러나 내장 `role` 을 가지고, 메뉴는 팝업 전후로 `menu-will-show` / `menu-will-close` 를 발생시켜요.
+
+**식당 메뉴판** 을 떠올려 보세요. 종이 위 잉크 배치를 직접 하지 않아요 — 요리(항목)를 적고, 섹션(하위 메뉴)으로 묶으면, 인쇄소가 예쁘게 배치해 줘요. `setApplicationMenu` 는 그 메뉴판을 모두가 보도록 벽에 거는 것, `popup` 은 한 손님에게 테이블에서 건네주는 거예요.
+
+<Cards>
+  <Cards.Card title="MenuItem" href="/ko/api/menu-item" arrow />
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+  <Cards.Card title="보안" href="/ko/docs/best-practices/security" arrow />
+</Cards>

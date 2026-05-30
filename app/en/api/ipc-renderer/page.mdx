@@ -1,0 +1,160 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { IpcApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<IpcApiIllustration />}
+  title="ipcRenderer"
+  subtitle="The renderer's phone line to the Main process — send messages, ask questions, and listen for replies."
+  badge="API · ipcRenderer"
+/>
+
+The `ipcRenderer` module lives in the **Renderer process**. It's an `EventEmitter` that lets the web page talk to the Main process: fire off one-way messages, ask a question and wait for an answer, or sit and listen for messages the Main process pushes to you.
+
+```js filename="renderer.js"
+const { ipcRenderer } = require('electron')
+
+// Ask the Main process to do something and wait for the result
+const fileContents = await ipcRenderer.invoke('read-file', '/path/to/file')
+```
+
+<Callout type="warning">
+With `contextIsolation` enabled (the secure default), the renderer **cannot** `require('electron')` directly. You expose a thin, channel-specific bridge from a **preload script** using `contextBridge` instead. Never hand the whole `ipcRenderer` object to the page.
+</Callout>
+
+---
+
+## Events
+
+`ipcRenderer` is an `EventEmitter`, but it doesn't have its own fixed event names. Instead, **you** invent the channel names, and an event fires when a message arrives on that channel. The "events" you listen to are simply the channels the Main process sends on.
+
+| Event (channel) | Fires when |
+|---|---|
+| _any channel name you choose_ | The Main process sends on that channel via `webContents.send(channel, ...)` |
+| _the reply channel of an `invoke`_ | Handled automatically — `invoke` resolves its Promise instead of firing a listener |
+
+Every listener receives an `IpcRendererEvent` as its first argument, followed by whatever the sender passed:
+
+```js filename="listen.js"
+// Main sent: win.webContents.send('update-counter', 42)
+ipcRenderer.on('update-counter', (event, value) => {
+  // event = IpcRendererEvent, value = 42
+  document.getElementById('counter').textContent = value
+})
+```
+
+The `IpcRendererEvent` object carries:
+
+| Property | What it is |
+|---|---|
+| `event.sender` | The `ipcRenderer` instance that received the message |
+| `event.senderId` | The `webContents.id` that sent the message (for `sendTo`-style routing) |
+| `event.ports` | Any `MessagePort` objects transferred with `postMessage` |
+
+<EasyNote>
+Think of `ipcRenderer` as a **walkie-talkie**. You don't have a fixed set of buttons — you agree with the other side on a "channel name" (like `'update-counter'`), then press talk (`send`) or keep it pressed to your ear (`on`). The channel name is the only thing both sides need to agree on.
+</EasyNote>
+
+---
+
+## Methods
+
+### Listening (incoming messages)
+
+| Method | What it does |
+|---|---|
+| `ipcRenderer.on(channel, listener)` | Listen to `channel`; `listener(event, ...args)` runs every time a message arrives |
+| `ipcRenderer.once(channel, listener)` | Like `on`, but the listener fires only for the **next** message, then removes itself |
+| `ipcRenderer.addListener(channel, listener)` | Alias for `on` |
+| `ipcRenderer.off(channel, listener)` | Remove a specific `listener` from `channel` |
+| `ipcRenderer.removeListener(channel, listener)` | Alias for `off` |
+| `ipcRenderer.removeAllListeners([channel])` | Remove every listener from `channel`, or from all channels if omitted |
+
+```js filename="listeners.js"
+function onMenuOpen(event, fileName) {
+  openFile(fileName)
+}
+
+// Start listening
+ipcRenderer.on('menu-open-file', onMenuOpen)
+
+// Stop listening later (e.g. on component unmount) — always clean up
+ipcRenderer.removeListener('menu-open-file', onMenuOpen)
+```
+
+<Callout type="warning">
+Always remove listeners you add inside components or repeated setups. Re-running `ipcRenderer.on('channel', ...)` without removing the old one stacks **duplicate** handlers, and each incoming message fires all of them.
+</Callout>
+
+### Sending (outgoing messages)
+
+| Method | What it does |
+|---|---|
+| `ipcRenderer.send(channel, ...args)` | Fire a one-way **asynchronous** message to the Main process. No reply |
+| `ipcRenderer.sendSync(channel, ...args)` | Send **synchronously** and return the Main process's response — **blocks** the renderer until it replies |
+| `ipcRenderer.invoke(channel, ...args)` | Send asynchronously and get back a `Promise` that resolves with the Main process's `ipcMain.handle` return value |
+| `ipcRenderer.sendToHost(channel, ...args)` | Like `send`, but routes to the host page of a `<webview>` instead of the Main process |
+
+```js filename="invoke.js"
+// The modern, preferred request/response pattern
+async function loadSettings() {
+  // Main side: ipcMain.handle('get-settings', () => readSettingsFromDisk())
+  const settings = await ipcRenderer.invoke('get-settings')
+  applySettings(settings)
+}
+
+// One-way fire-and-forget (no answer expected)
+ipcRenderer.send('log-event', { type: 'click', target: 'save' })
+```
+
+<Callout type="warning">
+Avoid `sendSync`: it **freezes the renderer's UI** until the Main process replies. Reach for `invoke` (Promise-based) instead in almost every case.
+</Callout>
+
+### Advanced — MessagePort transfer
+
+| Method | What it does |
+|---|---|
+| `ipcRenderer.postMessage(channel, message, [transfer])` | Send a `message`, optionally **transferring** ownership of `MessagePort` objects for a direct, high-throughput channel |
+
+```js filename="message-port.js"
+// Hand one end of a channel to the Main process for a private, fast pipe
+const { port1, port2 } = new MessageChannel()
+
+ipcRenderer.postMessage('port-handoff', null, [port1])
+
+// Now talk directly over the port we kept
+port2.postMessage('hello over the dedicated port')
+port2.onmessage = (e) => handleReply(e.data)
+```
+
+<EasyNote>
+`invoke` is the one to memorize: "ask a question, await the answer." `send` is "shout one-way," `on` is "keep listening," and `postMessage` is for when you want to set up your own private hotline instead of using the shared switchboard.
+</EasyNote>
+
+---
+
+## Properties
+
+`ipcRenderer` exposes **no public properties** — it's a method-only `EventEmitter`. (The per-message details you care about arrive on the `IpcRendererEvent` passed to your listeners; see the Events table above.)
+
+---
+
+## In plain words
+
+The renderer (your web page) and the Main process (Node.js, the real OS access) live in **separate worlds** for security. They can't read each other's variables. `ipcRenderer` is the **telephone** the page uses to reach Main.
+
+There are really just three calls to learn:
+
+1. **Ask and wait** → `invoke('channel', ...)`. You request something only Main can do — read a file, show a native dialog, query the OS — and `await` the answer. This is the right default 90% of the time.
+2. **Shout one-way** → `send('channel', ...)`. You notify Main of something and don't need a reply ("the user clicked save"). Main listens with `ipcMain.on`.
+3. **Keep an ear open** → `on('channel', handler)`. Main pushes something to you (a menu click, a progress update) and your handler reacts. Remember to `removeListener` when you're done so handlers don't pile up.
+
+The "channel" is just an agreed-upon name like `'get-settings'` — both sides must spell it the same way. And because of `contextIsolation`, in a real app you don't call these from the page directly: a **preload script** exposes a tiny, named API (`window.api.getSettings()`) that calls `ipcRenderer` for you. That keeps the page locked down while still letting it ask Main for help.
+
+<Cards>
+  <Cards.Card title="app API" href="/en/api/app" arrow />
+  <Cards.Card title="Preload scripts & IPC" href="/en/docs/tutorial/preload" arrow />
+  <Cards.Card title="Context Isolation" href="/en/docs/processes/context-isolation" arrow />
+</Cards>

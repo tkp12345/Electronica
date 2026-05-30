@@ -1,0 +1,193 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="clipboard"
+  subtitle="시스템 클립보드를 읽고 써요 — 텍스트, HTML, 이미지, RTF까지."
+  badge="API · clipboard"
+/>
+
+`clipboard` 모듈은 복사·붙여넣기 능력을 줘요. **시스템 클립보드** — Cmd/Ctrl+C, Cmd/Ctrl+V 로 쓰는 바로 그 클립보드 — 를 읽고 씁니다. Main 프로세스와 Renderer 프로세스 **양쪽** 에서 모두 동작해요.
+
+```js filename="clipboard.js"
+const { clipboard } = require('electron')
+
+clipboard.writeText('Electron 에서 보냅니다!')
+const text = clipboard.readText() // 'Electron 에서 보냅니다!'
+```
+
+<EasyNote>
+클립보드는 OS 의 **공용 포스트잇** 이에요. 어떤 프로그램이든 값을 적을 수 있고, 어떤 프로그램이든 거기 적힌 걸 읽을 수 있죠. `clipboard` 는 그 하나뿐인 공용 포스트잇을 위한 우리 앱의 펜이자 눈이에요.
+</EasyNote>
+
+---
+
+## 이벤트(Events)
+
+`clipboard` 모듈은 클래스가 아니라 일반 객체예요 — **이벤트가 없고**, `new` 로 만들지도 않아요. 그냥 메서드를 바로 호출하면 됩니다.
+
+<Callout type="info">
+Electron 에는 "클립보드가 바뀌었다" 같은 이벤트가 없어요. 변화에 반응하고 싶다면 **폴링(polling)** 해야 해요 — 타이머로 클립보드를 주기적으로 읽고, 직전에 본 값과 비교하는 방식이죠.
+</Callout>
+
+```js filename="watch.js"
+// 가난한 자의 "클립보드 변경 감지" — 500ms 마다 읽어서 비교해요
+let last = clipboard.readText()
+
+setInterval(() => {
+  const now = clipboard.readText()
+  if (now !== last) {
+    last = now
+    onClipboardChanged(now) // 직접 만든 핸들러
+  }
+}, 500)
+```
+
+---
+
+## 메서드(Methods)
+
+모든 읽기/쓰기는 한 쌍으로 와요: `readX()` 로 값을 꺼내고, `writeX()` 로 값을 넣어요. _(macOS)_ / _(Windows)_ 표시는 해당 플랫폼에서만 동작합니다. 선택적 `type` 인자는 Linux 에서 `'selection'`(X11 기본 선택 영역)을 의미하고, 다른 플랫폼에서는 무시돼요.
+
+### 일반 텍스트
+
+| 메서드 | 하는 일 |
+|---|---|
+| `clipboard.readText([type])` | 클립보드 내용을 일반 텍스트로 읽어요 |
+| `clipboard.writeText(text[, type])` | 일반 문자열을 클립보드에 써요 |
+
+```js filename="text.js"
+clipboard.writeText('user@example.com')
+const email = clipboard.readText() // 'user@example.com'
+```
+
+### HTML & RTF
+
+| 메서드 | 하는 일 |
+|---|---|
+| `clipboard.readHTML([type])` | 클립보드 내용을 HTML 마크업으로 읽어요 |
+| `clipboard.writeHTML(markup[, type])` | HTML 문자열을 클립보드에 써요 |
+| `clipboard.readRTF([type])` | 클립보드 내용을 RTF(서식 있는 텍스트)로 읽어요 |
+| `clipboard.writeRTF(text[, type])` | RTF 문자열을 클립보드에 써요 |
+
+```js filename="rich.js"
+// 에디터에 붙여넣으면 서식이 살아 있는 내용을 써요
+clipboard.writeHTML('<b>굵게</b> 그리고 <i>기울임</i>')
+const markup = clipboard.readHTML()
+```
+
+<Callout type="warning">
+`readHTML()` 은 원본 앱이 클립보드에 넣은 HTML 을 그대로 돌려줘요 — 스크립트나 예상치 못한 마크업이 들어 있을 수 있어요. **절대로** `innerHTML`/`dangerouslySetInnerHTML` 로 DOM 에 바로 넣지 마세요. 반드시 먼저 정제(sanitize)하세요.
+</Callout>
+
+### 이미지
+
+| 메서드 | 하는 일 |
+|---|---|
+| `clipboard.readImage([type])` | 클립보드를 `NativeImage` 로 읽어요 |
+| `clipboard.writeImage(image[, type])` | `NativeImage` 를 클립보드에 써요 |
+
+```js filename="image.js"
+const { clipboard, nativeImage } = require('electron')
+
+// 파일을 이미지로 클립보드에 복사해요
+const img = nativeImage.createFromPath('/path/to/logo.png')
+clipboard.writeImage(img)
+
+// 다시 읽어와요 (클립보드에 그림이 없으면 빈 이미지)
+const pasted = clipboard.readImage()
+```
+
+### 북마크 _(macOS/Windows)_
+
+| 메서드 | 하는 일 |
+|---|---|
+| `clipboard.readBookmark()` _(macOS/Windows)_ | 클립보드의 북마크 `{ title, url }` 을 읽어요 |
+| `clipboard.writeBookmark(title, url[, type])` _(macOS/Windows)_ | 북마크(제목 + URL)를 클립보드에 써요 |
+
+```js filename="bookmark.js"
+clipboard.writeBookmark('Electron', 'https://electronjs.org')
+const { title, url } = clipboard.readBookmark()
+```
+
+### 찾기 페이스트보드 _(macOS)_
+
+| 메서드 | 하는 일 |
+|---|---|
+| `clipboard.readFindText()` _(macOS)_ | macOS **찾기 페이스트보드** 의 텍스트를 읽어요 |
+| `clipboard.writeFindText(text)` _(macOS)_ | macOS 찾기 페이스트보드에 텍스트를 써요 |
+
+<EasyNote>
+찾기 페이스트보드는 "찾기" 상자 전용인 macOS 의 _별도_ 클립보드예요. 한 앱에서 검색어를 입력하고 다른 앱으로 전환하면 Cmd+F 에 이미 그 단어가 채워져 있죠 — 바로 찾기 페이스트보드가 하는 일이에요.
+</EasyNote>
+
+### 살펴보기 & 비우기
+
+| 메서드 | 하는 일 |
+|---|---|
+| `clipboard.availableFormats([type])` | 현재 클립보드에 있는 포맷 문자열 배열을 가져와요 |
+| `clipboard.clear([type])` | 클립보드 내용을 전부 지워요 |
+
+```js filename="inspect.js"
+clipboard.writeText('hi')
+clipboard.availableFormats() // 예: ['text/plain']
+
+clipboard.clear()
+clipboard.readText() // ''
+```
+
+### 커스텀 포맷 _(실험적)_
+
+| 메서드 | 하는 일 |
+|---|---|
+| `clipboard.has(format[, type])` _(실험적)_ | 클립보드가 특정 포맷을 지원하는지 여부 |
+| `clipboard.read(format)` _(실험적)_ | 커스텀 포맷을 문자열로 읽어요 |
+| `clipboard.readBuffer(format)` _(실험적)_ | 커스텀 포맷을 `Buffer` 로 읽어요 |
+| `clipboard.writeBuffer(format, buffer[, type])` _(실험적)_ | `Buffer` 를 커스텀 포맷으로 써요 |
+| `clipboard.write(data[, type])` | 여러 포맷을 한 번에 써요 (`{ text, html, image, rtf, bookmark }`) |
+
+```js filename="multi.js"
+// 텍스트와 html 을 한 번에 클립보드에 올려요
+// → 각 앱이 자기가 이해할 수 있는 가장 풍부한 포맷을 받아가요
+clipboard.write({
+  text: '굵게 그리고 기울임',
+  html: '<b>굵게</b> 그리고 <i>기울임</i>'
+})
+```
+
+<Callout type="warning">
+`has`, `read`, `readBuffer`, `writeBuffer` 는 **실험적(Experimental)** 으로 표시돼 있어요 — Electron 버전마다 동작이 달라질 수 있어요. 평소 작업에는 타입이 명확한 `readX`/`writeX` 쌍을 쓰세요.
+</Callout>
+
+---
+
+## 속성(Properties)
+
+`clipboard` 모듈은 **속성이 없어요** — 순수하게 메서드 모음이에요. 필드처럼 읽거나 설정할 게 없고, 모든 일은 `readX()` / `writeX()` 호출을 통해 일어나요.
+
+---
+
+## 쉽게 풀어 설명
+
+시스템 클립보드를 컴퓨터의 모든 앱이 볼 수 있는 **하나뿐인 공용 포스트잇** 이라고 생각해 보세요. `clipboard` 모듈은 그 포스트잇을 다루는 우리 앱의 손이에요:
+
+- **쓰기**(`writeText`, `writeHTML`, `writeImage`, ...)는 포스트잇에 뭔가를 적어요. 이전에 있던 내용은 덮여 사라져요.
+- **읽기**(`readText`, `readHTML`, `readImage`, ...)는 포스트잇을 보고 _요청한 포맷으로_ 뭐가 적혀 있는지 알려줘요. 이미지에 대고 텍스트를 달라고 하면 빈 문자열이 나와요 — 포스트잇이 스스로 변환해 주지는 못하니까요.
+- **비우기**(`clear`)는 포스트잇을 백지로 만들어요.
+
+기억할 몇 가지:
+
+1. **전역이고 공유돼요.** 적는 사람이 나 혼자가 아니에요 — 사용자와 다른 앱이 언제든 바꿀 수 있어요. 내가 쓴 게 1초 뒤에도 그대로 있을 거라고 가정하지 마세요.
+2. **변경 이벤트가 없어요.** 클립보드가 언제 바뀌는지 알고 싶다면 타이머로 읽어서 비교하세요 (위 폴링 예제 참고).
+3. **읽은 내용은 신뢰하지 마세요.** 그 포스트잇에는 뭐든 적혀 있을 수 있어요. HTML 은 렌더링 전에 정제하고, 텍스트는 사용하기 전에 검증하세요.
+
+두 이름만 외우세요 — **`writeText`** 와 **`readText`** — 그러면 현실의 클립보드 작업 대부분이 끝나요. 이미지·HTML·북마크 변형들은 필요한 날을 위해 준비돼 있을 뿐이에요.
+
+<Cards>
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+  <Cards.Card title="보안" href="/ko/docs/best-practices/security" arrow />
+  <Cards.Card title="프로세스 모델" href="/ko/docs/processes" arrow />
+</Cards>

@@ -1,0 +1,147 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="shell"
+  subtitle="Hand a file, folder, or link off to the operating system — open it, reveal it, trash it, or beep — without writing any platform-specific code."
+  badge="API · shell"
+/>
+
+The `shell` module lets your app reach out to the **user's desktop environment**: open a file in its default app, reveal a file in Finder/Explorer, launch a link in the default browser, move something to the trash, or play the system beep. It works in both the **Main** and **Renderer** processes.
+
+```js filename="main.js"
+const { shell } = require('electron')
+
+// Open a URL in the user's default browser (not inside your app!)
+shell.openExternal('https://electronjs.org')
+```
+
+## Events
+
+The `shell` module is a plain object of functions — it does **not** emit any events, and you never create it with `new`. There is nothing to subscribe to here; you simply call its methods when you need them.
+
+<EasyNote>
+Think of `shell` less like a living thing that shouts "something happened!" and more like a **concierge desk**. It never calls you — you walk up, hand over a file or a link, and ask it to take care of the rest.
+</EasyNote>
+
+---
+
+## Methods
+
+Every method below is called directly on the module, e.g. `shell.openExternal(url)`. Items marked _(Windows)_ / _(macOS)_ only work on that platform.
+
+### Opening files & folders
+
+| Method | What it does |
+|---|---|
+| `shell.showItemInFolder(fullPath)` | Show a file in the OS file manager and try to select it |
+| `shell.openPath(path)` | Open a file or folder with the system's default app — returns `Promise<string>` (empty on success, error message on failure) |
+| `shell.openExternal(url[, options])` | Open a URL or external protocol (`https:`, `mailto:`, ...) with the default handler — returns `Promise<void>` |
+
+```js filename="open-files.js"
+// Reveal a downloaded file in Finder / Explorer
+shell.showItemInFolder('/Users/me/Downloads/report.pdf')
+
+// Open a PDF in whatever the user set as their default viewer
+const errorMessage = await shell.openPath('/Users/me/Downloads/report.pdf')
+if (errorMessage) {
+  // openPath resolves with a non-empty string when it fails
+  reportProblem(errorMessage)
+}
+```
+
+`shell.openExternal` accepts an optional `options` object:
+
+| Option | Platform | What it does |
+|---|---|---|
+| `activate` | macOS | Bring the opened app to the foreground (default `true`) |
+| `workingDirectory` | Windows | Working directory for the launched process |
+| `logUsage` | Windows | Treat the launch as a user-initiated action for shell behaviors (default `false`) |
+
+```js filename="open-external.js"
+// Open the user's default browser — the safe way to follow a link
+await shell.openExternal('https://electronjs.org/docs')
+
+// Compose an email with the default mail client
+await shell.openExternal('mailto:hello@example.com?subject=Hi')
+```
+
+<Callout type="warning">
+Never pass **untrusted input** straight into `shell.openExternal`. A malicious string could launch an unexpected protocol or program. Validate and allow-list the URL scheme (e.g. only `https:` and `mailto:`) before opening it.
+</Callout>
+
+### Trash & system feedback
+
+| Method | What it does |
+|---|---|
+| `shell.trashItem(path)` | Move a file or folder to the OS trash / recycle bin — returns `Promise<void>` |
+| `shell.beep()` | Play the system's default beep sound |
+
+```js filename="trash-and-beep.js"
+// Move a file to the trash instead of deleting it permanently —
+// the user can still recover it from Trash / Recycle Bin
+await shell.trashItem('/Users/me/Documents/old-draft.txt')
+
+// A quick audible nudge that something needs attention
+shell.beep()
+```
+
+<EasyNote>
+`trashItem` is the friendly version of "delete." Instead of destroying the file forever, it drops it in the same Trash / Recycle Bin the user already knows — so a mistaken delete is one drag away from being undone.
+</EasyNote>
+
+### Shortcut links _(Windows)_
+
+These two methods read and write Windows `.lnk` shortcut files. They are **synchronous** and Windows-only.
+
+| Method | What it does |
+|---|---|
+| `shell.writeShortcutLink(shortcutPath[, operation], options)` | Create or update a `.lnk` shortcut — `operation` is `'create'` (default), `'update'`, or `'replace'`; returns `boolean` |
+| `shell.readShortcutLink(shortcutPath)` | Read and resolve a `.lnk` shortcut — returns a `ShortcutDetails` object (throws on error) |
+
+```js filename="shortcut.js"
+// Windows only: create a Start Menu shortcut that points at our app
+const ok = shell.writeShortcutLink('C:\\Users\\me\\Desktop\\MyApp.lnk', 'create', {
+  target: 'C:\\Program Files\\MyApp\\MyApp.exe',
+  description: 'Launch MyApp'
+})
+
+// Read it back later
+const details = shell.readShortcutLink('C:\\Users\\me\\Desktop\\MyApp.lnk')
+// details.target, details.args, details.icon, ...
+```
+
+<Callout type="warning">
+`writeShortcutLink` and `readShortcutLink` exist **only on Windows**. Guard them with `process.platform === 'win32'` or they'll throw on macOS and Linux.
+</Callout>
+
+---
+
+## Properties
+
+The `shell` module does not expose any properties — it is purely a collection of methods. (See the table above for everything it offers.)
+
+---
+
+## In plain words
+
+The `shell` module is your app's **doorway to the rest of the desktop**. Your app can't (and shouldn't) reimplement the user's browser, file manager, mail client, or trash — so when you need one of those, you politely hand the task to the OS instead.
+
+Picture a hotel **concierge**:
+
+- "Please open this document." → `openPath` (the concierge picks the right app for you).
+- "Show me where that file lives." → `showItemInFolder` (they walk you to the right drawer).
+- "Take me to this website." → `openExternal` (they call you a cab to the default browser).
+- "Throw this away — but keep it recoverable." → `trashItem` (into the bin, not the incinerator).
+- "Ring the bell." → `beep`.
+
+You never construct the concierge with `new`, there are no events to wait on, and there are no properties to read. You just call a method and the desktop does the rest. The one rule to remember: **treat every URL or path you didn't create yourself as suspicious**, and allow-list before you `openExternal`.
+
+<Cards>
+  <Cards.Card title="app" href="/en/api/app" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+  <Cards.Card title="Main process" href="/en/docs/processes/main" arrow />
+</Cards>

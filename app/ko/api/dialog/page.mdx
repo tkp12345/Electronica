@@ -1,0 +1,165 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="dialog"
+  subtitle="운영체제의 네이티브 열기·저장·메시지·오류 대화상자를 Main 프로세스에서 바로 띄워요."
+  badge="API · dialog"
+/>
+
+`dialog` 모듈은 **Main 프로세스** 에 살아요. 파일 열기·저장, 질문하기, 오류 알리기 같은 일을 OS 자체의 네이티브 대화상자로 보여줄 수 있게 해줘요 — 사용자가 다른 모든 앱에서 이미 익숙하게 보던 바로 그 패널이에요.
+
+```js filename="main.js"
+const { dialog } = require('electron')
+
+// OS 의 네이티브 "파일 열기" 패널을 띄워요
+const { canceled, filePaths } = await dialog.showOpenDialog({
+  properties: ['openFile'],
+})
+```
+
+<EasyNote>
+`dialog` 은 프로그램의 **안내 데스크 직원** 이에요. 앱이 사용자에게 뭔가 물어봐야 할 때 — "어떤 파일이요?", "어디에 저장할까요?", "정말 하시겠어요?" — 양식을 직접 그리지 않아요. 운영체제에게 공식적이고 익숙한 패널을 띄워 달라고 부탁한 뒤, 그 답을 돌려받아요.
+</EasyNote>
+
+---
+
+## 이벤트(Events)
+
+`dialog` 모듈에는 **이벤트가 없어요**. 메서드들의 모음일 뿐이에요 — 하나를 호출하면 OS 가 패널을 띄우고, 결과를 돌려받아요(`*Sync` 변형은 즉시, 비동기 버전은 `Promise` 로). 구독할 대상이 없어요.
+
+<EasyNote>
+프로그램의 생애 동안 이벤트를 쏟아내는 `app` 과 달리, `dialog` 은 순수하게 **요청-응답** 방식이에요. 질문하면 답이 와요. 리스너도, 생명주기도 없어요.
+</EasyNote>
+
+---
+
+## 메서드(Methods)
+
+모든 메서드는 첫 번째 인자로 `BrowserWindow` 를 선택적으로 받아요. 창을 넘기면 대화상자가 그 창에 붙어 **모달** 로 동작하고(창을 막아요), 생략하면 독립 대화상자로 떠요. 이름이 `Sync` 로 끝나는 메서드는 블로킹하며 결과를 바로 반환하고, 나머지는 `Promise` 를 반환해요.
+
+### 파일 열기 & 저장
+
+| 메서드 | 하는 일 |
+|---|---|
+| `dialog.showOpenDialog([window, ]options)` | 네이티브 "열기" 패널 표시; `{ canceled, filePaths }` 로 resolve |
+| `dialog.showOpenDialogSync([window, ]options)` | 동기식 "열기" 패널; 경로 `string[]` 또는 `undefined` 반환 |
+| `dialog.showSaveDialog([window, ]options)` | 네이티브 "저장" 패널 표시; `{ canceled, filePath }` 로 resolve |
+| `dialog.showSaveDialogSync([window, ]options)` | 동기식 "저장" 패널; 선택된 경로 `string` 또는 `undefined` 반환 |
+
+```js filename="open-file.js"
+const { dialog, BrowserWindow } = require('electron')
+
+async function pickFiles(win) {
+  const result = await dialog.showOpenDialog(win, {
+    title: '이미지 선택',
+    properties: ['openFile', 'multiSelections'],
+    filters: [{ name: '이미지', extensions: ['png', 'jpg', 'gif'] }],
+  })
+
+  if (result.canceled) return [] // 사용자가 취소를 누름
+  return result.filePaths        // 절대 경로 배열
+}
+```
+
+```js filename="save-file.js"
+// 파일을 어디에 쓸지 물어본 뒤 결과를 확인해요
+const { canceled, filePath } = await dialog.showSaveDialog({
+  defaultPath: 'report.pdf',
+  filters: [{ name: 'PDF', extensions: ['pdf'] }],
+})
+
+if (!canceled && filePath) {
+  writePdfTo(filePath)
+}
+```
+
+<Callout type="warning">
+`properties` 가 열기 패널이 무엇을 받아들일지 정해요: `'openFile'`, `'openDirectory'`, `'multiSelections'` 등이 있어요. **macOS** 에서는 `'openFile'` 과 `'openDirectory'` 를 함께 쓸 수 있지만, **Windows** 의 단일 패널은 파일과 폴더를 동시에 고를 수 없어 OS 가 하나의 동작만 선택해요.
+</Callout>
+
+### 메시지 & 오류
+
+| 메서드 | 하는 일 |
+|---|---|
+| `dialog.showMessageBox([window, ]options)` | 메시지 박스 표시(info / question / warning / error); `{ response, checkboxChecked }` 로 resolve |
+| `dialog.showMessageBoxSync([window, ]options)` | 동기식 메시지 박스; 클릭된 버튼의 인덱스(`Integer`) 반환 |
+| `dialog.showErrorBox(title, content)` | 간단한 블로킹 네이티브 오류 박스 표시(`app` 준비 전에도 동작) |
+
+```js filename="confirm.js"
+// 어떤 버튼을 눌렀는지 돌려주는 예/아니오 확인창
+const { response } = await dialog.showMessageBox({
+  type: 'question',
+  buttons: ['취소', '삭제'],
+  defaultId: 1,      // 기본으로 강조되는 버튼
+  cancelId: 0,       // Esc / 창 닫기에 매핑되는 버튼
+  title: '파일 삭제',
+  message: '이 파일을 정말 삭제할까요?',
+  detail: '이 작업은 되돌릴 수 없어요.',
+})
+
+if (response === 1) {
+  deleteTheFile() // 사용자가 "삭제"(인덱스 1)를 선택
+}
+```
+
+```js filename="error.js"
+// showErrorBox 는 가장 단순해요 — 제목 + 본문, 그리고 블로킹.
+// 창이 생기기 전 치명적 시작 오류에 유용해요.
+dialog.showErrorBox(
+  '시작 실패',
+  '설정 파일을 읽을 수 없어요.',
+)
+```
+
+<Callout type="warning">
+`showMessageBox` 는 클릭된 버튼의 **인덱스** 를 반환해요(텍스트가 아니에요). `buttons` 와 함께 `cancelId`(Esc / 대화상자 닫기)와 `defaultId`(강조 버튼)를 항상 짝지어 키보드 사용자도 자연스럽게 동작하도록 하세요.
+</Callout>
+
+### 보안
+
+| 메서드 | 플랫폼 | 하는 일 |
+|---|---|---|
+| `dialog.showCertificateTrustDialog([window, ]options)` | _(macOS / Windows)_ | 인증서를 신뢰할지 사용자에게 묻기; 닫히면 `Promise<void>` 로 resolve |
+
+```js filename="cert-trust.js"
+// macOS / Windows 전용: 인증서를 신뢰할지 사용자에게 물어봐요
+await dialog.showCertificateTrustDialog(win, {
+  certificate: someCertificate,
+  message: '계속하려면 이 인증서를 신뢰하세요.',
+})
+```
+
+<EasyNote>
+**`Sync`** 버전은 임시 스크립트나 정말 치명적인 상황에서만 쓰세요 — 사용자가 응답할 때까지 앱 전체를 멈춰 버려요. 실제 앱에서는 `Promise` 를 반환하는 버전(`showOpenDialog`, `showSaveDialog`, `showMessageBox`)을 선호해 나머지 프로그램이 계속 숨 쉬게 하세요.
+</EasyNote>
+
+---
+
+## 속성(Properties)
+
+`dialog` 모듈에는 **속성이 없어요**. 위에 나열한 메서드만 노출해요 — 모듈 자체에는 읽거나 설정할 상태가 없어요. 커스터마이즈하고 싶은 모든 것(제목·버튼·필터·기본 경로)은 각 호출의 `options` 객체로 전달해요.
+
+---
+
+## 쉽게 풀어 설명
+
+`dialog` 모듈은 앱이 **사용자에게 정중하게 질문하는 방법** 이에요 — 운영체제가 이미 어디서나 보여주던 바로 그 패널을 그대로 쓰기 때문에, 사용자에게는 집처럼 익숙하게 보이고 동작해요.
+
+쓰게 될 일은 사실 딱 네 가지예요:
+
+1. **"어떤 파일이요?"** → `showOpenDialog`. `properties` 로 파일·폴더·여러 개 선택을 정하고, `filters` 로 파일 형식을 제한해요.
+2. **"어디에 저장할까요?"** → `showSaveDialog`. `defaultPath` 와 `filters` 를 주면, 사용자가 고른 경로를 돌려받아요.
+3. **"정말 하시겠어요?"** → `showMessageBox`. `buttons` 를 나열한 뒤, 어떤 걸 눌렀는지 `response` 인덱스로 알아내요.
+4. **"뭔가 잘못됐어요."** → `showErrorBox`. 가장 단순해요. 제목, 메시지, 끝.
+
+두 가지 습관이 문제를 막아줘요: 대화상자가 붙을 **창** 을 첫 인자로 넘기고, 앱이 멈추지 않도록 `*Sync` 보다 **`Promise`** 버전을 선호하세요. 이 세 메서드 이름만 외우세요 — 열기, 저장, 메시지 — 그러면 거의 다 끝나요.
+
+<Cards>
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+  <Cards.Card title="Main 프로세스" href="/ko/docs/processes/main" arrow />
+  <Cards.Card title="보안" href="/ko/docs/best-practices/security" arrow />
+</Cards>

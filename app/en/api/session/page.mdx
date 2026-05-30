@@ -1,0 +1,322 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { NetworkApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<NetworkApiIllustration />}
+  title="session"
+  subtitle="Manage cookies, cache, network, permissions, and downloads for the web content your app loads."
+  badge="API · session"
+/>
+
+The `session` module lives in the **Main process**. It controls the _storage and networking_ for the web pages your app loads — cookies, cache, proxies, permissions, downloads, and more. Every `BrowserWindow` and `webContents` runs inside a `Session`, and you reach the most common one through `session.defaultSession`.
+
+```js filename="main.js"
+const { session, app } = require('electron')
+
+app.whenReady().then(() => {
+  const ses = session.defaultSession
+
+  // Clear all HTTP cache for the default session
+  ses.clearCache()
+})
+```
+
+## How sessions are obtained
+
+You never write `new Session()`. A `Session` is always handed to you — either the shared default one, or a partitioned/path-based one you ask for. Each `webContents` also exposes its own `webContents.session`.
+
+| Way to get a `Session` | What you get |
+|---|---|
+| `session.defaultSession` | The shared default session (after `app.whenReady()`) |
+| `session.fromPartition(partition[, options])` | A named session — `'persist:name'` survives restarts, `'name'` is in-memory only |
+| `session.fromPath(path[, options])` | A session stored at an absolute file path |
+| `webContents.session` | The session that a specific page/window belongs to |
+
+```js filename="partitions.js"
+// An isolated, in-memory session (great for a "private" window)
+const incognito = session.fromPartition('temp-window')
+
+// A persistent session that keeps its cookies/cache across restarts
+const account = session.fromPartition('persist:account-1')
+```
+
+<EasyNote>
+Think of `session` as the **profile** behind a browser tab. Two tabs sharing a profile share logins and history; switch profiles and you get a clean slate. `defaultSession` is your everyday profile; `fromPartition('temp')` is an incognito window.
+</EasyNote>
+
+---
+
+## Static Methods
+
+These live on the `session` module itself.
+
+| Method | What it does |
+|---|---|
+| `session.fromPartition(partition[, options])` | Get/create a session for a partition string (`'persist:name'` or `'name'`) |
+| `session.fromPath(path[, options])` | Get/create a session whose data is stored at an absolute path |
+
+## Static Properties
+
+| Property | Type | What it is |
+|---|---|---|
+| `session.defaultSession` | `Session` | The default session used by windows with no custom partition (ready after `app.whenReady()`) |
+
+---
+
+## Instance Events
+
+Listen with `ses.on('event-name', handler)`. Events marked _(macOS)_ / _(Windows)_ / _(Linux)_ only fire on that platform.
+
+### Downloads
+
+| Event | Fires when |
+|---|---|
+| `will-download` | A resource in `webContents` is about to be downloaded — gives you the `DownloadItem` |
+
+```js filename="download.js"
+session.defaultSession.on('will-download', (event, item, webContents) => {
+  // Force every download into a fixed folder, no save dialog
+  item.setSavePath('/tmp/downloads/' + item.getFilename())
+
+  item.on('done', (e, state) => {
+    if (state === 'completed') notifyDownloadDone(item.getSavePath())
+  })
+})
+```
+
+### Extensions
+
+| Event | Fires when |
+|---|---|
+| `extension-loaded` | A Chrome extension finished loading (gives the `Extension`) |
+| `extension-ready` | An extension's background page is initialized and ready |
+| `extension-unloaded` | An extension was unloaded |
+
+### Devices (HID / Serial / USB)
+
+| Event | Fires when |
+|---|---|
+| `select-hid-device` | A page requested a HID device and one must be chosen |
+| `hid-device-added` | A HID device became available during a `select-hid-device` prompt |
+| `hid-device-removed` | A HID device was removed during a `select-hid-device` prompt |
+| `hid-device-revoked` | Access to a granted HID device was revoked |
+| `select-serial-port` | A page requested a serial port and one must be chosen |
+| `serial-port-added` | A serial port became available during a `select-serial-port` prompt |
+| `serial-port-removed` | A serial port was removed during a `select-serial-port` prompt |
+| `serial-port-revoked` | Access to a granted serial port was revoked |
+| `select-usb-device` | A page requested a USB device and one must be chosen |
+| `usb-device-added` | A USB device became available during a `select-usb-device` prompt |
+| `usb-device-removed` | A USB device was removed during a `select-usb-device` prompt |
+| `usb-device-revoked` | Access to a granted USB device was revoked |
+| `select-webauthn-account` | A WebAuthn account must be selected |
+
+```js filename="select-device.js"
+// Auto-pick a serial port instead of showing the chooser UI
+session.defaultSession.on('select-serial-port', (event, portList, webContents, callback) => {
+  event.preventDefault()
+  const usbStick = portList.find((p) => p.vendorId === '0x2341')
+  callback(usbStick ? usbStick.portId : '') // '' = cancel the request
+})
+```
+
+### Spell checker
+
+| Event | Fires when |
+|---|---|
+| `spellcheck-dictionary-initialized` | A spell-check dictionary loaded successfully |
+| `spellcheck-dictionary-download-begin` | A dictionary download started |
+| `spellcheck-dictionary-download-success` | A dictionary download succeeded |
+| `spellcheck-dictionary-download-failure` | A dictionary download failed |
+
+### Network & file system
+
+| Event | Fires when |
+|---|---|
+| `preconnect` | A page requested a preconnection to a URL |
+| `file-system-access-restricted` | A File System Access request was blocked by policy |
+
+<EasyNote>
+The device events (`select-usb-device`, `select-serial-port`, `select-hid-device`) are how the browser asks _"which gadget do you want to talk to?"_. Without a handler the user sees a native picker; with one you can auto-select or filter for security.
+</EasyNote>
+
+---
+
+## Methods
+
+These are called on a `Session` instance (`ses`).
+
+### Cache & storage
+
+| Method | What it does |
+|---|---|
+| `ses.getCacheSize()` | Promise → the session's HTTP cache size in bytes |
+| `ses.clearCache()` | Promise → clear the HTTP cache |
+| `ses.clearStorageData([options])` | Promise → clear storage (cookies, localStorage, IndexedDB, ...) by type/origin |
+| `ses.flushStorageData()` | Write any unwritten DOMStorage data to disk |
+| `ses.clearData([options])` | Promise → clear chosen data types, optionally filtered by origin |
+| `ses.setCodeCachePath(path)` | Set the directory for V8 code caching |
+| `ses.clearCodeCaches(options)` | Promise → clear the code cache for given URLs |
+| `ses.getStoragePath()` | The on-disk path for this session's data, or `null` if in-memory |
+
+```js filename="clear-storage.js"
+// Log the user out: drop cookies + cached HTTP auth
+await session.defaultSession.clearStorageData({ storages: ['cookies'] })
+await session.defaultSession.clearAuthCache()
+```
+
+### Network & proxy
+
+| Method | What it does |
+|---|---|
+| `ses.setProxy(config)` | Promise → set proxy settings |
+| `ses.resolveProxy(url)` | Promise → the proxy resolved for a URL |
+| `ses.forceReloadProxyConfig()` | Promise → reset the proxy service to re-read config |
+| `ses.resolveHost(host[, options])` | Promise → resolve a hostname to IP addresses |
+| `ses.clearHostResolverCache()` | Promise → clear the DNS cache |
+| `ses.enableNetworkEmulation(options)` | Emulate slow/offline network conditions |
+| `ses.disableNetworkEmulation()` | Stop network emulation |
+| `ses.preconnect(options)` | Pre-open sockets to an origin |
+| `ses.closeAllConnections()` | Promise → close all open network connections |
+| `ses.fetch(input[, init])` | Promise → fetch a URL using Chrome's network stack |
+| `ses.setUserAgent(userAgent[, acceptLanguages])` | Set the user-agent and accepted languages |
+| `ses.getUserAgent()` | The current user-agent string |
+| `ses.setSSLConfig(config)` | Configure TLS versions and cipher policy |
+| `ses.allowNTLMCredentialsForDomains(domains)` | Send NTLM/Negotiate credentials to these domains |
+| `ses.getBlobData(identifier)` | Promise → the blob data for a UUID |
+
+```js filename="emulate.js"
+// Pretend we're offline to test error handling
+session.defaultSession.enableNetworkEmulation({ offline: true })
+
+// ...later, go back to normal
+session.defaultSession.disableNetworkEmulation()
+```
+
+<Callout type="warning">
+`setCertificateVerifyProc` and `setProxy` apply to the **whole session**. If you call them on `defaultSession`, every window without a custom partition is affected — scope risky behavior to a dedicated `fromPartition` session.
+</Callout>
+
+### Downloads
+
+| Method | What it does |
+|---|---|
+| `ses.setDownloadPath(path)` | Set the default folder for downloads |
+| `ses.downloadURL(url[, options])` | Start downloading a resource (fires `will-download`) |
+| `ses.createInterruptedDownload(options)` | Resume a previously interrupted download |
+
+### Permissions & device access
+
+| Method | What it does |
+|---|---|
+| `ses.setPermissionRequestHandler(handler)` | Approve/deny permission requests (camera, mic, geolocation, ...) |
+| `ses.setPermissionCheckHandler(handler)` | Synchronously answer "is this permission allowed?" |
+| `ses.setDisplayMediaRequestHandler(handler[, opts])` | Choose the screen/window source for screen capture |
+| `ses.setDevicePermissionHandler(handler)` | Grant/deny persistent access to a specific device |
+| `ses.setUSBProtectedClassesHandler(handler)` | Allow access to USB classes Chromium normally blocks |
+| `ses.setBluetoothPairingHandler(handler)` _(Windows/Linux)_ | Handle Bluetooth pairing prompts |
+| `ses.setCertificateVerifyProc(proc)` | Override TLS certificate verification |
+
+```js filename="permissions.js"
+// Deny everything except notifications — a strict default
+session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+  callback(permission === 'notifications')
+})
+```
+
+### Spell checker
+
+| Method | What it does |
+|---|---|
+| `ses.setSpellCheckerEnabled(enable)` | Turn the spell checker on/off |
+| `ses.isSpellCheckerEnabled()` | Is the spell checker on? |
+| `ses.setSpellCheckerLanguages(languages)` | Set the active spell-check languages |
+| `ses.getSpellCheckerLanguages()` | The enabled spell-check languages |
+| `ses.setSpellCheckerDictionaryDownloadURL(url)` | Where to download dictionaries from |
+| `ses.listWordsInSpellCheckerDictionary()` | Promise → the user's custom words |
+| `ses.addWordToSpellCheckerDictionary(word)` | Add a word to the custom dictionary |
+| `ses.removeWordFromSpellCheckerDictionary(word)` | Remove a word from the custom dictionary |
+
+### Preload scripts
+
+| Method | What it does |
+|---|---|
+| `ses.registerPreloadScript(script)` | Register a preload script, returns its id |
+| `ses.unregisterPreloadScript(id)` | Remove a registered preload script |
+| `ses.getPreloadScripts()` | The registered preload scripts |
+| `ses.setPreloads(preloads)` _(Deprecated)_ | Set the array of preload script paths |
+| `ses.getPreloads()` _(Deprecated)_ | The current preload script paths |
+
+### Shared dictionary (compression)
+
+| Method | What it does |
+|---|---|
+| `ses.getSharedDictionaryUsageInfo()` | Promise → info on all stored shared dictionaries |
+| `ses.getSharedDictionaryInfo(options)` | Promise → details for dictionaries matching an isolation key |
+| `ses.clearSharedDictionaryCache()` | Promise → remove all shared dictionaries |
+| `ses.clearSharedDictionaryCacheForIsolationKey(options)` | Promise → clear dictionaries for one isolation key |
+
+### Extensions _(Deprecated — use `ses.extensions`)_
+
+| Method | What it does |
+|---|---|
+| `ses.loadExtension(path[, options])` _(Deprecated)_ | Promise → load an unpacked Chrome extension |
+| `ses.removeExtension(extensionId)` _(Deprecated)_ | Unload an extension |
+| `ses.getExtension(extensionId)` _(Deprecated)_ | Get a loaded extension by id (or `null`) |
+| `ses.getAllExtensions()` _(Deprecated)_ | List all loaded extensions |
+
+### Auth & misc
+
+| Method | What it does |
+|---|---|
+| `ses.clearAuthCache()` | Promise → clear the HTTP authentication cache |
+| `ses.isPersistent()` | `true` if this session writes data to disk |
+
+---
+
+## Properties
+
+| Property | Type | What it is |
+|---|---|---|
+| `ses.availableSpellCheckerLanguages` | `string[]` (readonly) | All languages the spell checker supports |
+| `ses.spellCheckerEnabled` | `boolean` | Get/set whether the spell checker is on |
+| `ses.storagePath` | `string \| null` (readonly) | On-disk storage path, or `null` for in-memory sessions |
+| `ses.cookies` | `Cookies` (readonly) | The cookie manager for this session |
+| `ses.extensions` | `Extensions` (readonly) | The extension manager for this session |
+| `ses.serviceWorkers` | `ServiceWorkers` (readonly) | The service-worker manager for this session |
+| `ses.webRequest` | `WebRequest` (readonly) | Intercept and modify network requests |
+| `ses.protocol` | `Protocol` (readonly) | Register custom protocols (`app://`, ...) |
+| `ses.netLog` | `NetLog` (readonly) | Record network events to a log file |
+
+```js filename="cookies.js"
+// Read all cookies for a domain via the cookies sub-object
+const cookies = await session.defaultSession.cookies.get({ domain: 'example.com' })
+
+// Set a cookie
+await session.defaultSession.cookies.set({
+  url: 'https://example.com',
+  name: 'token',
+  value: 'abc123'
+})
+```
+
+---
+
+## In plain words
+
+A `session` is the **profile** that sits behind every page your app loads. It owns the things a browser profile owns: your cookies (logins), your cache (speed), your permissions (camera/mic), your downloads, and your network rules (proxy, user-agent).
+
+Three ideas cover almost everything:
+
+1. **Which profile?** Most apps just use `session.defaultSession`. Want an isolated, throwaway profile? `session.fromPartition('temp')`. Want one that survives restarts? `session.fromPartition('persist:name')`.
+2. **The sub-objects do the heavy lifting.** Cookies live on `ses.cookies`, request interception on `ses.webRequest`, custom URL schemes on `ses.protocol`. The session is the hub; these are the spokes.
+3. **Security handlers run here.** `setPermissionRequestHandler`, `setCertificateVerifyProc`, the `select-usb-device` family — this is where you decide what the web content is and isn't allowed to touch.
+
+Remember three names and you've covered the day-to-day: **`defaultSession`** (the profile you usually want), **`ses.cookies`** (read/write logins), and **`setPermissionRequestHandler`** (lock down what pages can do). Everything else you look up — that's what this page is for.
+
+<Cards>
+  <Cards.Card title="app" href="/en/api/app" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+  <Cards.Card title="Main process" href="/en/docs/processes/main" arrow />
+</Cards>

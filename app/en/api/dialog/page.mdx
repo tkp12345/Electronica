@@ -1,0 +1,165 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="dialog"
+  subtitle="Show the operating system's native open, save, message, and error dialogs — straight from the Main process."
+  badge="API · dialog"
+/>
+
+The `dialog` module lives in the **Main process**. It lets you display the OS's own native dialog boxes for opening and saving files, asking a question, or reporting an error — the same panels the user already knows from every other app on their machine.
+
+```js filename="main.js"
+const { dialog } = require('electron')
+
+// Ask the OS to show its native "open file" panel
+const { canceled, filePaths } = await dialog.showOpenDialog({
+  properties: ['openFile'],
+})
+```
+
+<EasyNote>
+`dialog` is the program's **front desk receptionist**. When your app needs something from the user — "which file?", "save where?", "are you sure?" — it doesn't draw the form itself. It asks the operating system to pop up the official, familiar panel and hands back the answer.
+</EasyNote>
+
+---
+
+## Events
+
+The `dialog` module has **no events**. It is a plain collection of methods — you call one, the OS shows a panel, and you get the result back (immediately for the `*Sync` variants, or via a `Promise` for the async ones). There is nothing to subscribe to.
+
+<EasyNote>
+Unlike `app`, which fires events as your program lives its life, `dialog` is purely **request-and-answer**. You ask a question, you get an answer. No listeners, no lifecycle.
+</EasyNote>
+
+---
+
+## Methods
+
+Every method optionally takes a `BrowserWindow` as the first argument. Pass one to make the dialog **modal** to that window (it attaches to the window and blocks it); omit it to show a standalone dialog. Methods ending in `Sync` block and return the result directly; the others return a `Promise`.
+
+### Open & Save files
+
+| Method | What it does |
+|---|---|
+| `dialog.showOpenDialog([window, ]options)` | Show the native "open" panel; resolves to `{ canceled, filePaths }` |
+| `dialog.showOpenDialogSync([window, ]options)` | Synchronous "open" panel; returns `string[]` of paths or `undefined` |
+| `dialog.showSaveDialog([window, ]options)` | Show the native "save" panel; resolves to `{ canceled, filePath }` |
+| `dialog.showSaveDialogSync([window, ]options)` | Synchronous "save" panel; returns the chosen path `string` or `undefined` |
+
+```js filename="open-file.js"
+const { dialog, BrowserWindow } = require('electron')
+
+async function pickFiles(win) {
+  const result = await dialog.showOpenDialog(win, {
+    title: 'Choose images',
+    properties: ['openFile', 'multiSelections'],
+    filters: [{ name: 'Images', extensions: ['png', 'jpg', 'gif'] }],
+  })
+
+  if (result.canceled) return [] // user clicked Cancel
+  return result.filePaths        // array of absolute paths
+}
+```
+
+```js filename="save-file.js"
+// Ask where to write a file, then check the result
+const { canceled, filePath } = await dialog.showSaveDialog({
+  defaultPath: 'report.pdf',
+  filters: [{ name: 'PDF', extensions: ['pdf'] }],
+})
+
+if (!canceled && filePath) {
+  writePdfTo(filePath)
+}
+```
+
+<Callout type="warning">
+`properties` controls what the open panel accepts: `'openFile'`, `'openDirectory'`, `'multiSelections'`, and more. On **macOS** you can combine `'openFile'` and `'openDirectory'`; on **Windows** a single panel cannot select both files and folders, so the OS picks one behavior.
+</Callout>
+
+### Messages & errors
+
+| Method | What it does |
+|---|---|
+| `dialog.showMessageBox([window, ]options)` | Show a message box (info / question / warning / error); resolves to `{ response, checkboxChecked }` |
+| `dialog.showMessageBoxSync([window, ]options)` | Synchronous message box; returns the index of the clicked button (`Integer`) |
+| `dialog.showErrorBox(title, content)` | Show a simple, blocking native error box (works even before `app` is ready) |
+
+```js filename="confirm.js"
+// A Yes / No confirmation that returns which button was pressed
+const { response } = await dialog.showMessageBox({
+  type: 'question',
+  buttons: ['Cancel', 'Delete'],
+  defaultId: 1,      // the button highlighted by default
+  cancelId: 0,       // the button mapped to Esc / window close
+  title: 'Delete file',
+  message: 'Are you sure you want to delete this file?',
+  detail: 'This action cannot be undone.',
+})
+
+if (response === 1) {
+  deleteTheFile() // user chose "Delete" (index 1)
+}
+```
+
+```js filename="error.js"
+// showErrorBox is the simplest one — title + text, and it blocks.
+// Handy for fatal startup errors before any window exists.
+dialog.showErrorBox(
+  'Startup failed',
+  'The configuration file could not be read.',
+)
+```
+
+<Callout type="warning">
+`showMessageBox` returns the **index** of the clicked button, not its text. Always pair `buttons` with `cancelId` (Esc / closing the dialog) and `defaultId` (the highlighted button) so keyboard users get sensible behavior.
+</Callout>
+
+### Security
+
+| Method | Platform | What it does |
+|---|---|---|
+| `dialog.showCertificateTrustDialog([window, ]options)` | _(macOS / Windows)_ | Ask the user to trust a certificate; resolves with `Promise<void>` when dismissed |
+
+```js filename="cert-trust.js"
+// macOS / Windows only: prompt the user to trust a certificate
+await dialog.showCertificateTrustDialog(win, {
+  certificate: someCertificate,
+  message: 'Trust this certificate to continue.',
+})
+```
+
+<EasyNote>
+Reach for the **`Sync`** versions only in throwaway scripts or truly fatal situations — they freeze your whole app until the user responds. In a real app, prefer the `Promise`-returning ones (`showOpenDialog`, `showSaveDialog`, `showMessageBox`) so the rest of the program keeps breathing.
+</EasyNote>
+
+---
+
+## Properties
+
+The `dialog` module has **no properties**. It exposes only the methods listed above — there is no state to read or configure on the module itself. Everything you want to customize (titles, buttons, filters, default paths) is passed through the `options` object on each call.
+
+---
+
+## In plain words
+
+The `dialog` module is your app's **polite way of asking the user a question** — using the exact panels the operating system already shows everywhere else, so they look and behave like home.
+
+There are really only four things you'll ever do with it:
+
+1. **"Which file?"** → `showOpenDialog`. Set `properties` to pick files, folders, or many at once, and `filters` to limit the file types.
+2. **"Save where?"** → `showSaveDialog`. Give a `defaultPath` and `filters`; you get back the path the user chose.
+3. **"Are you sure?"** → `showMessageBox`. List your `buttons`, then read the `response` index to know which one was clicked.
+4. **"Something broke."** → `showErrorBox`. The simplest of all: a title, a message, done.
+
+Two habits keep you out of trouble: pass the owning **window** as the first argument so the dialog attaches to it, and prefer the **`Promise`** versions over the `*Sync` ones so you never freeze the app. Memorize those three method names — open, save, message — and you've covered almost everything.
+
+<Cards>
+  <Cards.Card title="app" href="/en/api/app" arrow />
+  <Cards.Card title="Main process" href="/en/docs/processes/main" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+</Cards>

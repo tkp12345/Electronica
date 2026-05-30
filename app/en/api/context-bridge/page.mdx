@@ -1,0 +1,156 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { IpcApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<IpcApiIllustration />}
+  title="contextBridge"
+  subtitle="Safely hand a small, controlled API from your isolated preload script to the web page — without ever exposing Node.js to untrusted content."
+  badge="API · contextBridge"
+/>
+
+The `contextBridge` module lives in the **Renderer process** (inside your **preload** script). It builds a secure, one-way door between two isolated JavaScript worlds — the privileged preload world (which can touch Node and Electron internals) and the untrusted page world (your HTML/JS) — so the page can call exactly the functions you allow, and nothing more.
+
+```js filename="preload.js"
+const { contextBridge, ipcRenderer } = require('electron')
+
+// Expose a tiny, deliberate API on window.electron
+contextBridge.exposeInMainWorld('electron', {
+  ping: () => ipcRenderer.invoke('ping')
+})
+```
+
+```js filename="renderer.js"
+// In the page, you only see what you chose to expose
+const pong = await window.electron.ping()
+```
+
+<EasyNote>
+`contextBridge` is the **service window at a bank**. Behind the glass sits the teller (your preload, with the keys to the vault); in front sits the customer (the web page). The customer can slide a slip through the slot and get cash back, but can never reach in and grab the vault. You decide exactly which slips are accepted.
+</EasyNote>
+
+---
+
+## Events
+
+The `contextBridge` module is **stateless** — it has no lifecycle and emits **no events**. There is nothing to subscribe to with `.on(...)`; you simply call its methods once, at preload time, to set up the bridge.
+
+| Event | Fires when |
+|---|---|
+| _(none)_ | `contextBridge` does not emit any events |
+
+<EasyNote>
+Think of it less like a doorbell that rings (events) and more like **installing the service window once** when the branch opens. After it's mounted, it just sits there doing its job — there's nothing to "listen" for.
+</EasyNote>
+
+---
+
+## Methods
+
+All methods are **static** — call them on the module itself (`contextBridge.exposeInMainWorld(...)`), never on an instance. They're meant to run **once, in a preload script**, while `contextIsolation` is enabled (the default).
+
+### Exposing an API
+
+| Method | What it does |
+|---|---|
+| `contextBridge.exposeInMainWorld(apiKey, api)` | Expose `api` on the page's `window[apiKey]` (the "main world") |
+| `contextBridge.exposeInIsolatedWorld(worldId, apiKey, api)` | Expose `api` on `window[apiKey]` inside a **specific** isolated world (by numeric `worldId`) |
+
+```js filename="preload.js"
+const { contextBridge, ipcRenderer } = require('electron')
+
+// The classic pattern: wrap ipcRenderer in safe, named functions.
+// The page never touches ipcRenderer directly — only these calls.
+contextBridge.exposeInMainWorld('api', {
+  // Renderer -> Main, with a reply
+  loadSettings: () => ipcRenderer.invoke('settings:load'),
+  saveSettings: (data) => ipcRenderer.invoke('settings:save', data),
+
+  // Main -> Renderer: forward only the payload, not the raw event
+  onUpdate: (callback) =>
+    ipcRenderer.on('app:update', (_event, value) => callback(value))
+})
+```
+
+```js filename="isolated-world.js"
+// Inject into a non-default world (e.g. a world created for an extension).
+// World IDs 0 and 999 are reserved by Electron — use 1000+ for your own.
+contextBridge.exposeInIsolatedWorld(1004, 'extApi', {
+  version: () => '1.0.0'
+})
+```
+
+### Reaching back into the page (experimental)
+
+| Method | What it does |
+|---|---|
+| `contextBridge.executeInMainWorld(executionScript)` _(Experimental)_ | Run a function **in the main world** from your isolated preload and get a copy of its return value |
+
+```js filename="execute-in-main-world.js"
+// Run code in the page's world. `func` is serialized and re-created there,
+// so it CANNOT capture variables from the preload — pass everything via args.
+const result = contextBridge.executeInMainWorld({
+  func: (greeting, name) => `${greeting}, ${name}!`,
+  args: ['Hello', 'world']
+})
+// result === 'Hello, world!'
+```
+
+<Callout type="warning">
+**`executeInMainWorld` is experimental** and may change or be removed. The `func` you pass is serialized — it loses its closure, so it can't see any variables, imports, or `this` from your preload. Pass everything it needs through `args`.
+</Callout>
+
+### What can cross the bridge
+
+Values don't pass by reference — they are **copied** as they cross, and the copy is **immutable**. Mutating one side never affects the other.
+
+| Type | Crosses the bridge? |
+|---|---|
+| `string`, `number`, `boolean`, `null`, `undefined` | Yes |
+| `Object`, `Array`, `Date`, `Error` | Yes |
+| `Function` | Yes (calls are proxied across) |
+| `Promise` | Yes (resolves across the bridge) |
+| Cloneable types, `Element`, `Blob`, `VideoFrame` | Yes |
+| `Symbol` | No — not supported |
+| Custom class instances | Value is copied, but the **prototype is dropped** |
+
+<Callout type="warning">
+You **cannot** send `ipcRenderer` (or other complex Electron objects) straight across the bridge — as of Electron 29+ this is blocked, and before that it arrived as an empty object. Always wrap it in your own small functions, as in the examples above. Also: only expose the **minimum** surface needed. Every function you publish on `window` is reachable by any script on the page, including injected/untrusted ones.
+</Callout>
+
+<EasyNote>
+"Copied, not referenced" is the safety net. Even if the page modifies an object you handed it, your preload's original is untouched — like photocopying a document before sliding it through the window. They can scribble on their copy all they want; your original stays clean.
+</EasyNote>
+
+---
+
+## Properties
+
+The `contextBridge` module exposes **no properties** — it's purely a set of functions you call. There is no state to read.
+
+| Property | Type | What it is |
+|---|---|---|
+| _(none)_ | — | `contextBridge` has no properties |
+
+---
+
+## In plain words
+
+`contextBridge` answers one tricky question: _"How do I let my web page do powerful things (read files, talk to the OS) without handing it the keys to do anything?"_
+
+The naive answer — turn on `nodeIntegration` and let the page `require('fs')` — is a security disaster: any ad, any injected script, any compromised dependency on the page now has full Node access. `contextBridge` is the grown-up answer. Your **preload** script keeps the keys, and you publish only a handful of named, safe functions onto `window`. The page calls `window.api.saveSettings(...)`; it can't reach `fs`, it can't reach `ipcRenderer`, it can only call the doors you opened.
+
+Three ideas are the whole story:
+
+1. **One door per task.** Don't expose `ipcRenderer`; expose `saveSettings`, `loadSettings`, `onUpdate`. Small, named, intentional.
+2. **Everything is copied.** Values cross the bridge as immutable copies, so neither side can secretly mutate the other's state. Symbols don't cross; class prototypes are dropped.
+3. **Set it up once, in preload.** No events, no properties, no instances — just call `exposeInMainWorld` while `contextIsolation` is on (the default since Electron 12).
+
+Remember one method and you've got 90% of it: **`exposeInMainWorld('api', { ...safe functions... })`**. The rest — isolated worlds, `executeInMainWorld` — are advanced corners you'll look up when you need them.
+
+<Cards>
+  <Cards.Card title="app" href="/en/api/app" arrow />
+  <Cards.Card title="Context Isolation" href="/en/docs/processes/context-isolation" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+</Cards>

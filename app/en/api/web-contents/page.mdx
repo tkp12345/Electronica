@@ -1,0 +1,442 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { WindowApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<WindowApiIllustration />}
+  title="webContents"
+  subtitle="The remote control for the actual web page inside a window — navigate, run scripts, listen to events, print, and capture."
+  badge="API · webContents"
+/>
+
+The `webContents` module lives in the **Main process**, but it controls the _renderer_ — the live web page rendered inside a `BrowserWindow`, `BrowserView`, or `<webview>`. The module itself is a small factory: it hands you back **`WebContents` instances**, each one a full remote control for a single page.
+
+```js filename="main.js"
+const { BrowserWindow, webContents } = require('electron')
+
+const win = new BrowserWindow()
+const contents = win.webContents // the page's remote control
+
+contents.loadURL('https://electronjs.org')
+contents.on('did-finish-load', () => {
+  // the page finished loading — safe to talk to it now
+})
+```
+
+<EasyNote>
+A `BrowserWindow` is the **picture frame**; the `WebContents` is the **photo inside it**. The window gives you the frame, the title bar, and the close button — but everything _about the page itself_ (its URL, its scripts, its scroll position) lives on `webContents`.
+</EasyNote>
+
+---
+
+## Module methods
+
+`webContents` is **not** created with `new`. You always get instances from a window, from these factory methods, or from the `app`'s `web-contents-created` event.
+
+| Method | What it returns |
+|---|---|
+| `webContents.getAllWebContents()` | An array of every live `WebContents` (all windows, views, webviews, devtools) |
+| `webContents.getFocusedWebContents()` | The `WebContents` that currently has focus, or `null` |
+| `webContents.fromId(id)` | The `WebContents` with that `id`, or `undefined` |
+| `webContents.fromFrame(frame)` | The `WebContents` that owns a given `WebFrameMain`, or `undefined` |
+| `webContents.fromDevToolsTargetId(targetId)` | The `WebContents` for a Chrome DevTools Protocol target id, or `undefined` |
+
+```js filename="find-contents.js"
+// Mute every page in the whole app at once
+for (const contents of webContents.getAllWebContents()) {
+  contents.setAudioMuted(true)
+}
+```
+
+---
+
+## Instance Events
+
+Listen with `contents.on('event-name', handler)`. Items marked _(macOS)_ / _(Windows)_ / _(Linux)_ only fire on that platform.
+
+### Loading & navigation
+
+| Event | Fires when |
+|---|---|
+| `did-start-loading` | The tab spinner starts spinning |
+| `did-stop-loading` | The tab spinner stops spinning |
+| `dom-ready` | The document in the top-level frame is loaded |
+| `did-finish-load` | Navigation finished _and_ the page `onload` fired |
+| `did-fail-load` | A load failed (gives `errorCode`, `errorDescription`, URL) |
+| `did-fail-provisional-load` | A load was cancelled (e.g. `window.stop()`) |
+| `did-frame-finish-load` | A frame finished loading |
+| `page-title-updated` | The page title changed during navigation |
+| `page-favicon-updated` | New favicon URLs were received |
+| `did-create-window` | A new window was created via `window.open()` |
+| `will-navigate` | The page is about to navigate the **main frame** — `preventDefault()` to block |
+| `will-frame-navigate` | A navigation is about to start in **any** frame |
+| `did-start-navigation` | Any frame started navigating |
+| `will-redirect` | A server-side redirect is about to happen |
+| `did-redirect-navigation` | A server-side redirect completed |
+| `did-navigate` | The main frame finished navigating |
+| `did-frame-navigate` | Any frame finished navigating |
+| `did-navigate-in-page` | An in-page navigation happened (anchor/hash change) |
+| `will-prevent-unload` | A `beforeunload` handler is trying to cancel the unload |
+
+```js filename="navigation.js"
+contents.on('did-finish-load', () => {
+  // the page is fully loaded and interactive
+})
+
+contents.on('did-fail-load', (event, errorCode, errorDescription, url) => {
+  // show an offline / error page instead of a blank window
+})
+
+// Security: block the page from navigating away to untrusted sites
+contents.on('will-navigate', (event, url) => {
+  if (!url.startsWith('https://my-trusted-app.com')) event.preventDefault()
+})
+```
+
+<Callout type="warning">
+`did-finish-load` is the right "page is ready" signal — **not** `dom-ready`. `dom-ready` fires when the DOM exists but images/styles may still be loading. Wait for `did-finish-load` before calling `executeJavaScript` that depends on a fully rendered page.
+</Callout>
+
+### Process & responsiveness
+
+| Event | Fires when |
+|---|---|
+| `render-process-gone` | The renderer process disappeared (gives `details.reason`) |
+| `unresponsive` | The page hung and stopped responding |
+| `responsive` | A previously hung page recovered |
+| `destroyed` | This `WebContents` was destroyed |
+| `preload-error` | The preload script threw an unhandled exception |
+
+```js filename="crash-recovery.js"
+contents.on('render-process-gone', (event, details) => {
+  // details.reason: 'crashed' | 'killed' | 'oom' | 'launch-failed' | ...
+  if (details.reason !== 'clean-exit') contents.reload()
+})
+
+contents.on('unresponsive', () => {
+  // offer the user to wait or force-reload
+})
+```
+
+### Input & focus
+
+| Event | Fires when |
+|---|---|
+| `input-event` | Any input event was sent to the page |
+| `before-input-event` | Before a keyboard keydown/keyup is dispatched — `preventDefault()` to swallow it |
+| `before-mouse-event` | Before a mouse event is dispatched in the page |
+| `enter-html-full-screen` | The page entered full screen via the HTML API |
+| `leave-html-full-screen` | The page left HTML full screen |
+| `zoom-changed` | The user requested a zoom change via the mouse wheel |
+| `blur` | The `WebContents` lost focus |
+| `focus` | The `WebContents` gained focus |
+| `cursor-changed` | The mouse cursor type changed |
+| `update-target-url` | The mouse moved over (or focus landed on) a link |
+| `context-menu` | A context menu should be shown (gives `params`) |
+
+```js filename="shortcuts.js"
+// Intercept a global shortcut before the page sees it
+contents.on('before-input-event', (event, input) => {
+  if (input.control && input.key.toLowerCase() === 'r') {
+    event.preventDefault() // disable Ctrl+R reload
+  }
+})
+```
+
+### Media & appearance
+
+| Event | Fires when |
+|---|---|
+| `media-started-playing` | Media playback began |
+| `media-paused` | Media paused or finished |
+| `audio-state-changed` | The page became audible or inaudible |
+| `did-change-theme-color` | The page's `<meta theme-color>` changed |
+| `found-in-page` | A `findInPage` result is available |
+| `paint` | A new frame was generated (offscreen rendering only) |
+| `content-bounds-updated` | The page called `window.moveTo` / `window.resizeTo` |
+| `preferred-size-changed` | The preferred size of the contents changed |
+
+### DevTools
+
+| Event | Fires when |
+|---|---|
+| `devtools-opened` | DevTools were opened |
+| `devtools-closed` | DevTools were closed |
+| `devtools-focused` | DevTools were focused/opened |
+| `devtools-reload-page` | DevTools asked the page to reload |
+| `devtools-open-url` | A link was clicked in DevTools |
+| `devtools-search-query` | Text was searched from the DevTools context menu |
+
+### Security, IPC & embedding
+
+| Event | Fires when |
+|---|---|
+| `certificate-error` | TLS certificate verification failed for a URL |
+| `select-client-certificate` | A client certificate was requested |
+| `login` | The page needs basic/proxy authentication |
+| `select-bluetooth-device` | The page is choosing a Bluetooth device |
+| `console-message` | The page logged to the console |
+| `ipc-message` | The renderer sent an **async** IPC message |
+| `ipc-message-sync` | The renderer sent a **sync** IPC message |
+| `will-attach-webview` | A `<webview>` is about to be attached |
+| `did-attach-webview` | A `<webview>` was attached |
+| `frame-created` | A frame (main, iframe, or nested) was created |
+
+```js filename="ipc.js"
+// Receive a message a preload script sent with ipcRenderer.send('count', 5)
+contents.on('ipc-message', (event, channel, ...args) => {
+  if (channel === 'count') updateBadge(args[0])
+})
+```
+
+<EasyNote>
+There are a _lot_ of events, but they cluster into stories: "the page is loading" (`did-start-loading` → `dom-ready` → `did-finish-load`), "the page is navigating" (`will-navigate` → `did-navigate`), and "something went wrong" (`render-process-gone`, `unresponsive`). Learn the trio you need for the moment and ignore the rest until you do.
+</EasyNote>
+
+---
+
+## Instance Methods
+
+### Loading & navigation
+
+| Method | What it does |
+|---|---|
+| `contents.loadURL(url[, options])` | Load a URL (returns a `Promise`); options can set headers, postData, userAgent |
+| `contents.loadFile(filePath[, options])` | Load a local HTML file (returns a `Promise`) |
+| `contents.downloadURL(url[, options])` | Start a download without navigating the page |
+| `contents.getURL()` | The page's current URL |
+| `contents.getTitle()` | The page's current title |
+| `contents.stop()` | Stop any pending navigation |
+| `contents.reload()` | Reload the page |
+| `contents.reloadIgnoringCache()` | Reload, ignoring the cache |
+| `contents.isLoading()` | Is the page still loading resources? |
+| `contents.isLoadingMainFrame()` | Is the main frame still loading? |
+| `contents.isWaitingForResponse()` | Are we still waiting for the first response? |
+
+```js filename="load.js"
+// loadURL / loadFile return promises — await them
+await contents.loadFile('index.html')
+await contents.loadURL('https://example.com', {
+  userAgent: 'MyApp/1.0',
+})
+```
+
+<Callout type="warning">
+The old history methods — `goBack()`, `goForward()`, `canGoBack()`, `canGoForward()`, `goToIndex()`, `goToOffset()`, `canGoToOffset()`, `clearHistory()` — are **deprecated**. Use the `contents.navigationHistory` object instead (e.g. `contents.navigationHistory.goBack()`).
+</Callout>
+
+### Lifecycle & state
+
+| Method | What it does |
+|---|---|
+| `contents.close([opts])` | Close the page as if `window.close()` was called |
+| `contents.focus()` | Focus the page |
+| `contents.isFocused()` | Is the page focused? |
+| `contents.isDestroyed()` | Has the page been destroyed? |
+| `contents.isCrashed()` | Has the renderer process crashed? |
+| `contents.forcefullyCrashRenderer()` | Forcefully kill the renderer process |
+| `contents.getType()` | `'window'` / `'webview'` / `'browserView'` / `'remote'` |
+| `contents.isOffscreen()` | Is offscreen rendering enabled? |
+
+### Scripts & styles
+
+| Method | What it does |
+|---|---|
+| `contents.executeJavaScript(code[, userGesture])` | Run JS in the page; returns a `Promise` of the result |
+| `contents.executeJavaScriptInIsolatedWorld(worldId, scripts[, userGesture])` | Run JS in an isolated world |
+| `contents.insertCSS(css[, options])` | Inject CSS; returns a key for later removal |
+| `contents.removeInsertedCSS(key)` | Remove CSS injected with `insertCSS` |
+| `contents.insertText(text)` | Insert text into the focused element |
+
+```js filename="inject.js"
+// executeJavaScript returns a promise with the evaluated value
+const title = await contents.executeJavaScript('document.title')
+
+// insertCSS returns a key so you can remove it later
+const key = await contents.insertCSS('body { background: #111 }')
+await contents.removeInsertedCSS(key)
+```
+
+<Callout type="warning">
+Never pass untrusted strings into `executeJavaScript` — you'd be running arbitrary code with full page privileges. Build the code yourself and `JSON.stringify` any data you interpolate.
+</Callout>
+
+### Editing & selection
+
+| Method | What it does |
+|---|---|
+| `contents.undo()` / `contents.redo()` | Undo / redo |
+| `contents.cut()` / `contents.copy()` / `contents.paste()` | Clipboard cut / copy / paste |
+| `contents.pasteAndMatchStyle()` | Paste without formatting |
+| `contents.delete()` | Delete the selection |
+| `contents.selectAll()` / `contents.unselect()` | Select all / clear selection |
+| `contents.replace(text)` | Replace the selection |
+| `contents.replaceMisspelling(text)` | Replace a misspelled word |
+| `contents.copyImageAt(x, y)` | Copy the image at a point to the clipboard |
+| `contents.centerSelection()` | Scroll the selection into the center |
+| `contents.adjustSelection(options)` | Move the selection's start/end points |
+| `contents.scrollToTop()` / `contents.scrollToBottom()` | Scroll to the top / bottom |
+
+### Find in page
+
+| Method | What it does |
+|---|---|
+| `contents.findInPage(text[, options])` | Search the page; returns a request id (results arrive via `found-in-page`) |
+| `contents.stopFindInPage(action)` | Stop the search (`'clearSelection'`, `'keepSelection'`, `'activateSelection'`) |
+
+### Zoom
+
+| Method | What it does |
+|---|---|
+| `contents.setZoomFactor(factor)` / `contents.getZoomFactor()` | Zoom as a multiplier (`1.0` = 100%) |
+| `contents.setZoomLevel(level)` / `contents.getZoomLevel()` | Zoom as a level (`0` = default) |
+| `contents.setVisualZoomLevelLimits(min, max)` | Limit pinch-to-zoom |
+
+### Audio
+
+| Method | What it does |
+|---|---|
+| `contents.setAudioMuted(muted)` / `contents.isAudioMuted()` | Mute / read mute state |
+| `contents.isCurrentlyAudible()` | Is audio playing right now? |
+
+### IPC (talking to the renderer)
+
+| Method | What it does |
+|---|---|
+| `contents.send(channel, ...args)` | Send an async message to the renderer |
+| `contents.sendToFrame(frameId, channel, ...args)` | Send to a specific frame |
+| `contents.postMessage(channel, message, [transfer])` | Send a message and transfer `MessagePort`s |
+
+```js filename="send.js"
+// Main → renderer; receive in preload with ipcRenderer.on('update', ...)
+contents.send('update', { progress: 0.5 })
+```
+
+### Window-open & user agent
+
+| Method | What it does |
+|---|---|
+| `contents.setWindowOpenHandler(handler)` | Decide what happens on `window.open()` (allow/deny + override options) |
+| `contents.setUserAgent(userAgent)` / `contents.getUserAgent()` | Override / read the user agent |
+| `contents.setIgnoreMenuShortcuts(ignore)` | Ignore app menu shortcuts while focused |
+
+```js filename="window-open.js"
+// Open external links in the OS browser, deny in-app popups (security)
+contents.setWindowOpenHandler(({ url }) => {
+  require('electron').shell.openExternal(url)
+  return { action: 'deny' }
+})
+```
+
+### Printing & capturing
+
+| Method | What it does |
+|---|---|
+| `contents.print([options], [callback])` | Print the page |
+| `contents.printToPDF(options)` | Render the page to a PDF (`Promise<Buffer>`) |
+| `contents.getPrintersAsync()` | List the system's printers (`Promise`) |
+| `contents.capturePage([rect, opts])` | Screenshot the page (`Promise<NativeImage>`) |
+| `contents.isBeingCaptured()` | Is a capture in progress? |
+| `contents.savePage(fullPath, saveType)` | Save the page to disk (`Promise`) |
+
+```js filename="pdf.js"
+// Render the current page to a PDF buffer and write it to disk
+const fs = require('node:fs/promises')
+const pdf = await contents.printToPDF({ landscape: false })
+await fs.writeFile('out.pdf', pdf)
+```
+
+### DevTools
+
+| Method | What it does |
+|---|---|
+| `contents.openDevTools([options])` / `contents.closeDevTools()` | Open / close DevTools |
+| `contents.toggleDevTools()` | Toggle DevTools |
+| `contents.isDevToolsOpened()` / `contents.isDevToolsFocused()` | Read DevTools open/focus state |
+| `contents.setDevToolsWebContents(devToolsWebContents)` | Render DevTools into a custom `WebContents` |
+| `contents.getDevToolsTitle()` / `contents.setDevToolsTitle(title)` | Read / set the DevTools window title |
+| `contents.inspectElement(x, y)` | Inspect the element at a point |
+| `contents.inspectSharedWorker()` / `contents.inspectSharedWorkerById(workerId)` | Inspect a shared worker |
+| `contents.getAllSharedWorkers()` | Info about all shared workers |
+| `contents.inspectServiceWorker()` | Inspect the service worker |
+| `contents.addWorkSpace(path)` / `contents.removeWorkSpace(path)` | Add / remove a DevTools workspace folder |
+
+### Input emulation & offscreen rendering
+
+| Method | What it does |
+|---|---|
+| `contents.sendInputEvent(inputEvent)` | Synthesize a keyboard/mouse/touch event |
+| `contents.enableDeviceEmulation(parameters)` / `contents.disableDeviceEmulation()` | Emulate a device (size, scale, etc.) |
+| `contents.beginFrameSubscription([onlyDirty,] callback)` / `contents.endFrameSubscription()` | Subscribe / unsubscribe to raw frames |
+| `contents.startPainting()` / `contents.stopPainting()` / `contents.isPainting()` | Control offscreen painting |
+| `contents.setFrameRate(fps)` / `contents.getFrameRate()` | Set / read the offscreen frame rate |
+| `contents.invalidate()` | Force a full repaint |
+| `contents.startDrag(item)` | Begin a native drag-and-drop |
+
+### Process, WebRTC & diagnostics
+
+| Method | What it does |
+|---|---|
+| `contents.getOSProcessId()` | OS process id of the renderer |
+| `contents.getProcessId()` | Chromium's internal process id |
+| `contents.getMediaSourceId()` | The media source id for this page |
+| `contents.takeHeapSnapshot(filePath)` | Write a V8 heap snapshot to a file (`Promise`) |
+| `contents.getBackgroundThrottling()` / `contents.setBackgroundThrottling(allowed)` | Read / set CPU/network throttling when unfocused |
+| `contents.setImageAnimationPolicy(policy)` | `'animate'` / `'animateOnce'` / `'noAnimation'` |
+| `contents.getWebRTCIPHandlingPolicy()` / `contents.setWebRTCIPHandlingPolicy(policy)` | Read / set how WebRTC exposes IPs |
+| `contents.getWebRTCUDPPortRange()` / `contents.setWebRTCUDPPortRange(min, max)` | Read / restrict WebRTC UDP ports |
+| `contents.showDefinitionForSelection()` _(macOS)_ | Show the dictionary popup for the selection |
+
+---
+
+## Instance Properties
+
+| Property | Type | What it is |
+|---|---|---|
+| `contents.id` | `Integer` (readonly) | Unique numeric id for this page |
+| `contents.audioMuted` | `boolean` | Get/set whether the page is muted |
+| `contents.userAgent` | `string` | Get/set the user agent for requests |
+| `contents.zoomLevel` | `number` | Get/set the zoom level (`0` = default) |
+| `contents.zoomFactor` | `number` | Get/set the zoom factor (`1.0` = 100%) |
+| `contents.frameRate` | `Integer` | Get/set the offscreen frame rate |
+| `contents.backgroundThrottling` | `boolean` | Get/set throttling when the tab is unfocused |
+| `contents.session` | `Session` (readonly) | The `Session` this page uses |
+| `contents.mainFrame` | `WebFrameMain` (readonly) | The top-level frame |
+| `contents.focusedFrame` | `WebFrameMain \| null` (readonly) | The currently focused frame |
+| `contents.opener` | `WebFrameMain \| null` (readonly) | The frame that opened this one |
+| `contents.hostWebContents` | `WebContents \| null` (readonly) | The host page, if this is a guest/webview |
+| `contents.devToolsWebContents` | `WebContents \| null` (readonly) | The DevTools page, if attached |
+| `contents.debugger` | `Debugger` (readonly) | Chrome DevTools Protocol access |
+| `contents.navigationHistory` | `NavigationHistory` (readonly) | Back/forward history (replaces the deprecated `goBack`/`goForward` methods) |
+| `contents.ipc` | `IpcMain` (readonly) | An `ipcMain`-like interface scoped to **this** page |
+
+```js filename="ipc-scoped.js"
+// contents.ipc handles messages only from THIS page — cleaner than global ipcMain
+contents.ipc.handle('get-config', () => loadConfig())
+```
+
+---
+
+## In plain words
+
+A window has two layers, and beginners constantly mix them up:
+
+1. **`BrowserWindow`** is the _frame_ — the OS-level box with a title bar, a minimize button, and a position on your desktop.
+2. **`webContents`** is the _page_ — the living web document inside that frame, with a URL, scripts, a scroll position, and a console.
+
+Almost everything you actually _want to do_ — "load this URL", "run this script", "screenshot the page", "listen for when it finishes loading", "send a message to the page" — happens on `webContents`, not on the window.
+
+Three patterns cover most real work:
+
+1. **Wait, then act.** Listen for `did-finish-load`, then `executeJavaScript` or `send` your data in. (`dom-ready` is the tempting wrong answer — it fires too early.)
+2. **Lock it down.** `setWindowOpenHandler` (deny popups) and `will-navigate` (block untrusted navigation) are your two security seatbelts.
+3. **Talk to the page.** `contents.send(...)` goes out, `contents.ipc.handle(...)` and the `ipc-message` event come back in.
+
+Remember: you rarely write `new WebContents()`. You reach for one through `win.webContents`, `webContents.fromId(id)`, or the `web-contents-created` event — and then it's just a remote control for that one page.
+
+<Cards>
+  <Cards.Card title="app" href="/en/api/app" arrow />
+  <Cards.Card title="Process model" href="/en/docs/processes" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+</Cards>

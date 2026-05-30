@@ -1,0 +1,222 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { MenuApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<MenuApiIllustration />}
+  title="Tray"
+  subtitle="Put an icon in the system tray (menu bar / notification area) and react when the user clicks it."
+  badge="API · Tray"
+/>
+
+`Tray` lives in the **Main process**. It adds your app's icon to the operating system's status area — the menu bar on macOS, the notification area (bottom-right) on Windows, and the status tray on Linux — so people can reach your app even when no window is open.
+
+Unlike most API modules, `Tray` is a **class**: you create an instance with `new Tray(image)` and call methods on that instance.
+
+```js filename="main.js"
+const { app, Tray, Menu, nativeImage } = require('electron')
+
+let tray // keep a reference so it isn't garbage-collected
+
+app.whenReady().then(() => {
+  const icon = nativeImage.createFromPath('/path/to/icon.png')
+  tray = new Tray(icon)
+  tray.setToolTip('My App')
+
+  const menu = Menu.buildFromTemplate([
+    { label: 'Open', click: () => mainWindow.show() },
+    { label: 'Quit', role: 'quit' },
+  ])
+  tray.setContextMenu(menu)
+})
+```
+
+<Callout type="warning">
+Always store the `Tray` instance in a long-lived variable (like a module-level `let tray`). If the only reference is a local variable, it can be garbage-collected and your icon will silently disappear.
+</Callout>
+
+## Constructor
+
+```js filename="constructor.js"
+// image: a NativeImage or a path string
+// guid:  optional, Windows/macOS — a stable UUID so the OS remembers
+//        the icon's position across restarts
+const tray = new Tray(image, guid)
+```
+
+| Argument | Type | What it is |
+|---|---|---|
+| `image` | `NativeImage \| string` | The icon to show (object or file path) |
+| `guid` _(Windows/macOS)_ | `string` (optional) | A UUID that keeps the icon's position stable across app restarts |
+
+<EasyNote>
+On macOS, use a **template image** (a black-and-white PNG named `…Template.png`). macOS then recolors it automatically so it looks right in both light and dark menu bars.
+</EasyNote>
+
+---
+
+## Instance Events
+
+Listen with `tray.on('event-name', handler)`. Events marked _(macOS)_ / _(Windows)_ / _(Linux)_ only fire on that platform.
+
+### Clicks
+
+| Event | Fires when |
+|---|---|
+| `click` | The tray icon is clicked (on Linux this means "activated", not necessarily a left click) |
+| `right-click` _(macOS/Windows)_ | The tray icon is right-clicked |
+| `double-click` _(macOS/Windows)_ | The tray icon is double-clicked |
+| `middle-click` _(Windows)_ | The tray icon is clicked with the middle button |
+
+```js filename="clicks.js"
+// Toggle the main window when the icon is clicked
+tray.on('click', () => {
+  mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show()
+})
+
+// On Windows/macOS, right-click is the usual "show the menu" gesture
+tray.on('right-click', () => {
+  tray.popUpContextMenu()
+})
+```
+
+### Mouse movement
+
+| Event | Fires when |
+|---|---|
+| `mouse-down` _(macOS)_ | The mouse is pressed on the icon |
+| `mouse-up` _(macOS)_ | The mouse is released over the icon |
+| `mouse-enter` _(macOS/Windows)_ | The cursor enters the icon |
+| `mouse-leave` _(macOS/Windows)_ | The cursor leaves the icon |
+| `mouse-move` _(macOS/Windows)_ | The cursor moves over the icon |
+
+### Balloons _(Windows)_
+
+| Event | Fires when |
+|---|---|
+| `balloon-show` _(Windows)_ | A balloon notification is shown |
+| `balloon-click` _(Windows)_ | The balloon notification is clicked |
+| `balloon-closed` _(Windows)_ | The balloon closes (timeout or user dismiss) |
+| `focus` _(Windows)_ | Focus returns to the notification area |
+
+```js filename="balloon.js"
+// Windows: show a balloon and react when the user clicks it
+tray.displayBalloon({ title: 'Done', content: 'Your export finished.' })
+
+tray.on('balloon-click', () => {
+  mainWindow.show()
+})
+```
+
+### Drag & drop _(macOS)_
+
+| Event | Fires when |
+|---|---|
+| `drop` _(macOS)_ | Any dragged item is dropped on the icon |
+| `drop-files` _(macOS)_ | Files are dropped on the icon (gives the file paths) |
+| `drop-text` _(macOS)_ | Text is dropped on the icon |
+| `drag-enter` _(macOS)_ | A drag operation enters the icon |
+| `drag-leave` _(macOS)_ | A drag operation leaves the icon |
+| `drag-end` _(macOS)_ | A drag operation ends, on the icon or elsewhere |
+
+```js filename="drop-files.js"
+// macOS: accept files dropped onto the tray icon
+tray.on('drop-files', (event, files) => {
+  // files is an array of absolute paths
+  importFiles(files)
+})
+```
+
+<EasyNote>
+Think of the tray icon as a tiny doorbell sitting in the corner of your screen. `click` is someone pressing it, `mouse-enter`/`mouse-leave` is someone walking past, and on macOS you can even leave a package on the doorstep — that's `drop-files`.
+</EasyNote>
+
+---
+
+## Instance Methods
+
+### Core (all platforms)
+
+| Method | What it does |
+|---|---|
+| `tray.destroy()` | Remove the tray icon immediately |
+| `tray.setImage(image)` | Change the icon's image |
+| `tray.setToolTip(toolTip)` | Set the hover tooltip text (`''` removes it) |
+| `tray.setContextMenu(menu)` | Set the menu shown on click/right-click (`null` clears it) |
+| `tray.isDestroyed()` | `true` if the icon has been destroyed |
+
+```js filename="status-icon.js"
+// Swap the icon to reflect app state
+tray.setImage(isOnline ? onlineIcon : offlineIcon)
+tray.setToolTip(isOnline ? 'Connected' : 'Offline')
+```
+
+### Bounds, GUID & menu control _(macOS/Windows)_
+
+| Method | What it does |
+|---|---|
+| `tray.getBounds()` _(macOS/Windows)_ | The icon's `Rectangle` (`x`, `y`, `width`, `height`) |
+| `tray.getGUID()` _(macOS/Windows)_ | The icon's GUID, or `null` if none was set |
+| `tray.popUpContextMenu([menu, position])` _(macOS/Windows)_ | Pop up the context menu (optionally a different menu/position) |
+| `tray.closeContextMenu()` _(macOS/Windows)_ | Close an open context menu |
+
+```js filename="popup-near-icon.js"
+// Show a custom popup window right under the tray icon
+const { x, y } = tray.getBounds()
+popup.setPosition(x, y)
+popup.show()
+```
+
+### Title & press image _(macOS)_
+
+| Method | What it does |
+|---|---|
+| `tray.setTitle(title[, options])` _(macOS)_ | Show text next to the icon in the menu bar |
+| `tray.getTitle()` _(macOS)_ | Read the current title text |
+| `tray.setPressedImage(image)` _(macOS)_ | The image shown while the icon is pressed |
+| `tray.setIgnoreDoubleClickEvents(ignore)` _(macOS)_ | Treat double-clicks as two separate clicks |
+| `tray.getIgnoreDoubleClickEvents()` _(macOS)_ | Are double-click events being ignored? |
+
+```js filename="title.js"
+// macOS: show a live counter beside the menu-bar icon
+tray.setTitle('3 new')
+```
+
+### Balloons _(Windows)_
+
+| Method | What it does |
+|---|---|
+| `tray.displayBalloon(options)` _(Windows)_ | Show a balloon notification (`title`, `content`, `icon`, ...) |
+| `tray.removeBalloon()` _(Windows)_ | Remove the current balloon |
+| `tray.focus()` _(Windows)_ | Return focus to the notification area |
+
+<Callout type="warning">
+Method availability is **platform-specific**. Calling `setTitle()` does nothing outside macOS, and `displayBalloon()` only works on Windows. Branch on `process.platform`, or prefer the cross-platform `Notification` module for alerts.
+</Callout>
+
+---
+
+## Instance Properties
+
+The `Tray` class has **no instance properties** — all interaction happens through its methods and events.
+
+---
+
+## In plain words
+
+A `Tray` is your app's **little icon in the corner of the screen** — the menu bar on a Mac, the bottom-right notification area on Windows. It's how an app stays reachable when its window is closed: music players, chat apps, and backup tools all live here.
+
+There are really only three things you do with it:
+
+1. **Show an icon.** `new Tray(image)` puts it there; `setImage` changes it (online vs. offline, idle vs. busy); `setToolTip` adds the little label on hover.
+2. **Give it a menu.** `setContextMenu(menu)` is what most apps use — click the icon, get "Open / Settings / Quit". Build the menu with the `Menu` module.
+3. **React to clicks.** Listen for `click` to toggle your window, or `right-click` to pop the menu. Everything else (balloons, drag-and-drop, titles) is platform-specific polish you can add later.
+
+Remember one rule above all: **keep a reference to the Tray object alive**, or it vanishes. Master `new Tray`, `setContextMenu`, and the `click` event and you've covered almost every real-world tray app.
+
+<Cards>
+  <Cards.Card title="app" href="/en/api/app" arrow />
+  <Cards.Card title="Main process" href="/en/docs/processes/main" arrow />
+  <Cards.Card title="Examples" href="/en/docs/examples" arrow />
+</Cards>

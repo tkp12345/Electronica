@@ -1,0 +1,156 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { IpcApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<IpcApiIllustration />}
+  title="contextBridge"
+  subtitle="신뢰할 수 없는 콘텐츠에 Node.js 를 노출하지 않으면서, 격리된 preload 스크립트에서 웹 페이지로 작고 통제된 API 만 안전하게 건네줘요."
+  badge="API · contextBridge"
+/>
+
+`contextBridge` 모듈은 **Renderer 프로세스**(정확히는 **preload** 스크립트) 에 살아요. 서로 격리된 두 자바스크립트 세계 — Node 와 Electron 내부를 만질 수 있는 권한 있는 preload 세계, 그리고 신뢰할 수 없는 페이지 세계(여러분의 HTML/JS) — 사이에 안전한 단방향 문을 만들어요. 그래서 페이지는 여러분이 허락한 함수만 호출할 수 있고, 그 이상은 못 해요.
+
+```js filename="preload.js"
+const { contextBridge, ipcRenderer } = require('electron')
+
+// window.electron 에 작고 의도된 API 만 노출해요
+contextBridge.exposeInMainWorld('electron', {
+  ping: () => ipcRenderer.invoke('ping')
+})
+```
+
+```js filename="renderer.js"
+// 페이지에서는 노출하기로 선택한 것만 보여요
+const pong = await window.electron.ping()
+```
+
+<EasyNote>
+`contextBridge` 는 **은행 창구의 작은 유리창** 이에요. 유리 너머에는 금고 열쇠를 가진 직원(여러분의 preload)이 있고, 앞에는 고객(웹 페이지)이 있어요. 고객은 작은 구멍으로 종이를 밀어 넣고 현금을 받아 갈 수는 있지만, 손을 뻗어 금고를 직접 잡을 수는 없어요. 어떤 종이를 받아 줄지는 여러분이 정해요.
+</EasyNote>
+
+---
+
+## 이벤트(Events)
+
+`contextBridge` 모듈은 **상태가 없어요** — 생명주기가 없고, 발생하는 **이벤트도 없어요**. `.on(...)` 으로 구독할 게 없습니다. preload 시점에 메서드를 한 번 호출해 다리를 놓아 줄 뿐이에요.
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| _(없음)_ | `contextBridge` 는 어떤 이벤트도 발생시키지 않아요 |
+
+<EasyNote>
+울리는 초인종(이벤트)이라기보다는, 지점이 문을 열 때 **창구를 한 번 설치하는 것** 에 가까워요. 한 번 달아 두면 그 자리에서 묵묵히 제 일을 하니, "들을" 게 없어요.
+</EasyNote>
+
+---
+
+## 메서드(Methods)
+
+모든 메서드는 **정적(static)** 이에요 — 인스턴스가 아니라 모듈 자체에서 호출해요(`contextBridge.exposeInMainWorld(...)`). `contextIsolation` 이 켜진 상태(기본값) 에서, **preload 스크립트에서 한 번** 실행하도록 만들어졌어요.
+
+### API 노출하기
+
+| 메서드 | 하는 일 |
+|---|---|
+| `contextBridge.exposeInMainWorld(apiKey, api)` | 페이지의 `window[apiKey]`("메인 월드") 에 `api` 를 노출 |
+| `contextBridge.exposeInIsolatedWorld(worldId, apiKey, api)` | **특정** 격리 월드(숫자 `worldId`) 안의 `window[apiKey]` 에 `api` 를 노출 |
+
+```js filename="preload.js"
+const { contextBridge, ipcRenderer } = require('electron')
+
+// 정석 패턴: ipcRenderer 를 안전한 이름 있는 함수로 감싸요.
+// 페이지는 ipcRenderer 를 직접 만지지 않고, 이 호출만 쓸 수 있어요.
+contextBridge.exposeInMainWorld('api', {
+  // Renderer -> Main, 응답을 받음
+  loadSettings: () => ipcRenderer.invoke('settings:load'),
+  saveSettings: (data) => ipcRenderer.invoke('settings:save', data),
+
+  // Main -> Renderer: 원본 event 가 아니라 payload 만 전달
+  onUpdate: (callback) =>
+    ipcRenderer.on('app:update', (_event, value) => callback(value))
+})
+```
+
+```js filename="isolated-world.js"
+// 기본이 아닌 월드(예: 확장 프로그램용 월드) 에 주입해요.
+// 월드 ID 0 과 999 는 Electron 이 예약했으니, 직접 쓸 때는 1000 이상을 사용해요.
+contextBridge.exposeInIsolatedWorld(1004, 'extApi', {
+  version: () => '1.0.0'
+})
+```
+
+### 페이지 안으로 다시 들어가기 (실험적)
+
+| 메서드 | 하는 일 |
+|---|---|
+| `contextBridge.executeInMainWorld(executionScript)` _(실험적)_ | 격리된 preload 에서 **메인 월드** 의 함수를 실행하고, 반환값의 복사본을 받음 |
+
+```js filename="execute-in-main-world.js"
+// 페이지 월드에서 코드를 실행해요. `func` 는 직렬화되어 그쪽에서 다시 만들어지므로,
+// preload 의 변수를 캡처할 수 없어요 — 필요한 건 전부 args 로 넘겨요.
+const result = contextBridge.executeInMainWorld({
+  func: (greeting, name) => `${greeting}, ${name}!`,
+  args: ['Hello', 'world']
+})
+// result === 'Hello, world!'
+```
+
+<Callout type="warning">
+**`executeInMainWorld` 는 실험적** 이라 바뀌거나 제거될 수 있어요. 넘기는 `func` 는 직렬화되면서 클로저를 잃으므로, preload 의 변수·import·`this` 를 전혀 볼 수 없어요. 필요한 값은 모두 `args` 로 전달하세요.
+</Callout>
+
+### 다리를 건널 수 있는 타입
+
+값은 참조로 넘어가지 않아요 — 건널 때 **복사** 되고, 그 복사본은 **불변(immutable)** 이에요. 한쪽을 바꿔도 다른 쪽에는 영향이 없어요.
+
+| 타입 | 다리를 건널 수 있나요? |
+|---|---|
+| `string`, `number`, `boolean`, `null`, `undefined` | 가능 |
+| `Object`, `Array`, `Date`, `Error` | 가능 |
+| `Function` | 가능 (호출이 양쪽으로 프록시됨) |
+| `Promise` | 가능 (다리 너머에서 resolve 됨) |
+| 복제 가능 타입, `Element`, `Blob`, `VideoFrame` | 가능 |
+| `Symbol` | 불가능 — 지원 안 됨 |
+| 커스텀 클래스 인스턴스 | 값은 복사되지만 **프로토타입은 사라짐** |
+
+<Callout type="warning">
+`ipcRenderer`(또는 다른 복잡한 Electron 객체) 를 다리 너머로 곧장 보낼 수 **없어요** — Electron 29+ 부터는 차단되고, 그 이전에는 빈 객체로 도착했어요. 위 예시처럼 항상 직접 만든 작은 함수로 감싸세요. 그리고 꼭 필요한 **최소한** 의 표면만 노출하세요. `window` 에 올린 모든 함수는 주입된/신뢰할 수 없는 스크립트를 포함해 페이지의 어떤 스크립트든 호출할 수 있어요.
+</Callout>
+
+<EasyNote>
+"참조가 아니라 복사" 가 바로 안전망이에요. 페이지가 건네받은 객체를 고쳐도 preload 의 원본은 그대로예요 — 창구로 종이를 밀어 넣기 전에 복사본을 떠 두는 것과 같아요. 상대가 자기 복사본에 마음껏 낙서해도, 여러분의 원본은 깨끗하게 남아요.
+</EasyNote>
+
+---
+
+## 속성(Properties)
+
+`contextBridge` 모듈은 **속성이 없어요** — 호출하는 함수의 모음일 뿐이에요. 읽을 상태가 없습니다.
+
+| 속성 | 타입 | 무엇인가요 |
+|---|---|---|
+| _(없음)_ | — | `contextBridge` 에는 속성이 없어요 |
+
+---
+
+## 쉽게 풀어 설명
+
+`contextBridge` 는 까다로운 질문 하나에 답해요. _"웹 페이지가 강력한 일(파일 읽기, OS 와 대화)을 하게 해 주면서도, 아무거나 다 할 수 있는 열쇠는 안 주려면 어떻게 하지?"_
+
+순진한 답 — `nodeIntegration` 을 켜고 페이지가 `require('fs')` 하게 두는 것 — 은 보안 참사예요. 광고든, 주입된 스크립트든, 오염된 의존성이든, 페이지 위의 무엇이든 이제 Node 에 완전히 접근할 수 있게 되니까요. `contextBridge` 는 어른스러운 답이에요. **preload** 스크립트가 열쇠를 쥐고, 여러분은 이름 있는 안전한 함수 몇 개만 `window` 에 올려요. 페이지는 `window.api.saveSettings(...)` 를 호출할 뿐, `fs` 에도 `ipcRenderer` 에도 닿을 수 없어요. 여러분이 연 문만 쓸 수 있죠.
+
+핵심은 세 가지예요:
+
+1. **작업마다 문 하나씩.** `ipcRenderer` 를 통째로 노출하지 말고, `saveSettings`, `loadSettings`, `onUpdate` 를 노출하세요. 작고, 이름 있고, 의도적으로요.
+2. **모든 것은 복사돼요.** 값은 불변 복사본으로 다리를 건너서, 어느 쪽도 상대의 상태를 몰래 바꿀 수 없어요. Symbol 은 못 건너고, 클래스 프로토타입은 사라져요.
+3. **preload 에서 한 번만 설정.** 이벤트도, 속성도, 인스턴스도 없어요 — `contextIsolation` 이 켜진 상태(Electron 12 부터 기본값) 에서 `exposeInMainWorld` 를 호출하면 끝이에요.
+
+메서드 하나만 기억하면 90%는 끝나요: **`exposeInMainWorld('api', { ...안전한 함수들... })`**. 나머지 — 격리 월드, `executeInMainWorld` — 는 필요할 때 찾아보면 되는 고급 영역이에요.
+
+<Cards>
+  <Cards.Card title="app" href="/ko/api/app" arrow />
+  <Cards.Card title="컨텍스트 격리" href="/ko/docs/processes/context-isolation" arrow />
+  <Cards.Card title="보안" href="/ko/docs/best-practices/security" arrow />
+</Cards>
