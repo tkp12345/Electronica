@@ -1,8 +1,8 @@
 // 두 로케일(en/ko)의 layout.tsx가 공유하는 Nextra Layout 래퍼.
 // 각 로케일 layout은 이 컴포넌트에 lang 만 넘긴다.
+import Image from 'next/image'
 import { Footer, Layout, Navbar } from 'nextra-theme-docs'
 import { getPageMap } from 'nextra/page-map'
-import { ElectronIcon } from './ElectronIcon'
 import { LocaleSwitcher } from './LocaleSwitcher'
 
 export type Lang = 'en' | 'ko'
@@ -56,7 +56,10 @@ export async function LangLayoutShell({ lang, children }: LangLayoutShellProps) 
             fontWeight: 700,
           }}
         >
-          <ElectronIcon className="text-red-500" size={26} />
+          {/* next/image 는 basePath(/Electronica)/assetPrefix 를 자동 적용 →
+              dev: /logo-mark.png, prod: /Electronica/logo-mark.png 로 렌더된다.
+              26px 표시·@2x(52px) 원본이라 레티나에서도 선명. */}
+          <Image src="/logo-mark.png" alt="" width={26} height={26} priority />
           {t.siteName}
         </span>
       }

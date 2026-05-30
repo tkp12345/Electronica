@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://tkp12345.github.io/Electronica/">
-    <img src="public/logo.svg" alt="Electronica" width="160" />
+    <img src="public/logo.png" alt="Electronica" width="160" />
   </a>
 </p>
 
