@@ -1,0 +1,218 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { SystemApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<SystemApiIllustration />}
+  title="systemPreferences"
+  subtitle="운영체제 자체의 설정 — 강조 색, 다크 모드, 카메라·마이크 권한, Touch ID — 을 읽고, 바뀌면 반응해요."
+  badge="API · systemPreferences"
+/>
+
+`systemPreferences` 모듈은 **Main 프로세스** 에 살아요. _사용자의_ OS 설정을 들여다보는 창문이에요. 사용자가 고른 강조 색, 다크 모드 여부, 우리 앱이 카메라를 써도 되는지 등을 알 수 있죠. 대부분은 플랫폼별로 동작해요.
+
+```js filename="main.js"
+const { systemPreferences } = require('electron')
+
+// OS 외관(테마)에 맞추기
+const appearance = systemPreferences.getEffectiveAppearance() // 'dark' | 'light' | 'unknown'
+
+// 카메라를 만지기 전에 확인 (macOS / Windows)
+const camera = systemPreferences.getMediaAccessStatus('camera') // 'granted' | 'denied' | ...
+```
+
+<EasyNote>
+`systemPreferences` 는 꾸미기 전에 **운영체제에게 사용자의 취향을 물어보는** 것과 같아요. "가장 좋아하는 색이 뭐예요?"(강조 색), "불 켤까요 끌까요?"(다크 모드), "카메라 써도 될까요?"(권한). 그 대답을 읽어서 앱을 네이티브처럼 느끼게 만드는 거예요.
+</EasyNote>
+
+---
+
+## 이벤트(Events)
+
+`systemPreferences.on('이벤트명', 핸들러)` 로 듣습니다. 두 이벤트 모두 플랫폼 전용이에요.
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `accent-color-changed` _(Windows/Linux)_ | 시스템 강조 색이 바뀜 — 핸들러가 새 RGBA 색 문자열을 받음 |
+| `color-changed` _(Windows)_ | 시스템 색 설정 중 하나가 바뀜 |
+
+```js filename="watch-accent.js"
+// Windows/Linux: 사용자가 강조 색을 바꾸면 UI 테마를 다시 칠해요
+systemPreferences.on('accent-color-changed', (event, newColor) => {
+  // newColor 는 'aabbccdd' 같은 RGBA 16진수 문자열
+  applyAccentColor(`#${newColor}`)
+})
+```
+
+<Callout type="warning">
+이 두 이벤트는 **Windows/Linux 전용** 이에요. 다크 모드·고대비 변경에는 거의 항상 크로스 플랫폼 [`nativeTheme`](/ko/api/app) 모듈과 그 `updated` 이벤트를 쓰는 게 좋아요 — 플랫폼에 상관없이 외관 변경에 반응하는 권장 방식이에요.
+</Callout>
+
+<EasyNote>
+`accent-color-changed` 는 OS 가 어깨를 톡톡 치며 "사용자가 방금 좋아하는 색을 바꿨어요, 다시 칠하는 게 좋을걸요" 라고 알려 주는 것과 같아요. 직접 들여다보며 확인할 필요 없이, 그냥 듣고만 있으면 돼요.
+</EasyNote>
+
+---
+
+## 메서드(Methods)
+
+### 외관 & 색상
+
+| 메서드 | 플랫폼 | 하는 일 |
+|---|---|---|
+| `systemPreferences.getEffectiveAppearance()` | macOS | `'dark'`, `'light'`, `'unknown'` 중 하나 반환 |
+| `systemPreferences.getAccentColor()` | macOS/Windows | 사용자의 강조 색을 RGBA 16진수 문자열로 |
+| `systemPreferences.getColor(color)` | macOS/Windows | 시스템 UI 색(예: `'window'`, `'highlight'`)을 `#RRGGBBAA` 로 |
+| `systemPreferences.getSystemColor(color)` | macOS | 표준 시스템 색: `blue`, `brown`, `gray`, `green`, `orange`, `pink`, `purple`, `red`, `yellow` |
+
+```js filename="theme.js"
+// macOS 또는 Windows 에서 OS 에 맞춰 UI 를 칠해요
+const accent = systemPreferences.getAccentColor() // 예: 'ff5733ff'
+const windowBg = systemPreferences.getColor('window') // '#RRGGBBAA'
+
+if (process.platform === 'darwin') {
+  const isDark = systemPreferences.getEffectiveAppearance() === 'dark'
+  setThemeClass(isDark ? 'dark' : 'light')
+}
+```
+
+### 미디어 접근(권한)
+
+| 메서드 | 플랫폼 | 하는 일 |
+|---|---|---|
+| `systemPreferences.getMediaAccessStatus(mediaType)` | macOS/Windows | `'microphone'`, `'camera'`, `'screen'` 의 상태: `'not-determined'`, `'granted'`, `'denied'`, `'restricted'`, `'unknown'` |
+| `systemPreferences.askForMediaAccess(mediaType)` | macOS | `'microphone'` 또는 `'camera'` 권한 요청 — `Promise<boolean>` 반환 |
+
+```js filename="camera.js"
+// macOS: 묻지 않고 카메라를 열지 않아요
+async function ensureCamera() {
+  if (systemPreferences.getMediaAccessStatus('camera') !== 'granted') {
+    const granted = await systemPreferences.askForMediaAccess('camera')
+    if (!granted) throw new Error('카메라 권한이 거부됐어요')
+  }
+}
+```
+
+<Callout type="warning">
+`askForMediaAccess` 는 **macOS 전용** 이고, OS 는 미디어 종류별로 권한 창을 **딱 한 번** 만 보여줘요. 사용자가 거부했다면 두 번째 호출은 즉시 `false` 로 resolve 돼요 — 그땐 시스템 설정으로 안내해야 해요. Windows 에서는 상태를 읽을 수는 있지만 여기서 권한 창을 띄울 수는 없어요.
+</Callout>
+
+### 인증 (Touch ID & 접근성) _(macOS)_
+
+| 메서드 | 하는 일 |
+|---|---|
+| `systemPreferences.canPromptTouchID()` | 이 기기가 Touch ID 를 쓸 수 있으면 `true` |
+| `systemPreferences.promptTouchID(reason)` | Touch ID 인증 요청 — `Promise<void>` 반환 (성공 시 resolve, 실패 시 reject) |
+| `systemPreferences.isTrustedAccessibilityClient(prompt)` | 이 앱이 신뢰된 접근성 클라이언트인가? `prompt: true` 면 시스템 대화상자 표시 |
+
+```js filename="touch-id.js"
+// macOS: 민감한 동작을 Touch ID 뒤에 두기
+if (systemPreferences.canPromptTouchID()) {
+  try {
+    await systemPreferences.promptTouchID('금고를 잠금 해제')
+    unlockVault()
+  } catch {
+    // 사용자가 취소했거나 인증 실패
+  }
+}
+```
+
+### 사용자 기본값(`NSUserDefaults`) _(macOS)_
+
+| 메서드 | 하는 일 |
+|---|---|
+| `systemPreferences.getUserDefault(key, type)` | `NSUserDefaults` 에서 값 읽기. `type`: `'string'`, `'boolean'`, `'integer'`, `'float'`, `'double'`, `'url'`, `'array'`, `'dictionary'` |
+| `systemPreferences.setUserDefault(key, type, value)` | `NSUserDefaults` 에 값 쓰기 |
+| `systemPreferences.removeUserDefault(key)` | `NSUserDefaults` 에서 키 제거 |
+| `systemPreferences.registerDefaults(defaults)` | 기본값 딕셔너리 등록 |
+
+```js filename="defaults.js"
+// macOS: 시스템 환경설정 읽기, 예: 사용자 로케일 식별자
+const locale = systemPreferences.getUserDefault('AppleLocale', 'string')
+
+// 불리언 기본값 읽기
+const collapses = systemPreferences.getUserDefault('AppleMenuBarVisibleInFullscreen', 'boolean')
+```
+
+### 시스템 알림(`NSNotificationCenter` / `NSWorkspace`) _(macOS)_
+
+| 메서드 | 하는 일 |
+|---|---|
+| `systemPreferences.postNotification(event, userInfo[, deliverImmediately])` | `NSDistributedNotificationCenter` 로 네이티브 알림 전송 |
+| `systemPreferences.postLocalNotification(event, userInfo)` | `NSNotificationCenter` 로 로컬 알림 전송 |
+| `systemPreferences.postWorkspaceNotification(event, userInfo)` | `NSWorkspace` 로 워크스페이스 알림 전송 |
+| `systemPreferences.subscribeNotification(event, callback)` | 분산 알림 구독 — 구독자 `id` 반환 |
+| `systemPreferences.subscribeLocalNotification(event, callback)` | 로컬 알림 구독 — 구독자 `id` 반환 |
+| `systemPreferences.subscribeWorkspaceNotification(event, callback)` | 워크스페이스 알림 구독 — 구독자 `id` 반환 |
+| `systemPreferences.unsubscribeNotification(id)` | 분산 알림 구독자 제거 |
+| `systemPreferences.unsubscribeLocalNotification(id)` | 로컬 알림 구독자 제거 |
+| `systemPreferences.unsubscribeWorkspaceNotification(id)` | 워크스페이스 알림 구독자 제거 |
+
+```js filename="workspace-notify.js"
+// macOS: 화면이 잠기거나 사용자가 Spaces 를 전환할 때 반응
+const id = systemPreferences.subscribeWorkspaceNotification(
+  'NSWorkspaceScreensDidSleepNotification',
+  () => pauseSensitiveWork()
+)
+
+// 더 이상 필요 없을 때:
+systemPreferences.unsubscribeWorkspaceNotification(id)
+```
+
+<Callout type="warning">
+모든 `subscribe*` 호출은 `id` 를 반환해요 — 잘 보관했다가 끝나면 짝이 되는 `unsubscribe*` 에 넘기세요. 안 그러면 옵저버가 새어 나가요(누수). 알림 이름은 `'AppleInterfaceThemeChangedNotification'` 같은 Cocoa 문자열 상수 그대로예요.
+</Callout>
+
+### 시스템 힌트 & 모션
+
+| 메서드 | 플랫폼 | 하는 일 |
+|---|---|---|
+| `systemPreferences.getAnimationSettings()` | 전체 | `{ shouldRenderRichAnimation, scrollAnimationsEnabledBySystem, prefersReducedMotion }` 반환 |
+| `systemPreferences.isSwipeTrackingFromScrollEventsEnabled()` | macOS | 트랙패드 설정의 "페이지 간 스와이프" 가 켜져 있으면 `true` |
+
+```js filename="motion.js"
+// 사용자의 "동작 줄이기" 접근성 설정을 존중해요
+const { prefersReducedMotion } = systemPreferences.getAnimationSettings()
+if (prefersReducedMotion) disableFancyTransitions()
+```
+
+---
+
+## 속성(Properties)
+
+| 속성 | 타입 | 플랫폼 | 무엇인가 |
+|---|---|---|---|
+| `systemPreferences.effectiveAppearance` | `string` (읽기전용) | macOS | `'dark'`, `'light'`, `'unknown'` — `getEffectiveAppearance()` 와 같은 값 |
+| `systemPreferences.accessibilityDisplayShouldReduceTransparency` | `boolean` (읽기전용) | macOS | 사용자가 "투명도 줄이기" 를 켰으면 `true` |
+
+<Callout type="warning">
+`accessibilityDisplayShouldReduceTransparency` 는 **deprecated(폐기 예정)** 예요. 대신 [`nativeTheme.prefersReducedTransparency`](/ko/api/app) 를 쓰세요 — 크로스 플랫폼이고 계속 관리되고 있어요.
+</Callout>
+
+```js filename="appearance-prop.js"
+// 속성 형태는 한 번만 읽을 때 편해요
+if (systemPreferences.effectiveAppearance === 'dark') {
+  loadDarkStylesheet()
+}
+```
+
+---
+
+## 쉽게 풀어 설명
+
+`systemPreferences` 는 우리 앱이 **사용자에 대해 운영체제에게 정중히 물어보는** 방법이에요. 이 값들을 우리가 설정하는 게 아니에요 — 사용자가 시스템 설정에서 직접 정해요. 우리는 읽어서 맞추기만 하면 돼요.
+
+크게 세 가지 일이 거의 전부예요:
+
+1. **현지인처럼 보이기.** "강조 색이 뭐예요?" → `getAccentColor()`. "다크 모드예요 라이트예요?" → `getEffectiveAppearance()`. "애니메이션을 껐나요?" → `getAnimationSettings()`. 이걸 읽으면 크로스 플랫폼 앱이 마치 그 OS 에서 태어난 것처럼 느껴져요.
+2. **권한 물어보기.** "카메라 써도 될까요?" → `getMediaAccessStatus('camera')` 로 확인하고, macOS 라면 `askForMediaAccess('camera')`. 확인 없이 마이크·카메라를 잡으면 OS 가 막고 사용자도 앱을 의심하게 돼요.
+3. **네이티브 보안·이벤트에 연결하기.** Touch ID(`promptTouchID`), macOS 워크스페이스 알림(`subscribeWorkspaceNotification`), Windows 의 `accent-color-changed` 이벤트는 평범한 웹 페이지로는 닿을 수 없는 곳까지 연결해 줘요.
+
+솔직한 주의 한 가지: 이 모듈은 **플랫폼에 크게 의존** 해요 — 대부분 메서드가 macOS 전용이고, 몇 개는 Windows 전용이에요. 항상 `process.platform` 으로 가드하고, 단순 다크 모드·외관 작업에는 어디서나 동작하는 `nativeTheme` 을 우선하세요. 세 이름만 외우면 나머지는 찾아보면 돼요: **`getEffectiveAppearance()`**(테마), **`getMediaAccessStatus()`**(권한), **`getAccentColor()`**(색).
+
+<Cards>
+  <Cards.Card title="app 모듈" href="/ko/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/ko/api/browser-window" arrow />
+  <Cards.Card title="보안" href="/ko/docs/best-practices/security" arrow />
+</Cards>

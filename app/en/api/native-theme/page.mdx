@@ -1,0 +1,135 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { SystemApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<SystemApiIllustration />}
+  title="nativeTheme"
+  subtitle="Read — and override — the operating system's dark mode, high contrast, and accessibility color preferences."
+  badge="API · nativeTheme"
+/>
+
+The `nativeTheme` module lives in the **Main process**. It's a single, ready-to-use object (no `new` needed) that tells you whether the OS is in dark mode, whether high-contrast or reduced-transparency is on, and it even lets you force your whole app into light or dark.
+
+```js filename="main.js"
+const { nativeTheme } = require('electron')
+
+// Is the operating system currently using a dark theme?
+const dark = nativeTheme.shouldUseDarkColors
+
+// Force the entire app to dark mode, ignoring the OS setting
+nativeTheme.themeSource = 'dark'
+```
+
+<EasyNote>
+`nativeTheme` is a **two-way light switch** for your app's appearance. You can _read_ which way the OS flipped it (dark or light), and you can _flip it yourself_ with `themeSource` — overriding the system until you set it back to `'system'`.
+</EasyNote>
+
+---
+
+## Events
+
+Listen with `nativeTheme.on('event-name', handler)`. `nativeTheme` exposes a single event.
+
+| Event | Fires when |
+|---|---|
+| `updated` | The underlying system theme changed — i.e. any of `shouldUseDarkColors`, `shouldUseHighContrastColors`, or `shouldUseInvertedColorScheme` changed value |
+
+```js filename="watch-theme.js"
+const { nativeTheme } = require('electron')
+
+nativeTheme.on('updated', () => {
+  // The OS toggled dark mode (or high contrast, etc.) — react to it
+  const isDark = nativeTheme.shouldUseDarkColors
+  mainWindow.webContents.send('theme-changed', isDark)
+})
+```
+
+<EasyNote>
+The `updated` event is like a doorbell that rings whenever the user changes their system appearance — for example, when macOS auto-switches to dark at sunset. You listen once and re-read the properties whenever it fires, rather than polling.
+</EasyNote>
+
+---
+
+## Methods
+
+`nativeTheme` has **no methods**. Everything is done by reading properties or by assigning to the one writable property, `themeSource`.
+
+<Callout type="warning">
+Don't override the user's choice lightly. Setting `themeSource` to `'light'` or `'dark'` ignores the OS preference for your _entire_ app. If you offer a theme toggle, always include a "System" option that sets `themeSource = 'system'` so users can hand control back to the OS.
+</Callout>
+
+---
+
+## Properties
+
+Properties marked _(macOS)_ / _(Windows)_ only carry meaningful values on that platform. All properties except `themeSource` are **read-only**.
+
+### Theme override (the writable one)
+
+| Property | Type | What it is |
+|---|---|---|
+| `nativeTheme.themeSource` | `string` | Get/set the active theme: `'system'`, `'light'`, or `'dark'`. Setting `'light'`/`'dark'` overrides the OS; `'system'` removes the override |
+
+```js filename="theme-source.js"
+// Let the user pick from a settings UI
+ipcMain.handle('set-theme', (_event, choice) => {
+  // choice is 'system' | 'light' | 'dark'
+  nativeTheme.themeSource = choice
+  return nativeTheme.shouldUseDarkColors
+})
+```
+
+<Callout type="info">
+Setting `themeSource` also drives the `prefers-color-scheme` CSS media query inside your renderer, so your web styles update automatically. Set it once in the Main process and your CSS follows along.
+</Callout>
+
+### Read-only theme state
+
+| Property | Type | Platform | What it tells you |
+|---|---|---|---|
+| `nativeTheme.shouldUseDarkColors` | `boolean` (readonly) | all | `true` if your app should be using dark colors (respects `themeSource`) |
+| `nativeTheme.shouldUseHighContrastColors` | `boolean` (readonly) | macOS/Windows | `true` if the OS high-contrast mode is on |
+| `nativeTheme.shouldUseInvertedColorScheme` | `boolean` (readonly) | macOS/Windows | `true` if an inverted color scheme (accessibility) is active |
+| `nativeTheme.shouldUseDarkColorsForSystemIntegratedUI` | `boolean` (readonly) | macOS/Windows | `true` if system-integrated UI (e.g. menus/title bars) should use dark colors |
+
+### Read-only accessibility state
+
+| Property | Type | Platform | What it tells you |
+|---|---|---|---|
+| `nativeTheme.inForcedColorsMode` | `boolean` (readonly) | Windows | `true` when the OS is in forced-colors mode (Windows High Contrast) |
+| `nativeTheme.prefersReducedTransparency` | `boolean` (readonly) | all | `true` if the user prefers reduced transparency in the OS |
+| `nativeTheme.shouldDifferentiateWithoutColor` | `boolean` (readonly) | macOS | `true` if the user asked the OS to differentiate UI without relying on color |
+
+```js filename="respect-a11y.js"
+// Adapt to accessibility preferences, not just dark/light
+if (nativeTheme.shouldUseHighContrastColors) {
+  applyHighContrastPalette()
+}
+
+if (nativeTheme.prefersReducedTransparency) {
+  disableBlurAndGlassEffects()
+}
+```
+
+<EasyNote>
+`shouldUseDarkColors` is the one you'll reach for 90% of the time — it already factors in your `themeSource` override, so you don't have to combine "OS says dark" with "I forced dark" yourself. The accessibility properties are the polish that makes your app feel considerate.
+</EasyNote>
+
+---
+
+## In plain words
+
+Think of `nativeTheme` as the **thermostat for your app's look**. The OS is the weather outside (dark at night, light in the day, sometimes "high contrast" for accessibility), and `nativeTheme` is the little panel on the wall that does two jobs:
+
+1. **It reads the room.** `shouldUseDarkColors` tells you whether to paint dark or light right now. `shouldUseHighContrastColors`, `prefersReducedTransparency`, and friends tell you about accessibility needs. Read them once at startup, then again whenever the `updated` event rings.
+2. **It lets you take over.** Assign `'light'` or `'dark'` to `themeSource` and your app ignores the weather outside — handy for a "Dark mode" toggle in settings. Set it back to `'system'` to follow the OS again.
+
+The whole module really comes down to three names: **`shouldUseDarkColors`** (what should I look like now?), **`themeSource`** (let me override it), and the **`updated`** event (tell me when it changes). Wire those three together and your app respects the user's system appearance perfectly.
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+</Cards>

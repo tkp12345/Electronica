@@ -1,0 +1,168 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { IpcApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<IpcApiIllustration />}
+  title="ServiceWorkerMain"
+  subtitle="Talk to a single running service worker from the Main process — send it messages, read its identity, and keep it alive while it works."
+  badge="API · ServiceWorkerMain"
+/>
+
+`ServiceWorkerMain` is the **Main-process handle to one running service worker**. You never create it with `new` — it isn't even exported from the `'electron'` module. Instead you get an instance back from the session's `serviceWorkers` registry, and from there you can message the worker over IPC, inspect its scope/script, and keep it from being shut down while a task is in flight.
+
+```js filename="main.js"
+const { session } = require('electron')
+
+const sw = session.defaultSession.serviceWorkers
+
+// Grab the live handle for a worker by its version id
+const worker = sw.getWorkerFromVersionID(versionId)
+
+if (worker) {
+  worker.send('config', { theme: 'dark' })
+}
+```
+
+<Callout type="info">
+Every member of `ServiceWorkerMain` is currently marked **Experimental** in Electron. The shape of this API may change between major versions — pin your Electron version and re-check on upgrade.
+</Callout>
+
+<EasyNote>
+A service worker is a tiny background script the browser runs even when no page is open (think push notifications, offline caching). `ServiceWorkerMain` is the **walkie-talkie** the Main process uses to reach that background script directly, instead of going through a web page.
+</EasyNote>
+
+---
+
+## How you get one
+
+`ServiceWorkerMain` has no constructor and no static methods. Instances always come from the `ServiceWorkers` object that lives on a `Session`:
+
+| Source | Returns | Notes |
+|---|---|---|
+| `ses.serviceWorkers.getWorkerFromVersionID(versionId)` | `ServiceWorkerMain \| undefined` | The live handle for a worker, or `undefined` if it isn't running _(Experimental)_ |
+| `ses.serviceWorkers.startWorkerForScope(scope)` | `Promise<ServiceWorkerMain>` | Starts (or reuses) the worker registered for a scope, then resolves with its handle _(Experimental)_ |
+
+```js filename="get-worker.js"
+const { session } = require('electron')
+const sw = session.defaultSession.serviceWorkers
+
+// Make sure the worker for a scope is running, then talk to it
+async function wake(scope) {
+  const worker = await sw.startWorkerForScope(scope)
+  worker.send('ping', Date.now())
+  return worker
+}
+```
+
+<EasyNote>
+Use `getWorkerFromVersionID` when you already know a worker is up (for example, right after a `running-status-changed` event told you it started). Use `startWorkerForScope` when you need the worker awake *now* and don't care whether it was already running.
+</EasyNote>
+
+---
+
+## Events
+
+`ServiceWorkerMain` itself defines **no instance events**. Lifecycle signals live one level up, on the session's `ServiceWorkers` object — listen there to learn when a worker starts or stops, then fetch its handle:
+
+```js filename="track-lifecycle.js"
+const { session } = require('electron')
+const sw = session.defaultSession.serviceWorkers
+
+// 'running-status-changed' is itself Experimental
+sw.on('running-status-changed', (details) => {
+  // details.runningStatus: 'starting' | 'running' | 'stopping' | 'stopped'
+  if (details.runningStatus === 'running') {
+    const worker = sw.getWorkerFromVersionID(details.versionId)
+    worker?.send('hello')
+  }
+})
+```
+
+---
+
+## Methods
+
+All instance methods are **Experimental**.
+
+| Method | What it does |
+|---|---|
+| `worker.send(channel, ...args)` | Send an async IPC message to the service worker process over `channel`. Arguments are serialized with the Structured Clone Algorithm — no functions, Promises, Symbols, WeakMaps, or WeakSets |
+| `worker.startTask()` | Mark the start of a unit of work so the worker is kept alive; returns an object with an `end()` method to call when you're done |
+| `worker.isDestroyed()` | `true` once the underlying worker has been destroyed — calling other methods after this is unsafe |
+
+```js filename="send.js"
+// One-way message to the worker (receive it there with ipcRenderer-style listeners)
+worker.send('update-config', { locale: 'en-US', verbose: true })
+```
+
+Service workers are aggressively stopped by the browser when idle. If you kick off async work from the Main side, wrap it in a task so the worker isn't torn down mid-flight:
+
+```js filename="keep-alive.js"
+async function runJob(worker) {
+  const task = worker.startTask() // hold the worker open
+  try {
+    worker.send('begin-sync')
+    await waitForWorkerToFinish(worker)
+  } finally {
+    task.end() // ALWAYS release it, even on error
+  }
+}
+```
+
+<Callout type="warning">
+`startTask()` keeps the worker alive, which costs memory and battery. Always pair it with `task.end()` in a `finally` block — a leaked task can pin a service worker open indefinitely. And because everything goes through Structured Clone, `send()` will throw if you pass a function or a Promise.
+</Callout>
+
+<EasyNote>
+`startTask()` is like putting your hand in a closing elevator door. As long as you hold it (the task is open), the doors stay open and the worker keeps running. Calling `end()` is taking your hand out — the elevator (worker) is then free to shut down whenever it likes.
+</EasyNote>
+
+---
+
+## Properties
+
+All properties are **read-only** and **Experimental**.
+
+| Property | Type | What it is |
+|---|---|---|
+| `worker.ipc` | `IpcMainServiceWorker` (readonly) | An IPC channel scoped to *this* worker — register `handle`/`on` listeners for messages coming **from** the worker |
+| `worker.scope` | `string` (readonly) | The scope URL the worker controls (e.g. `https://example.com/app/`) |
+| `worker.scriptURL` | `string` (readonly) | The URL of the worker's script file (e.g. `https://example.com/app/sw.js`) |
+| `worker.versionId` | `number` (readonly) | The id of this specific version of the worker script within its scope |
+
+```js filename="ipc.js"
+// Receive messages and requests FROM the worker, scoped to just this one
+worker.ipc.on('log', (event, line) => {
+  appendToLogFile(`[${worker.scope}] ${line}`)
+})
+
+worker.ipc.handle('get-token', async () => {
+  return await fetchFreshToken() // the worker awaits this result
+})
+```
+
+<EasyNote>
+Think of `worker.send(...)` and `worker.ipc` as the two directions of one phone line: `send` is **you calling the worker**, and `ipc.on` / `ipc.handle` is **answering when the worker calls you**. `scope`, `scriptURL`, and `versionId` are just the caller ID — they tell you exactly which worker is on the line.
+</EasyNote>
+
+---
+
+## In plain words
+
+A **service worker** is a little script the browser keeps running in the background — caching files for offline use, receiving push notifications, syncing data — all without a visible page. Normally only the web side can talk to it. `ServiceWorkerMain` is the door that lets your **Main process** reach in and talk to one directly.
+
+The whole API fits in your head:
+
+1. **Get a handle.** You don't build it with `new`. You ask the session: `serviceWorkers.getWorkerFromVersionID(id)` if it's already running, or `await serviceWorkers.startWorkerForScope(scope)` to wake it up.
+2. **Talk to it.** `worker.send(channel, ...args)` pushes a message to the worker. `worker.ipc` is the other direction — it's how you listen for, and reply to, messages the worker sends back.
+3. **Keep it alive.** Workers get stopped when idle. If you start async work, call `worker.startTask()` and hold the returned handle until you call `task.end()` — like keeping a finger on the elevator button.
+
+Everything here is **Experimental**, so treat it as a power tool, not a foundation: pin your Electron version, wrap your tasks in `finally`, and check `isDestroyed()` before reaching for a worker you've held onto for a while.
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="Process model" href="/en/docs/processes" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+</Cards>

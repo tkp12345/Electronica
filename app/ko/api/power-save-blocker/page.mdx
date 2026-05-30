@@ -1,0 +1,117 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { SystemApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<SystemApiIllustration />}
+  title="powerSaveBlocker"
+  subtitle="기기를 깨어 있게 — 앱이 바쁜 동안 시스템이 잠들거나 화면이 어두워지지 않도록 막아요."
+  badge="API · powerSaveBlocker"
+/>
+
+`powerSaveBlocker` 모듈은 **Main 프로세스** 에 살아요. 운영체제에게 "지금은 잠들지 말아 주세요" 라고 말할 수 있게 해줘요 — 큰 파일을 다운로드하거나, 영상을 인코딩하거나, 미디어를 재생하는 동안 화면이 중간에 어두워지지 않도록 할 때 유용해요.
+
+```js filename="main.js"
+const { powerSaveBlocker } = require('electron')
+
+// 블로커를 시작하고 반환된 id 를 보관해요 — 나중에 멈출 때 필요해요
+const id = powerSaveBlocker.start('prevent-display-sleep')
+
+// ...작업이 끝난 뒤에
+powerSaveBlocker.stop(id)
+```
+
+<EasyNote>
+`powerSaveBlocker` 는 컴퓨터의 낮잠에 **"방해 금지" 팻말** 을 걸어 두는 것과 같아요. OS 는 보통 일정 시간이 지나면 화면을 어둡게 하고 졸기 시작하는데, 이 모듈이 팻말을 걸어 깨어 있게 만들어요 — 그리고 `stop()` 으로 팻말을 다시 거두면 비로소 쉴 수 있어요.
+</EasyNote>
+
+---
+
+## 이벤트(Events)
+
+`powerSaveBlocker` 에는 **이벤트가 없어요**. 요청/응답 형태의 아주 작은 모듈이에요 — 블로커를 `start` 하고, id 를 들고 있다가, 끝나면 `stop` 하면 끝이에요. 구독할 대상이 없어요.
+
+<Callout type="info">
+시스템이 실제로 절전에 들어가거나, 깨어나거나, 배터리로 전환되는 순간에 _반응_ 하고 싶다면 그건 **`powerMonitor`** 모듈의 역할이에요 — `suspend`, `resume`, `on-ac`, `on-battery` 같은 이벤트를 가지고 있어요.
+</Callout>
+
+---
+
+## 메서드(Methods)
+
+### 차단 & 해제
+
+| 메서드 | 하는 일 |
+|---|---|
+| `powerSaveBlocker.start(type)` | 저전력 모드를 차단하기 시작 — 이 블로커를 식별하는 **정수 id** 를 반환 |
+| `powerSaveBlocker.stop(id)` | 주어진 `id` 의 블로커를 멈춤 — 멈췄는지 여부를 `boolean` 으로 반환 |
+| `powerSaveBlocker.isStarted(id)` | 해당 `id` 의 블로커가 현재 동작 중이면 `true` 반환 |
+
+`start()` 에 넘기는 `type` 은 다음 두 문자열 중 하나예요:
+
+| 타입 | 무엇을 깨어 있게 하는가 |
+|---|---|
+| `prevent-app-suspension` | **시스템** 이 일시 중단되는 것을 막아요 — 앱은 백그라운드에서 계속 돌지만 **화면은 꺼질 수 있어요**. 파일 다운로드·업로드, 오디오 재생에 사용. |
+| `prevent-display-sleep` | **디스플레이** 가 잠드는 것을 막아요 — 시스템 _과_ 화면을 모두 켜 둬요. 영상 재생이나 프레젠테이션에 사용. |
+
+```js filename="download.js"
+const { powerSaveBlocker } = require('electron')
+
+let blockerId = null
+
+function startDownload() {
+  // 화면은 어두워져도 괜찮아요 — 기기 자체만 깨어 있으면 됨
+  blockerId = powerSaveBlocker.start('prevent-app-suspension')
+  // 오래 걸리는 다운로드 시작...
+}
+
+function finishDownload() {
+  if (blockerId !== null && powerSaveBlocker.isStarted(blockerId)) {
+    powerSaveBlocker.stop(blockerId)
+    blockerId = null
+  }
+}
+```
+
+```js filename="video.js"
+// 사용자가 보는 내내 화면을 켜 둬요
+const id = powerSaveBlocker.start('prevent-display-sleep')
+
+player.on('ended', () => {
+  powerSaveBlocker.stop(id)
+})
+```
+
+<Callout type="warning">
+`prevent-display-sleep` 은 `prevent-app-suspension` 보다 **우선순위가 높아요**. 둘 다 시작하면 디스플레이 차단이 활성인 동안에는 그것이 이겨요 — 그게 멈춰야 비로소 앱 일시 중단 차단이 효력을 가져요. `start()` 가 반환하는 id 는 반드시 보관하세요: 그 블로커를 `stop()` 할 수 있는 유일한 방법이고, 잊어버린 블로커는 사용자의 기기를 영원히 깨워 둔 채(배터리를 계속 소모하며) 남게 돼요.
+</Callout>
+
+<EasyNote>
+`start()` 는 창구에서 번호표를 뽑는 것과 같아요 — 그 번호(`id`)가 증표예요. 블로커를 여러 개 시작할 수 있고 각각 자기 번호를 받아요. 하나를 해제하려면 `stop(id)` 로 그 번호를 돌려줘요. 번호를 잃어버리면 그 블로커는 영영 해제할 수 없어요.
+</EasyNote>
+
+---
+
+## 속성(Properties)
+
+`powerSaveBlocker` 에는 **속성이 없어요**. 모든 상태는 위 세 메서드 뒤에 숨어 있고, 모듈 객체에서 직접 읽거나 설정할 값은 없어요.
+
+---
+
+## 쉽게 풀어 설명
+
+컴퓨터는 전력을 아끼도록 설계돼 있어요. 몇 분만 가만히 있어도 화면이 어두워지고 기기가 슬그머니 잠들죠. 배터리로 동작하는 노트북에는 좋은 일이지만 — 앱이 두 시간짜리 영상을 내보내거나 느린 다운로드를 절반쯤 진행 중이라면 끔찍한 일이에요.
+
+`powerSaveBlocker` 는 "아직은 안 돼요" 라고 정중히 말하는 방법이에요. **`start()`** 를 두 가지 의도 중 하나로 호출해요:
+
+1. **"컴퓨터를 계속 돌게 해 주세요"** (`prevent-app-suspension`) — 화면이 꺼져도 작업은 계속돼요. 다운로드나 백그라운드 오디오에 딱이에요.
+2. **"화면도 켜 두세요"** (`prevent-display-sleep`) — 아무것도 어두워지지 않고 잠들지 않아요. 영상이나 프레젠테이션에 딱이에요.
+
+`start()` 는 **id** 를 건네줘요. 이 id 를 보관표처럼 잘 지키세요. **`stop(id)`** 가 기기를 다시 쉬게 할 유일한 방법이고, **`isStarted(id)`** 로는 해제하기 전에 블로커가 아직 켜져 있는지 확인할 수 있어요. 황금률은 이거예요: 모든 `start()` 에는 짝이 되는 `stop()` 이 있어야 해요. 잊어버리면 누군가의 배터리를 오후 내내 조용히 갉아먹게 돼요.
+
+<Cards>
+  <Cards.Card title="app 모듈" href="/ko/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/ko/api/browser-window" arrow />
+  <Cards.Card title="Main 프로세스" href="/ko/docs/processes/main" arrow />
+</Cards>

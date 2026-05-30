@@ -1,0 +1,167 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { MenuApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<MenuApiIllustration />}
+  title="ShareMenu"
+  subtitle="macOS 네이티브 공유 시트를 띄워, 텍스트·파일·URL 을 메시지·메일·AirDrop 등으로 보낼 수 있게 해요."
+  badge="API · ShareMenu"
+/>
+
+`ShareMenu` 는 **Main 프로세스** 에서 `new` 로 만드는 **클래스** 예요. 각 인스턴스는 공유할 내용 묶음인 `SharingItem`(텍스트·파일·URL)을 감싸고, `popup()` 을 호출하면 시스템 공유 시트를 띄워요.
+
+```js filename="main.js"
+const { ShareMenu } = require('electron')
+
+const shareMenu = new ShareMenu({
+  texts: ['이 앱 한번 써보세요!'],
+  urls: ['https://electronjs.org'],
+})
+
+shareMenu.popup()
+```
+
+<Callout type="info">
+`ShareMenu` 는 **macOS 전용** 이에요. Windows·Linux 에는 대응되는 네이티브 공유 시트가 없으니, 인스턴스를 만들기 전에 `process.platform === 'darwin'` 으로 감싸 주세요.
+</Callout>
+
+<EasyNote>
+`ShareMenu` 는 macOS 곳곳에서 보던 그 **"공유" 버튼** 이라고 생각하면 돼요 — Safari, 사진, Finder 어디서든 보이는 그것이요. 소포(`SharingItem`: 약간의 텍스트, 파일 몇 개, 링크 몇 개)를 건네면, macOS 가 그 소포를 보낼 수 있는 곳들(메시지, 메일, AirDrop, 메모 등)을 표준 목록으로 보여줘요.
+</EasyNote>
+
+---
+
+## 생성자(Constructor)
+
+```js filename="constructor.js"
+new ShareMenu(sharingItem)
+```
+
+| 인자 | 타입 | 무엇인가 |
+|---|---|---|
+| `sharingItem` | `SharingItem` | 공유할 내용 묶음 (텍스트·파일·URL) |
+
+### `SharingItem` 객체
+
+`SharingItem` 은 평범한 객체예요. 세 필드 모두 선택 사항이라, 공유하고 싶은 종류만 골라 담으면 돼요.
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `texts` | `string[]` _(선택)_ | 공유할 텍스트 문자열 배열 |
+| `filePaths` | `string[]` _(선택)_ | 공유할 파일의 절대 경로 배열 |
+| `urls` | `string[]` _(선택)_ | 공유할 URL 배열 |
+
+```js filename="sharing-item.js"
+// 스크린샷 파일을 설명 문구·링크와 함께 공유
+const shareMenu = new ShareMenu({
+  texts: ['최근에 내보낸 결과물이에요'],
+  filePaths: ['/Users/me/Pictures/export.png'],
+  urls: ['https://example.com/gallery'],
+})
+```
+
+<EasyNote>
+`SharingItem` 은 "무엇을" 이고 `ShareMenu` 는 "어떻게" 예요. 생성자에서 공유할 _내용_ 을 한 번 정의해 두면, _방법_ 은 macOS 가 알아서 처리해요 — 텍스트·파일·URL 을 받을 수 있는 앱을 스스로 판단해서 맞는 것만 보여줘요.
+</EasyNote>
+
+---
+
+## 인스턴스 메서드(Instance methods)
+
+`ShareMenu` 에는 딱 두 개의 메서드가 있어요 — 공유 시트를 여는 것과 닫는 것.
+
+| 메서드 | 하는 일 |
+|---|---|
+| `shareMenu.popup([options])` | `BrowserWindow` 안에 공유 시트를 컨텍스트 메뉴로 띄움 |
+| `shareMenu.closePopup([browserWindow])` | 해당 창의 공유 시트를 닫음 |
+
+### `shareMenu.popup([options])`
+
+공유 시트를 열어요. 선택 `options` 객체로 위치와 동작을 설정합니다:
+
+| 옵션 | 타입 | 하는 일 |
+|---|---|---|
+| `browserWindow` | `BrowserWindow` _(선택)_ | 메뉴를 띄울 창. 기본값은 포커스된 창 |
+| `x` | `number` _(선택)_ | 메뉴를 띄울 X 좌표. 기본값은 현재 마우스 커서 위치 |
+| `y` | `number` _(선택)_ | 메뉴를 띄울 Y 좌표. 기본값은 현재 마우스 커서 위치 |
+| `positioningItem` | `number` _(선택, macOS)_ | 마우스 커서 아래에 놓을 메뉴 항목의 인덱스. 기본값 `-1` |
+| `callback` | `Function` _(선택)_ | 메뉴가 닫히면 호출됨 |
+
+```js filename="popup.js"
+const { ShareMenu, BrowserWindow, ipcMain } = require('electron')
+
+// 사용자가 우클릭한 위치에 공유 시트를 띄워요
+ipcMain.on('share', (event, position) => {
+  const win = BrowserWindow.fromWebContents(event.sender)
+
+  const shareMenu = new ShareMenu({
+    texts: ['제 Electron 앱에서 공유합니다'],
+    urls: ['https://electronjs.org'],
+  })
+
+  shareMenu.popup({
+    browserWindow: win,
+    x: position.x,
+    y: position.y,
+    callback: () => {
+      // 시트가 닫힌 뒤 실행돼요 (실제 공유 여부와 무관)
+    },
+  })
+})
+```
+
+### `shareMenu.closePopup([browserWindow])`
+
+공유 시트를 코드로 직접 닫아요 — 다른 곳에서 시트를 닫아야 할 때 유용해요.
+
+| 인자 | 타입 | 하는 일 |
+|---|---|---|
+| `browserWindow` | `BrowserWindow` _(선택)_ | 메뉴를 닫을 창. 기본값은 포커스된 창 |
+
+```js filename="close-popup.js"
+// 사용자를 기다리지 않고 시트를 닫아요
+shareMenu.closePopup(win)
+```
+
+<Callout type="warning">
+새로운 것을 공유할 때마다 **매번 새 `ShareMenu` 를 만드세요**. 공유할 내용은 생성 시점에 `SharingItem` 으로 고정되므로, 인스턴스를 재사용하면 예전 소포를 또 공유하게 돼요.
+</Callout>
+
+---
+
+## 인스턴스 이벤트(Instance events)
+
+`ShareMenu` 에는 **이벤트가 없어요**. 시트가 닫힌 뒤 코드를 실행하려면 대신 `popup()` 에 `callback` 을 넘기세요.
+
+---
+
+## 인스턴스 속성(Instance properties)
+
+`ShareMenu` 에는 **공개 속성이 없어요**. 필요한 모든 정보는 생성자에 넘긴 `SharingItem` 에 담겨 있어요.
+
+---
+
+## 정적 메서드(Static methods)
+
+`ShareMenu` 에는 **정적 메서드가 없어요**. 언제나 `new ShareMenu(sharingItem)` 로 만든 인스턴스를 사용해요.
+
+---
+
+## 쉽게 풀어 설명
+
+`ShareMenu` 는 macOS 의 **"공유" 버튼** 을 객체로 옮긴 거예요. 우리는 이미 수없이 써 왔어요 — macOS 어디서든 "공유" 를 누르면 익숙한 시트가 올라오면서 메시지·메일·AirDrop·메모, 그리고 그 내용을 받을 수 있는 곳들을 보여주죠.
+
+전체 API 는 두 단계예요:
+
+1. **소포 싸기.** 공유할 것을 `SharingItem` 으로 정의해요 — `texts`, `filePaths`, `urls` 를 원하는 대로 섞어서 — 그리고 `new ShareMenu(...)` 에 건네요.
+2. **시트 열기.** `popup()` 을 호출해요 (사용자가 클릭한 자리에 뜨도록 `browserWindow` 와 `x`/`y` 도 함께). 그다음은 macOS 가 알아서 — 내용을 받을 수 있는 곳만 골라 보여줘요.
+
+기억할 건 두 가지예요. **macOS 전용** 이라는 점(항상 `process.platform === 'darwin'` 으로 감싸기), 그리고 내용이 생성 시점에 고정되니 **공유할 때마다 새 인스턴스** 를 만든다는 점. 이벤트도 속성도 없어요 — 그냥 `popup()`, 그리고 필요하면 `closePopup()` 뿐이에요.
+
+<Cards>
+  <Cards.Card title="Menu" href="/ko/api/menu" arrow />
+  <Cards.Card title="app 모듈" href="/ko/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/ko/api/browser-window" arrow />
+</Cards>

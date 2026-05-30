@@ -1,0 +1,274 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { MenuApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<MenuApiIllustration />}
+  title="TouchBar"
+  subtitle="Build the thin strip of buttons, sliders, and labels that lives above the keyboard on a Touch Bar Mac."
+  badge="API · TouchBar"
+/>
+
+`TouchBar` is a **class** you create with `new` in the **Main process**. You assemble a layout from small item objects (buttons, labels, sliders, …) and hand it to a window with `win.setTouchBar(touchBar)`. macOS draws it on the physical Touch Bar above the keyboard.
+
+```js filename="main.js"
+const { app, BrowserWindow, TouchBar } = require('electron')
+const { TouchBarButton, TouchBarLabel, TouchBarSpacer } = TouchBar
+
+app.whenReady().then(() => {
+  const win = new BrowserWindow({ width: 800, height: 600 })
+
+  const touchBar = new TouchBar({
+    items: [
+      new TouchBarLabel({ label: 'Hello Touch Bar' }),
+      new TouchBarSpacer({ size: 'large' }),
+      new TouchBarButton({ label: 'Click me', click: () => win.reload() }),
+    ],
+  })
+
+  win.setTouchBar(touchBar)
+})
+```
+
+<Callout type="warning">
+TouchBar is **macOS only** — it does nothing on Windows or Linux. Newer MacBooks have dropped the physical Touch Bar entirely, so treat it as a nice-to-have, never a required control. Apple's own APIs here are experimental, so the surface may shift between Electron versions.
+</Callout>
+
+<EasyNote>
+Think of `TouchBar` as a **tiny second screen** that sits where your function keys used to be. You don't draw on it directly — you describe a row of small widgets, and macOS renders that row for whichever window is in front.
+</EasyNote>
+
+---
+
+## Constructor
+
+| Constructor | What it does |
+|---|---|
+| `new TouchBar(options)` | Create a Touch Bar layout from a list of items |
+
+The `options` object:
+
+| Option | Type | What it is |
+|---|---|---|
+| `items` | `(TouchBarButton \| TouchBarColorPicker \| TouchBarGroup \| TouchBarLabel \| TouchBarPopover \| TouchBarScrubber \| TouchBarSegmentedControl \| TouchBarSlider \| TouchBarSpacer \| TouchBarOtherItemsProxy)[]` | The widgets shown, left to right |
+| `escapeItem` | `TouchBarItem \| null` | Replaces the system "esc" button (`null` keeps the default) |
+
+```js filename="escape-item.js"
+const { TouchBar } = require('electron')
+const { TouchBarButton } = TouchBar
+
+// Swap the "esc" key for a custom Cancel button
+const touchBar = new TouchBar({
+  items: [/* ... */],
+  escapeItem: new TouchBarButton({
+    label: 'Cancel',
+    backgroundColor: '#C0392B',
+    click: () => abortCurrentTask(),
+  }),
+})
+```
+
+---
+
+## Instance events
+
+`TouchBar` itself has **no events**. Each item handles interaction through callbacks you pass in its constructor — for example a button's `click`, a slider's `change`, or a scrubber's `select`/`highlight`. See the item types below.
+
+---
+
+## Instance methods
+
+`TouchBar` exposes **no instance methods**. You build the layout once in the constructor, attach it with `win.setTouchBar(touchBar)`, and then mutate individual items (e.g. `button.label = 'Saving…'`) to update what's drawn — those item changes are reflected on the bar immediately.
+
+```js filename="live-update.js"
+const saveButton = new TouchBarButton({ label: 'Save', click: save })
+win.setTouchBar(new TouchBar({ items: [saveButton] }))
+
+// Later: changing an item property updates the bar live, no re-attach needed
+saveButton.label = 'Saving…'
+saveButton.enabled = false
+```
+
+---
+
+## Instance properties
+
+| Property | Type | What it is |
+|---|---|---|
+| `touchBar.escapeItem` | `TouchBarItem \| null` | Get/set the item replacing the "esc" button; `null` restores the system default |
+
+---
+
+## Item types
+
+These are the building blocks. Reach them as static properties of `TouchBar` (e.g. `TouchBar.TouchBarButton`) and create each with `new`. All are **macOS only**.
+
+| Item type | What it is |
+|---|---|
+| `TouchBar.TouchBarButton` | A tappable button (label and/or icon) |
+| `TouchBar.TouchBarColorPicker` | A swatch that opens a color picker |
+| `TouchBar.TouchBarGroup` | A container that nests another `TouchBar`'s items |
+| `TouchBar.TouchBarLabel` | Static (optionally colored) text |
+| `TouchBar.TouchBarPopover` | A button that expands into a nested set of items |
+| `TouchBar.TouchBarScrubber` | A scrollable strip of selectable items |
+| `TouchBar.TouchBarSegmentedControl` | A row of connected segments (like a tab switcher) |
+| `TouchBar.TouchBarSlider` | A draggable slider with a value range |
+| `TouchBar.TouchBarSpacer` | Fixed or flexible empty space between items |
+| `TouchBar.TouchBarOtherItemsProxy` | A placeholder where macOS injects its own system items |
+
+### TouchBarButton
+
+| Option / Property | Type | What it is |
+|---|---|---|
+| `label` | `string` | Button text |
+| `accessibilityLabel` | `string` | Short description read by VoiceOver |
+| `backgroundColor` | `string` | Background color in hex, e.g. `#ABCDEF` |
+| `icon` | `NativeImage \| string` | Button icon |
+| `iconPosition` | `'left' \| 'right' \| 'overlay'` | Icon placement (default `overlay`) |
+| `click` | `Function` | Called when the button is tapped |
+| `enabled` | `boolean` | Whether the button responds (default `true`) |
+
+All of the above (except `click`) are also live-writable properties.
+
+```js filename="button.js"
+const playButton = new TouchBarButton({
+  label: '▶ Play',
+  backgroundColor: '#27AE60',
+  click: () => togglePlayback(),
+})
+```
+
+### TouchBarLabel
+
+| Option / Property | Type | What it is |
+|---|---|---|
+| `label` | `string` | Text to display |
+| `accessibilityLabel` | `string` | Description read by a screen reader |
+| `textColor` | `string` | Text color in hex, e.g. `#ABCDEF` |
+
+### TouchBarSlider
+
+| Option / Property | Type | What it is |
+|---|---|---|
+| `label` | `string` | Label text |
+| `value` | `Integer` | Current value |
+| `minValue` | `Integer` | Minimum bound |
+| `maxValue` | `Integer` | Maximum bound |
+| `change` | `Function` | Called with the new value as the user drags (constructor only) |
+
+```js filename="slider.js"
+const volume = new TouchBarSlider({
+  label: 'Volume',
+  value: 50,
+  minValue: 0,
+  maxValue: 100,
+  change: (newValue) => setVolume(newValue),
+})
+```
+
+### TouchBarColorPicker
+
+| Option / Property | Type | What it is |
+|---|---|---|
+| `availableColors` | `string[]` | Hex colors the user may pick from |
+| `selectedColor` | `string` | Initially selected hex color |
+| `change` | `Function` | Called with the chosen color (constructor only) |
+
+### TouchBarScrubber
+
+| Option / Property | Type | What it is |
+|---|---|---|
+| `items` | `ScrubberItem[]` | The scrollable items (`label` and/or `icon`) |
+| `select` | `Function` | Called with `selectedIndex` when an item is chosen (constructor only) |
+| `highlight` | `Function` | Called with `highlightedIndex` on any tap (constructor only) |
+| `selectedStyle` | `'background' \| 'outline' \| 'none'` | Style of the selected item (default `none`) |
+| `overlayStyle` | `'background' \| 'outline' \| 'none'` | Overlay style for the selected item (default `none`) |
+| `showArrowButtons` | `boolean` | Show left/right arrows (default `false`) |
+| `mode` | `'fixed' \| 'free'` | Scrolling mode (default `free`) |
+| `continuous` | `boolean` | Continuous scrolling (default `true`) |
+
+### TouchBarSegmentedControl
+
+| Option / Property | Type | What it is |
+|---|---|---|
+| `segmentStyle` | `string` | `automatic`, `rounded`, `textured-rounded`, `round-rect`, `textured-square`, `capsule`, `small-square`, or `separated` |
+| `mode` | `'single' \| 'multiple' \| 'buttons'` | Selection behavior (default `single`) |
+| `segments` | `SegmentedControlSegment[]` | The segments (`label` and/or `icon`, `enabled`) |
+| `selectedIndex` | `Integer` | The currently selected segment |
+| `change` | `Function` | Called with `selectedIndex` and `isSelected` (constructor only) |
+
+<Callout type="warning">
+For `TouchBarSegmentedControl`, changing the `segments` array reference updates the bar, but mutating a property _inside_ an existing segment object does **not** refresh it. Assign a fresh array when you need a visible change.
+</Callout>
+
+### TouchBarPopover
+
+| Option / Property | Type | What it is |
+|---|---|---|
+| `label` | `string` | Button text |
+| `icon` | `NativeImage` | Button icon |
+| `items` | `TouchBar` | The nested layout shown when expanded |
+| `showCloseButton` | `boolean` | Show a close button inside the popover (default `true`) |
+
+### TouchBarGroup
+
+| Option | Type | What it is |
+|---|---|---|
+| `items` | `TouchBar` | The nested items grouped together |
+
+### TouchBarSpacer
+
+| Option / Property | Type | What it is |
+|---|---|---|
+| `size` | `'small' \| 'large' \| 'flexible'` | `small`/`large` add fixed gaps; `flexible` soaks up all leftover space (default `small`) |
+
+### TouchBarOtherItemsProxy
+
+No options. Drop it into your `items` to reserve a spot where macOS places its own standard controls.
+
+```js filename="combined.js"
+const { TouchBar } = require('electron')
+const {
+  TouchBarLabel,
+  TouchBarSlider,
+  TouchBarSpacer,
+  TouchBarSegmentedControl,
+} = TouchBar
+
+const tabs = new TouchBarSegmentedControl({
+  segmentStyle: 'rounded',
+  segments: [{ label: 'Edit' }, { label: 'Preview' }],
+  selectedIndex: 0,
+  change: (selectedIndex) => switchPane(selectedIndex),
+})
+
+const touchBar = new TouchBar({
+  items: [
+    new TouchBarLabel({ label: 'Editor' }),
+    new TouchBarSpacer({ size: 'flexible' }),
+    tabs,
+    new TouchBarSlider({ label: 'Zoom', value: 100, minValue: 50, maxValue: 200, change: setZoom }),
+  ],
+})
+
+win.setTouchBar(touchBar)
+```
+
+---
+
+## In plain words
+
+The Touch Bar is that **slim touchscreen strip** above the keyboard on certain MacBooks, where the function keys used to be. `TouchBar` lets your app put its own controls there — a Play button, a volume slider, a color picker — instead of plain F-keys.
+
+The mental model is simple: you're **building a single row of widgets**. You pick the pieces from `TouchBar.*` (a button here, a label there, a spacer to push things apart), drop them into `new TouchBar({ items: [...] })`, and hand the result to a window with `win.setTouchBar(...)`. macOS does the drawing.
+
+There are no events or methods on the bar itself — each widget carries its own callback (`click` on a button, `change` on a slider). And to update something later, you don't rebuild the bar; you just change the item's property (`button.label = 'Saving…'`) and it refreshes on the spot.
+
+Two cautions worth remembering: it's **macOS only**, and Apple has been retiring the hardware, so it's a delightful extra — never the only way to do something important.
+
+<Cards>
+  <Cards.Card title="BrowserWindow (setTouchBar)" href="/en/api/browser-window" arrow />
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="Process model" href="/en/docs/processes" arrow />
+</Cards>

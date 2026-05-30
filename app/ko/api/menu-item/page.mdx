@@ -1,0 +1,209 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { MenuApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<MenuApiIllustration />}
+  title="MenuItem"
+  subtitle="메뉴의 항목 하나를 정의해요 — 라벨, 단축키, 클릭 시 동작, 그리고 체크박스·라디오·구분선·서브메뉴 중 무엇인지까지."
+  badge="API · MenuItem"
+/>
+
+`MenuItem` 은 **Main 프로세스** 에서 `new` 로 만드는 **클래스** 예요. 각 인스턴스는 `Menu` 안의 한 줄 — 사용자가 클릭할 수 있는 항목, 토글할 수 있는 체크박스, 구분선, 또는 서브메뉴를 여는 항목이에요.
+
+```js filename="main.js"
+const { MenuItem, Menu } = require('electron')
+
+const menu = new Menu()
+
+menu.append(
+  new MenuItem({
+    label: '저장',
+    accelerator: 'CmdOrCtrl+S',
+    click: () => saveDocument(),
+  }),
+)
+```
+
+<EasyNote>
+`Menu` 는 **메뉴 전체** 이고, `MenuItem` 은 **그 안의 한 줄** 이에요. 식당 메뉴판을 떠올려 보세요. 코팅된 메뉴판이 `Menu` 이고, 거기 적힌 음식 하나하나("수프 — 6,000원")가 `MenuItem` 이에요. 항목은 자기만의 글자, 가격(단축키), 그리고 주문했을 때 주방이 하는 일(`click` 핸들러)을 갖고 있어요.
+</EasyNote>
+
+---
+
+## 생성자(Constructor)
+
+옵션 객체를 넘겨 항목을 만들어요. 가장 흔한 두 형태는 "클릭하면 뭔가 한다"(`click`)와 "내장 동작을 쓴다"(`role`)예요.
+
+```js filename="new-item.js"
+const item = new MenuItem({
+  label: '새로고침',
+  role: 'reload', // 내장 동작 — click 핸들러 필요 없음
+})
+```
+
+### 동작
+
+| 옵션 | 타입 | 하는 일 |
+|---|---|---|
+| `click` | `Function` | 클릭 시 `click(menuItem, window, event)` 형태로 호출됨 |
+| `role` | `string` | 미리 정의된 OS 동작 사용 (`click` 보다 우선 — 아래 role 목록 참고) |
+| `type` | `string` | `'normal'` / `'separator'` / `'submenu'` / `'checkbox'` / `'radio'` / `'header'` / `'palette'` |
+| `submenu` | `Menu \| MenuItemConstructorOptions[]` | 중첩 메뉴 — 지정하면 `type` 이 `'submenu'` 로 강제됨 |
+
+### 모양 & 글자
+
+| 옵션 | 타입 | 하는 일 |
+|---|---|---|
+| `label` | `string` | 항목에 보이는 글자 |
+| `sublabel` | `string` _(macOS ≥ 14.4)_ | 라벨 아래에 보이는 보조 글자 |
+| `toolTip` | `string` _(macOS)_ | 항목 위에 마우스를 올렸을 때 나오는 글자 |
+| `icon` | `NativeImage \| string` | 라벨 옆에 보이는 아이콘(이미지 또는 파일 경로) |
+| `accelerator` | `Accelerator` | 키보드 단축키, 예: `'CmdOrCtrl+S'` |
+
+### 상태
+
+| 옵션 | 타입 | 하는 일 |
+|---|---|---|
+| `enabled` | `boolean` | `false` 면 항목이 흐려지고 클릭이 무시됨 (기본 `true`) |
+| `visible` | `boolean` | `false` 면 항목을 완전히 숨김 (기본 `true`) |
+| `checked` | `boolean` | 체크 표시 / 라디오 점 상태 — `'checkbox'` 와 `'radio'` 에서만 |
+| `acceleratorWorksWhenHidden` | `boolean` _(macOS)_ | 항목이 숨겨져 있어도 단축키가 작동하게 함 (기본 `true`) |
+| `registerAccelerator` | `boolean` _(Linux/Windows)_ | 단축키를 시스템에 등록할지, 그냥 표시만 할지 (기본 `true`) |
+| `sharingItem` | `SharingItem` _(macOS)_ | `role` 이 `'shareMenu'` 일 때 공유할 항목 |
+
+### 식별 & 위치
+
+| 옵션 | 타입 | 하는 일 |
+|---|---|---|
+| `id` | `string` | 메뉴 안에서의 고유 id — 아래 위치 옵션이 참조함 |
+| `before` | `string[]` | 이 id 를 가진 항목들 **앞** 에 삽입 |
+| `after` | `string[]` | 이 id 를 가진 항목들 **뒤** 에 삽입 |
+| `beforeGroupContaining` | `string[]` | 이 id 들을 포함한 그룹 **앞** 에 이 항목 그룹을 배치 |
+| `afterGroupContaining` | `string[]` | 이 id 들을 포함한 그룹 **뒤** 에 이 항목 그룹을 배치 |
+
+```js filename="checkbox-and-radio.js"
+// 체크박스 항목: click 핸들러 안에서 바뀐 상태를 읽어요
+new MenuItem({
+  label: '자동 줄바꿈',
+  type: 'checkbox',
+  checked: true,
+  click: (menuItem) => setWordWrap(menuItem.checked),
+})
+
+// 라디오 항목은 그룹 단위로 자동 토글돼요
+new MenuItem({ label: '작게', type: 'radio' })
+new MenuItem({ label: '보통', type: 'radio', checked: true })
+new MenuItem({ label: '크게', type: 'radio' })
+```
+
+<Callout type="warning">
+`role` 을 지정하면 함께 넘긴 `click` 을 **덮어써요** — 여러분의 함수 대신 OS 의 내장 동작이 실행돼요. 둘 중 하나만 쓰세요.
+</Callout>
+
+### Role(역할)
+
+`role` 을 쓰면 `click` 핸들러를 작성하지 않아도 네이티브 OS 동작(플랫폼별로 올바른 기본 라벨과 단축키 포함)을 그대로 얻어요. 유효한 값:
+
+| 그룹 | Role |
+|---|---|
+| 편집 | `undo`, `redo`, `cut`, `copy`, `paste`, `pasteAndMatchStyle`, `delete`, `selectAll` |
+| 보기 & 확대 | `reload`, `forceReload`, `toggleDevTools`, `resetZoom`, `zoomIn`, `zoomOut`, `togglefullscreen` |
+| 창 | `minimize`, `close`, `zoom`, `front` _(macOS)_, `window` _(macOS)_, `help` |
+| 앱 _(macOS)_ | `about`, `services`, `hide`, `hideOthers`, `unhide`, `quit` |
+| 텍스트 치환 _(macOS)_ | `toggleSpellChecker`, `showSubstitutions`, `toggleSmartQuotes`, `toggleSmartDashes`, `toggleTextReplacement`, `startSpeaking`, `stopSpeaking` |
+| 서브메뉴 전체 | `appMenu` _(macOS)_, `fileMenu`, `editMenu`, `viewMenu`, `shareMenu` _(macOS)_, `windowMenu` |
+| 탭 & 문서 _(macOS)_ | `toggleTabBar`, `selectNextTab`, `selectPreviousTab`, `showAllTabs`, `mergeAllWindows`, `moveTabToNewWindow`, `recentDocuments`, `clearRecentDocuments` |
+
+```js filename="roles.js"
+// 표준 편집 메뉴를 role 만으로 — 모든 플랫폼에서 올바르게 동작해요
+const editMenu = new MenuItem({
+  label: '편집',
+  submenu: [
+    { role: 'undo' },
+    { role: 'redo' },
+    { type: 'separator' },
+    { role: 'cut' },
+    { role: 'copy' },
+    { role: 'paste' },
+  ],
+})
+```
+
+<EasyNote>
+Role 은 "조립이 끝난" 메뉴 항목이에요. 복사·붙여넣기를 직접 배선하는 대신 `{ role: 'copy' }` 하나면 올바른 라벨, 올바른 단축키(맥은 `⌘C`, 윈도우는 `Ctrl+C`), 올바른 동작까지 전부 공짜로 얻어요.
+</EasyNote>
+
+---
+
+## 이벤트(Events)
+
+`MenuItem` 에는 **이벤트가 없어요.** `.on(...)` 으로 구독할 게 없습니다. 클릭에 반응하려면 생성자에 `click` 함수를 넘기세요(또는 `role` 을 쓰세요).
+
+---
+
+## 메서드(Methods)
+
+`MenuItem` 에는 **인스턴스 메서드가 없어요.** 항목에 메서드를 호출하는 게 아니라, **속성** 을 직접 바꾸면(아래 참고) 메뉴가 다음에 열릴 때 반영돼요.
+
+---
+
+## 속성(Properties)
+
+대부분 런타임에 바꿀 수 있고, 메뉴가 다음에 열릴 때 변경 사항이 반영돼요.
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `menuItem.id` | `string` | 항목의 고유 id |
+| `menuItem.label` | `string` | 보이는 글자 — 바꾸면 항목 이름이 바뀜 |
+| `menuItem.click` | `Function` | 클릭 핸들러, `(event, focusedWindow, focusedWebContents)` 로 호출됨 |
+| `menuItem.submenu` | `Menu \| undefined` | 중첩 서브메뉴(있다면) |
+| `menuItem.type` | `string` | 항목 타입 (`'normal'`, `'checkbox'` ...) |
+| `menuItem.role` | `string \| undefined` | 설정된 role(있다면) |
+| `menuItem.accelerator` | `Accelerator \| null` | 키보드 단축키 |
+| `menuItem.userAccelerator` | `Accelerator \| null` (읽기전용) _(macOS)_ | 사용자가 지정한 단축키 — 메뉴에 추가되기 전엔 `null` |
+| `menuItem.icon` | `NativeImage \| string` | 항목의 아이콘 |
+| `menuItem.sublabel` | `string` | 라벨 아래 보조 글자 |
+| `menuItem.toolTip` | `string` _(macOS)_ | 마우스 오버 글자 |
+| `menuItem.enabled` | `boolean` | 항목을 클릭할 수 있는지 |
+| `menuItem.visible` | `boolean` | 항목이 보이는지 |
+| `menuItem.checked` | `boolean` | 체크박스/라디오 상태 — 바꾸면 체크 표시가 토글됨 |
+| `menuItem.registerAccelerator` | `boolean` | 단축키가 시스템에 등록되었는지 |
+| `menuItem.sharingItem` | `SharingItem` _(macOS)_ | `role` 이 `'shareMenu'` 일 때 공유되는 항목 |
+| `menuItem.commandId` | `number` | 클릭을 내부적으로 라우팅하는 데 쓰는, 순차 부여된 고유 id |
+| `menuItem.menu` | `Menu` | 이 항목이 속한 `Menu` |
+
+```js filename="toggle-at-runtime.js"
+// 참조를 보관했다가 나중에 바꿔요 — 메뉴가 변경을 반영해요
+const offline = new MenuItem({ label: '오프라인 작업', type: 'checkbox' })
+
+function goOnline() {
+  offline.checked = false
+  offline.enabled = true
+}
+```
+
+<Callout type="warning">
+`MenuItem` 을 바꾸는 건 `Menu.buildFromTemplate` 로 만들었거나 항목 인스턴스로 조립한 메뉴에만 영향을 줘요. 변경이 보이려면 메뉴를 다시 열어야 해요 — 대부분의 플랫폼은 이미 열려 있는 메뉴를 실시간으로 갱신하지 않아요.
+</Callout>
+
+---
+
+## 쉽게 풀어 설명
+
+`MenuItem` 은 **메뉴 안의 클릭 가능한 한 줄** 이에요 — 그 이상도 이하도 아니에요. `label`(무슨 글자를 보일지)을 주고, 그다음 어떻게 동작할지를 고르면 돼요:
+
+1. **내가 짠 일을 한다.** `click` 함수를 주세요. 사용자가 고르면 여러분의 코드가 실행돼요.
+2. **표준 OS 동작을 한다.** `'copy'` 나 `'quit'` 같은 `role` 을 주면, Electron 이 모든 플랫폼에 맞는 라벨·단축키·동작을 알아서 채워 줘요 — 코드가 필요 없어요.
+3. **특별한 종류의 줄이 된다.** `type` 을 `'separator'` 로 하면 구분선, `'checkbox'` 나 `'radio'` 로 하면 토글, `submenu` 를 주면 그 아래에 항목을 중첩해요.
+
+여기엔 이벤트도 메서드도 없어요 — 순수한 데이터 객체예요. 클릭에 반응하려면 처음에 `click` 을 넘기고, 나중에 바꾸려면 속성만 설정(`item.enabled = false`, `item.checked = true`)하고 메뉴를 다시 열면 돼요. 실제로는 거의 항상 `Menu.buildFromTemplate` 로 항목을 만들게 되는데, 같은 옵션 객체를 받아 `MenuItem` 을 대신 만들어 줘요.
+
+형태만 기억하세요: **`label`**(글자), **`click` 또는 `role`**(동작), **`type`**(어떤 종류의 줄인지). 이게 클래스의 전부예요.
+
+<Cards>
+  <Cards.Card title="Menu" href="/ko/api/menu" arrow />
+  <Cards.Card title="app 모듈" href="/ko/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/ko/api/browser-window" arrow />
+</Cards>

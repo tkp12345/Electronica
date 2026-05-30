@@ -1,0 +1,171 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { SystemApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<SystemApiIllustration />}
+  title="safeStorage"
+  subtitle="Encrypt and decrypt strings using the operating system's own secure storage — so secrets on disk stay secret."
+  badge="API · safeStorage"
+/>
+
+The `safeStorage` module lives in the **Main process**. It hands a string to the OS's native credential store (macOS Keychain, Windows DPAPI, or a Linux secret service) and gives you back encrypted bytes you can safely write to disk — and turn back into the original string later.
+
+```js filename="main.js"
+const { app, safeStorage } = require('electron')
+
+app.whenReady().then(() => {
+  if (safeStorage.isEncryptionAvailable()) {
+    const encrypted = safeStorage.encryptString('my-secret-token')
+    // `encrypted` is a Buffer — safe to persist to disk
+    const plain = safeStorage.decryptString(encrypted)
+  }
+})
+```
+
+<EasyNote>
+Think of `safeStorage` as a **safe-deposit box at the bank**. You hand over a note (`encryptString`), the bank locks it in a box that only your OS account can open, and gives you a claim ticket (the encrypted `Buffer`). Later you bring the ticket back (`decryptString`) and get your note. You never have to manage the key yourself — the operating system does.
+</EasyNote>
+
+---
+
+## Events
+
+The `safeStorage` module emits **no events**. It's a small, purely functional module: you call a method, you get a result back.
+
+<Callout type="info">
+Because encryption is only available after the app is ready, gate every call behind `app.whenReady()` and a check of `safeStorage.isEncryptionAvailable()`.
+</Callout>
+
+---
+
+## Methods
+
+### Availability
+
+| Method | What it does |
+|---|---|
+| `safeStorage.isEncryptionAvailable()` | Returns `boolean` — `true` if encryption is currently available (see platform notes below) |
+| `safeStorage.isAsyncEncryptionAvailable()` | Returns `Promise<boolean>` — whether encryption is available for the **async** operations |
+
+Platform behavior of `isEncryptionAvailable()`:
+
+| Platform | Returns `true` when |
+|---|---|
+| _(macOS)_ | The Keychain is available |
+| _(Windows)_ | After the app has emitted the `ready` event |
+| _(Linux)_ | After `ready`, and a secret key (from the OS keyring) is available |
+
+```js filename="availability.js"
+app.whenReady().then(() => {
+  if (!safeStorage.isEncryptionAvailable()) {
+    // No secure backend — decide whether to refuse or fall back
+    return
+  }
+  // safe to encrypt/decrypt
+})
+```
+
+### Encrypt & decrypt (synchronous)
+
+| Method | What it does |
+|---|---|
+| `safeStorage.encryptString(plainText)` | Encrypts a `string` and returns a `Buffer` of bytes. **Throws** if encryption isn't available |
+| `safeStorage.decryptString(encrypted)` | Takes a `Buffer` produced by `encryptString` and returns the original `string` |
+
+```js filename="sync-roundtrip.js"
+const fs = require('node:fs')
+
+// Save a secret to disk
+const encrypted = safeStorage.encryptString('refresh-token-abc123')
+fs.writeFileSync('token.bin', encrypted)
+
+// Read it back later
+const fromDisk = fs.readFileSync('token.bin') // a Buffer
+const token = safeStorage.decryptString(fromDisk)
+```
+
+<Callout type="warning">
+Call `isEncryptionAvailable()` first. `encryptString` **throws** when no backend is available — and on Linux that can happen even at runtime if the keyring isn't unlocked. Never assume the buffer you stored can always be decrypted on another machine: the encryption key is tied to the current OS user, so encrypted data is **not portable** between users or devices.
+</Callout>
+
+### Encrypt & decrypt (asynchronous)
+
+| Method | What it does |
+|---|---|
+| `safeStorage.encryptStringAsync(plainText)` | Returns `Promise<Buffer>` — the async equivalent of `encryptString` |
+| `safeStorage.decryptStringAsync(encrypted)` | Returns `Promise<Object>` with `{ result: string, shouldReEncrypt: boolean }` |
+
+The `shouldReEncrypt` flag is `true` when the OS rotated the underlying key after this data was written — your cue to re-encrypt and re-save the value.
+
+```js filename="async-roundtrip.js"
+const encrypted = await safeStorage.encryptStringAsync('refresh-token-abc123')
+
+const { result, shouldReEncrypt } = await safeStorage.decryptStringAsync(encrypted)
+
+if (shouldReEncrypt) {
+  // The key rotated — store a freshly encrypted copy
+  const fresh = await safeStorage.encryptStringAsync(result)
+  await saveToDisk(fresh)
+}
+```
+
+### Linux configuration
+
+| Method | What it does |
+|---|---|
+| `safeStorage.setUsePlainTextEncryption(usePlainText)` _(Linux)_ | Forces the module to use an in-memory password to build the symmetric key when no OS password manager is present. No-op on macOS/Windows |
+| `safeStorage.getSelectedStorageBackend()` _(Linux)_ | Returns a `string` naming the backend in use (see table below) |
+
+Possible values of `getSelectedStorageBackend()`:
+
+| Value | Means |
+|---|---|
+| `basic_text` | Unrecognized environment, or launched with `--password-store="basic"` — **not secure** |
+| `gnome_libsecret` | GNOME / XFCE and similar desktops |
+| `kwallet` / `kwallet5` / `kwallet6` | KDE wallet variants |
+| `unknown` | Called before the app emitted `ready` |
+
+```js filename="linux-backend.js"
+app.whenReady().then(() => {
+  if (process.platform === 'linux') {
+    const backend = safeStorage.getSelectedStorageBackend()
+    if (backend === 'basic_text') {
+      // Encryption here is effectively plaintext — warn or refuse
+    }
+  }
+})
+```
+
+<Callout type="warning">
+On Linux, if no keyring (GNOME Keyring, KWallet, …) is available, `safeStorage` may silently fall back to a `basic_text` backend that is **not actually secure**. Check `getSelectedStorageBackend()` before trusting it with real secrets.
+</Callout>
+
+---
+
+## Properties
+
+The `safeStorage` module exposes **no properties** — everything is done through the methods above.
+
+---
+
+## In plain words
+
+`safeStorage` solves one specific problem: **"I have a secret, and I need to write it to disk without leaving it readable."** Think auth tokens, API keys, the password to a local database.
+
+The deal is simple. You give it a string, it gives you back a locked box of bytes (a `Buffer`). Only the current OS account can open that box, because the actual encryption key is held by the operating system — Keychain on macOS, DPAPI on Windows, a keyring on Linux. You never see the key, never store it, never lose it.
+
+Three things to remember:
+
+1. **Always check first.** Call `isEncryptionAvailable()` before you encrypt — on Linux especially, a secure backend isn't guaranteed.
+2. **It's per-user, per-machine.** An encrypted `Buffer` from one computer can't be decrypted on another. It's for local storage, not for sending secrets across the network.
+3. **Linux is the tricky one.** If there's no keyring, you can fall back to `basic_text`, which is just obfuscation. Check `getSelectedStorageBackend()` so you know what you're getting.
+
+Memorize three names and you have it: **`isEncryptionAvailable()`** (can I?), **`encryptString()`** (lock it), **`decryptString()`** (unlock it). The rest is for Linux fine-tuning and async variants.
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+  <Cards.Card title="Process model" href="/en/docs/processes" arrow />
+</Cards>

@@ -1,0 +1,161 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { WindowApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<WindowApiIllustration />}
+  title="ImageView"
+  subtitle="이미지 하나만 그리는 가벼운 네이티브 View예요 — 실제 콘텐츠가 로드되는 동안 보여줄 스플래시 화면에 딱 맞아요."
+  badge="API · ImageView"
+/>
+
+`ImageView` 는 **Main 프로세스** 에서 `new` 로 만드는 **클래스** 예요. 단 하나의 이미지를 그리는 것이 전부인 `View` 라서, 무거운 `WebContentsView` 가 뒤에서 로드되는 동안 (스플래시 화면처럼) 무언가를 즉시 보여줄 수 있어요.
+
+```js filename="main.js"
+const { app, BaseWindow, ImageView, nativeImage } = require('electron')
+
+app.whenReady().then(() => {
+  const win = new BaseWindow({ width: 800, height: 600 })
+
+  const splash = new ImageView()
+  splash.setImage(nativeImage.createFromPath('splash.png'))
+  splash.setBounds({ x: 0, y: 0, width: 800, height: 600 })
+
+  win.contentView.addChildView(splash)
+})
+```
+
+<Callout type="warning">
+`ImageView` 는 **실험적(experimental)** API 예요. 앞으로의 Electron 릴리스에서 바뀌거나 제거될 수 있고, 직접 상속(subclass)할 수 없어요. Electron `>=37.0.0` 및 `^36.4.0` 에서 쓸 수 있어요.
+</Callout>
+
+<EasyNote>
+`ImageView` 는 **액자에 든 사진 한 장** 이라고 생각하면 돼요 — 웹 엔진도, 자바스크립트도, 스크롤도 없어요. 그냥 사진 하나만 보여줄 뿐이죠. 그래서 실제 콘텐츠가 준비되기 전, 창이 열리는 바로 그 순간에 띄우기에 비용이 아주 저렴해요.
+</EasyNote>
+
+---
+
+## 어떻게 맞물리나
+
+`ImageView` 는 **`View` 를 상속(extends)** 해요 — `BaseWindow` 안에서 네이티브 뷰를 조합할 때 쓰는 바로 그 가벼운 베이스 클래스죠. 즉 `ImageView` 의 배치·위치·중첩은 표준 `View` 메서드(`setBounds`, `addChildView` …)로 처리하고, 여기에 자기만의 메서드 `setImage` 딱 하나가 더해져요.
+
+```js filename="splash-then-content.js"
+const { BaseWindow, ImageView, WebContentsView, nativeImage } = require('electron')
+
+const win = new BaseWindow({ width: 1024, height: 768 })
+
+// 1) 스플래시 이미지를 즉시 보여줘요
+const splash = new ImageView()
+splash.setImage(nativeImage.createFromPath('splash.png'))
+splash.setBounds({ x: 0, y: 0, width: 1024, height: 768 })
+win.contentView.addChildView(splash)
+
+// 2) 실제 페이지를 뒤에서 로드하고, 준비되면 교체해요
+const content = new WebContentsView()
+content.setBounds({ x: 0, y: 0, width: 1024, height: 768 })
+content.webContents.loadURL('https://example.com')
+
+content.webContents.once('did-finish-load', () => {
+  win.contentView.addChildView(content)      // 실제 콘텐츠를 올려요
+  win.contentView.removeChildView(splash)    // 스플래시를 치워요
+})
+```
+
+---
+
+## 생성자(Constructor)
+
+| 생성자 | 하는 일 |
+|---|---|
+| `new ImageView()` | 새 `ImageView` 를 만들어요. **옵션은 없어요** — 이미지는 이후에 `setImage` 로 설정해요. |
+
+---
+
+## 인스턴스 이벤트(Instance events)
+
+`ImageView` 는 **자기만의 이벤트가 없어요**. 다만 베이스 클래스인 `View` 의 이벤트를 물려받아요:
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `bounds-changed` | 레이아웃 과정에서 뷰의 bounds 가 바뀜 |
+
+```js filename="bounds-changed.js"
+splash.on('bounds-changed', () => {
+  // 레이아웃 중 뷰의 위치/크기가 바뀌었어요
+})
+```
+
+---
+
+## 인스턴스 메서드(Instance methods)
+
+### 자기 메서드
+
+| 메서드 | 하는 일 |
+|---|---|
+| `imageView.setImage(image)` | 표시할 이미지를 설정해요. `image` 는 `NativeImage` 이며, `NativeImage` 가 지원하는 형식만 가능해요. _(실험적)_ |
+
+```js filename="set-image.js"
+const { nativeImage } = require('electron')
+
+// 디스크의 파일에서...
+imageView.setImage(nativeImage.createFromPath('logo.png'))
+
+// ...또는 데이터 URL / 버퍼에서
+imageView.setImage(nativeImage.createFromDataURL(dataUrl))
+```
+
+<Callout type="warning">
+`setImage` 는 `NativeImage` 가 이해하는 형식(PNG, JPEG 등)만 받아요. 지원하지 않는 형식이나 존재하지 않는 경로를 넘기면 오류가 아니라 **빈 이미지** 가 돼요. 먼저 `NativeImage` 를 만든 뒤 `isEmpty()` 가 아닌지 확인하세요.
+</Callout>
+
+### `View` 에서 상속한 메서드
+
+`ImageView` 가 `View` 를 상속하므로 모든 `View` 메서드도 함께 쓸 수 있어요:
+
+| 메서드 | 하는 일 |
+|---|---|
+| `imageView.addChildView(view[, index])` | 자식 `View` 추가 (인덱스 지정 가능, 이미 있으면 맨 위로 이동) |
+| `imageView.removeChildView(view)` | 자식 `View` 제거 (자식이 아니면 아무 일도 안 함) |
+| `imageView.setBounds(bounds[, options])` | 부모 기준 위치·크기 설정 (`options.animate` 로 애니메이션) |
+| `imageView.getBounds()` | 현재 bounds 를 `Rectangle` 로 가져오기 |
+| `imageView.setBackgroundColor(color)` | 배경색 설정 (hex, RGB(A), HSL(A), CSS 색상 이름) |
+| `imageView.setBorderRadius(radius)` | 모서리를 `radius` 픽셀만큼 둥글게 (잘려나간 영역도 클릭은 받음) |
+| `imageView.setVisible(visible)` | 뷰 표시/숨김 |
+| `imageView.getVisible()` | 뷰가 그려지도록 설정돼 있는가? |
+
+```js filename="layout.js"
+// 이미지 위치 지정, 모서리 둥글게, 배경 깔기
+splash.setBounds({ x: 0, y: 0, width: 800, height: 600 })
+splash.setBackgroundColor('#0b0b0b')
+splash.setBorderRadius(12)
+```
+
+---
+
+## 인스턴스 속성(Instance properties)
+
+`ImageView` 는 **자기만의 속성이 없어요**. `View` 에서 하나를 물려받아요:
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `imageView.children` | `View[]` (읽기전용) | 뒤에서 앞 순서의 자식 뷰들 |
+
+---
+
+## 쉽게 풀어 설명
+
+`ImageView` 는 **Electron 이 제공하는 가장 단순한 뷰** 예요. 사진 한 장만 담는 액자일 뿐, 그 외엔 아무것도 없어요. 웹 페이지도, 스크립트도, 부담도 없이 화면에 이미지 하나를 그릴 뿐이죠.
+
+배울 동작도 사실 하나뿐이에요. `new ImageView()` 로 만들고, **`setImage`** 로 `NativeImage` 를 넘겨주고, 상속받은 **`setBounds`** 로 위치를 잡으면 끝 — 이게 API 의 전부예요.
+
+존재 이유는 **타이밍** 이에요. 진짜 웹 페이지(`WebContentsView`)는 로드에 시간이 걸려요. 그래서 `ImageView` 스플래시를 _즉시_ 띄우고, 뒤에서 무거운 콘텐츠를 로드한 뒤, `did-finish-load` 시점에 둘을 교체해요 — `addChildView(content)` 후 `removeChildView(splash)`. 사용자는 로고를 바로 보게 되고, 빈 창을 멍하니 바라볼 일이 없어요.
+
+한 가지 기억할 점은 이게 **실험적** 이고 상속할 수 없다는 거예요. 그러니 앱 전체를 떠받칠 기반이 아니라, 편리한 부품으로 쓰세요. 페이지 자체는 `WebContentsView` 가 담당해요.
+
+<Cards>
+  <Cards.Card title="app 모듈" href="/ko/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/ko/api/browser-window" arrow />
+  <Cards.Card title="프로세스 모델" href="/ko/docs/processes" arrow />
+</Cards>

@@ -1,0 +1,181 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { WindowApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<WindowApiIllustration />}
+  title="WebContentsView"
+  subtitle="웹 페이지(WebContents)를 위치·계층을 가진 뷰로 창 안에 끼워 넣어요 — BrowserView 의 현대적 대체재."
+  badge="API · WebContentsView"
+/>
+
+`WebContentsView` 는 **Main 프로세스** 에서 `new` 로 만드는 **클래스** 예요. 각 인스턴스는 웹 페이지(`WebContents`) 하나를 담는 사각형 뷰로, 크기·위치를 정하고, 층을 쌓고, `BaseWindow` 안에 중첩할 수 있어요. 베이스가 되는 [`View`](https://www.electronjs.org/docs/latest/api/view) 클래스를 상속합니다.
+
+```js filename="main.js"
+const { BaseWindow, WebContentsView } = require('electron')
+
+const win = new BaseWindow({ width: 800, height: 600 })
+
+const view = new WebContentsView()
+win.contentView.addChildView(view)
+
+view.setBounds({ x: 0, y: 0, width: 800, height: 600 })
+view.webContents.loadURL('https://electronjs.org')
+```
+
+<EasyNote>
+`WebContentsView` 는 **코르크보드에 붙인 사진** 이라고 생각하면 쉬워요. 코르크보드는 창(`BaseWindow`)이고, 각 사진은 원하는 곳에 핀으로 꽂고, 크기를 바꾸고, 서로 겹쳐 쌓을 수 있는 뷰예요. 그 사진에 인쇄된 그림이 바로 `view.webContents` — 실제 웹 페이지죠.
+</EasyNote>
+
+<Callout type="info">
+`WebContentsView` 는 (`BaseWindow` 와 함께) **더 이상 권장되지 않는 `BrowserView` 의 현대적 대체재** 예요. 아직 `BrowserView` 나 `win.addBrowserView(...)` 를 쓰고 있다면, 새 코드는 `WebContentsView` 로 옮기세요.
+</Callout>
+
+---
+
+## 생성자(Constructor)
+
+```js filename="new.js"
+new WebContentsView([options])
+```
+
+| 옵션 | 타입 | 하는 일 |
+|---|---|---|
+| `webPreferences` | `WebPreferences` (선택) | 페이지 기능 설정 (preload 스크립트, 샌드박스, contextIsolation 등) |
+| `webContents` | `WebContents` (선택) | 새로 만드는 대신 기존 `WebContents` 를 입양. 하나의 `WebContents` 는 동시에 **한** `WebContentsView` 에만 존재할 수 있어요 |
+
+```js filename="with-preload.js"
+const path = require('node:path')
+
+// 강화된 preload 스크립트를 통해 페이지를 로드하는 뷰 생성
+const view = new WebContentsView({
+  webPreferences: {
+    preload: path.join(__dirname, 'preload.js'),
+    contextIsolation: true,
+    sandbox: true,
+  },
+})
+```
+
+<Callout type="warning">
+기존 `webContents` 를 넘기면 그것을 **옮겨 옵니다** — 두 뷰에 동시에 표시할 수 없어요. 소유권을 이전할 의도가 있을 때만 입양하세요.
+</Callout>
+
+---
+
+## 정적 메서드(Static methods)
+
+`WebContentsView` 자체에는 **정적 메서드가 없어요**. 페이지로부터 창을 찾으려면 `BaseWindow` / `BrowserWindow` 의 헬퍼를 쓰세요 (예: `BaseWindow.fromWebContents(view.webContents)`).
+
+---
+
+## 인스턴스 이벤트(Instance events)
+
+`WebContentsView` 는 **자체 이벤트가 없지만**, 베이스 `View` 클래스로부터 하나를 상속해요. `view.on('이벤트명', 핸들러)` 로 듣습니다.
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `bounds-changed` | 레이아웃 배치 결과로 뷰의 경계가 바뀜 |
+
+```js filename="bounds-changed.js"
+view.on('bounds-changed', () => {
+  // 레이아웃 엔진이 뷰를 다시 배치함 — 겹쳐 둔 오버레이를 다시 맞춰요
+  repositionOverlay(view.getBounds())
+})
+```
+
+<EasyNote>
+진짜 동작은 뷰 자체가 아니라 **`view.webContents`** 에서 일어나요. 페이지 단위 이벤트 — `did-finish-load`, `did-navigate`, `dom-ready`, `page-title-updated` 등 — 은 모두 `view.webContents` 에서 발생하며, 이는 `win.webContents` 에서 얻는 객체와 완전히 같은 것이에요.
+</EasyNote>
+
+---
+
+## 인스턴스 메서드(Instance methods)
+
+베이스 `View` 클래스에서 온 것들이에요. 뷰 인스턴스에 대고 호출하세요.
+
+### 레이아웃 & 좌표
+
+| 메서드 | 하는 일 |
+|---|---|
+| `view.setBounds(bounds[, options])` | 부모 기준 뷰의 사각형 설정 (`options.animate` + easing 으로 애니메이션 전환) |
+| `view.getBounds()` | 부모 기준 현재 경계를 `Rectangle` 로 반환 |
+
+```js filename="bounds.js"
+// 상단 48px 툴바 자리를 남기고 뷰를 창 가득 채우기
+view.setBounds({ x: 0, y: 48, width: 800, height: 552 })
+
+const { width, height } = view.getBounds()
+```
+
+### 자식 뷰 (뷰 중첩)
+
+| 메서드 | 하는 일 |
+|---|---|
+| `view.addChildView(view[, index])` | 자식 뷰 추가; 이미 자식이면 맨 위로 이동. `index` 로 쌓이는 순서 조절 |
+| `view.removeChildView(view)` | 자식 뷰 제거 (자식이 아니면 아무 일도 안 함) |
+
+```js filename="layering.js"
+// 한 창 안에서 콘텐츠 뷰 아래에 사이드바 뷰를 쌓기
+win.contentView.addChildView(sidebarView)
+win.contentView.addChildView(contentView) // 사이드바 위에 그려짐
+```
+
+### 모양 & 표시
+
+| 메서드 | 하는 일 |
+|---|---|
+| `view.setBackgroundColor(color)` | 배경색 설정 (Hex, RGB, RGBA, HSL, HSLA, 또는 명명된 CSS 색상) |
+| `view.setBorderRadius(radius)` | 뷰 모서리를 `radius` 픽셀만큼 둥글게 |
+| `view.setVisible(visible)` | 뷰 표시/숨김 (`boolean`) |
+| `view.getVisible()` | 뷰가 그려져야 하는지 여부 (`boolean`) |
+
+```js filename="appearance.js"
+view.setBackgroundColor('#1e1e1e') // 투명 페이지 뒤의 어두운 배경
+view.setBorderRadius(12)            // 둥근 모서리
+view.setVisible(false)              // 트리에서 제거하지 않고 숨김
+```
+
+<Callout type="warning">
+`WebContentsView` 에는 자체 `loadURL` / `loadFile` 이 **없어요**. 페이지 객체를 통해 로드하세요: `view.webContents.loadURL(...)` 또는 `view.webContents.loadFile(...)`.
+</Callout>
+
+---
+
+## 인스턴스 속성(Instance properties)
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `view.webContents` | `WebContents` (읽기전용) | 이 뷰가 담은 페이지 — URL 로드, 스크립트 실행, DevTools 열기, 페이지 이벤트 청취에 사용 |
+| `view.children` | `View[]` (읽기전용) | 뷰의 자식 뷰들 (`View` 에서 상속) |
+
+```js filename="webcontents.js"
+// 뷰는 액자, webContents 는 그 안의 페이지예요
+view.webContents.loadFile('index.html')
+view.webContents.openDevTools()
+view.webContents.on('did-finish-load', () => {
+  // 페이지 준비 완료
+})
+```
+
+---
+
+## 쉽게 풀어 설명
+
+`WebContentsView` 는 **창 안에 패널처럼 붙일 수 있는 웹 페이지** 예요. `BrowserWindow` 가 페이지 하나가 박힌 창 하나라면, `WebContentsView` 는 _여러_ 페이지를 한 창에 넣을 수 있게 해줘요 — 여기 사이드바, 저기 메인 콘텐츠, 그 위에 떠 있는 오버레이 — 그리고 각각을 독립적으로 옮기고, 크기 바꾸고, 층을 쌓고, 숨길 수 있어요.
+
+기억할 건 사실 두 가지뿐이에요:
+
+1. **뷰** — `View` 를 상속한 `WebContentsView` 자체예요. 어디에 놓이지(`setBounds`)? 위아래로 무엇이 쌓이지(`addChildView`)? 보이는지, 배경색은 뭔지, 모서리는 둥근지 — 이런 좌표·모양 관련 메서드들이에요.
+2. **안의 페이지** — `view.webContents` 로, 어떤 창에서든 얻는 것과 같은 객체예요. `view.webContents.loadFile(...)` 로 HTML 을 로드하고, `did-finish-load` 를 듣고, DevTools 를 열고 — 페이지 관련 작업은 전부 여기서 일어나요.
+
+흔한 흐름: `BaseWindow` 를 만들고, `WebContentsView` 를 하나 이상 생성하고, `addChildView` 로 붙이고, 각각 `setBounds` 로 사각형을 주고, `webContents` 를 통해 `loadURL`/`loadFile` 합니다. 예전 `BrowserView` 를 써봤다면, 이건 더 얌전한 후계자예요 — 같은 발상, 더 깔끔한 API, 그리고 deprecated 아님.
+
+세 이름만 외우면 나머지는 찾아보면 돼요: **`addChildView`**(창에 넣기), **`setBounds`**(놓고 크기 정하기), **`view.webContents`**(페이지와 대화하기).
+
+<Cards>
+  <Cards.Card title="BrowserWindow" href="/ko/api/browser-window" arrow />
+  <Cards.Card title="app 모듈" href="/ko/api/app" arrow />
+  <Cards.Card title="보안" href="/ko/docs/best-practices/security" arrow />
+</Cards>

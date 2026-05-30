@@ -1,0 +1,151 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { WindowApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<WindowApiIllustration />}
+  title="BrowserView"
+  subtitle="Embed a second, separately-positioned web page inside an existing window — like a sub-rectangle with its own page."
+  badge="API · BrowserView"
+/>
+
+`BrowserView` is a **class** you create with `new` in the **Main process**. Each instance is a rectangular region — with its own `WebContents` — that you lay on top of a `BrowserWindow`, positioned and sized relative to that window.
+
+```js filename="main.js"
+const { app, BrowserWindow, BrowserView } = require('electron')
+
+app.whenReady().then(() => {
+  const win = new BrowserWindow({ width: 800, height: 600 })
+
+  const view = new BrowserView()
+  win.setBrowserView(view)
+  view.setBounds({ x: 0, y: 0, width: 300, height: 600 })
+  view.webContents.loadURL('https://example.com')
+})
+```
+
+<Callout type="warning">
+**`BrowserView` is deprecated** (since Electron v29). It is replaced by [`WebContentsView`](/en/api/web-contents) combined with `BaseWindow`, which offer the same "embed a web page in a region" capability with a cleaner, more flexible API. **For new code, use `WebContentsView` instead** — only keep `BrowserView` for older apps you are maintaining.
+</Callout>
+
+<EasyNote>
+A `BrowserWindow` holds **one** web page. A `BrowserView` lets you glue an **extra** page into a sub-rectangle of that window — think of a browser's toolbar sitting above the page area, where the toolbar and the page are two independent web contents. The window is the picture frame; a `BrowserView` is a smaller picture you tape on top of part of it.
+</EasyNote>
+
+---
+
+## Constructor
+
+| Constructor | What it does |
+|---|---|
+| `new BrowserView([options])` | Create a view. `options.webPreferences` configures its `WebContents` (same settings as a window's `webPreferences`) |
+
+```js filename="construct.js"
+// Lock the embedded page down with the secure defaults
+const view = new BrowserView({
+  webPreferences: {
+    preload: path.join(__dirname, 'preload.js'),
+    contextIsolation: true, // recommended
+    nodeIntegration: false, // recommended
+  },
+})
+```
+
+The `webPreferences` object accepts the full set of `WebContents` preferences — `preload`, `sandbox`, `contextIsolation`, `nodeIntegration`, `session`, `partition`, `webSecurity`, `zoomFactor`, `backgroundThrottling`, `offscreen`, `spellcheck`, and many more — exactly like the `webPreferences` you pass to `new BrowserWindow(...)`.
+
+<Callout type="warning">
+A `BrowserView` is **not** a child of any window on its own. You must attach it with `win.setBrowserView(view)` (or `win.addBrowserView(view)`) before it appears, and it is **not** automatically destroyed — remember to release it when you're done.
+</Callout>
+
+---
+
+## Static methods
+
+`BrowserView` has **no static methods**. (You create instances with `new BrowserView()` and attach them to a window via `BrowserWindow` methods such as `win.setBrowserView` / `win.addBrowserView`.)
+
+---
+
+## Instance events
+
+`BrowserView` itself emits **no events**. Listen on its page instead — `view.webContents` is a normal [`WebContents`](/en/api/web-contents), so you use `view.webContents.on('did-finish-load', ...)`, `'did-fail-load'`, `'dom-ready'`, and the rest of the `WebContents` event set.
+
+```js filename="events.js"
+// There are no view.on(...) events — listen on the page inside it
+view.webContents.on('did-finish-load', () => {
+  // the embedded page finished loading
+})
+
+view.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+  // handle a load failure
+})
+```
+
+---
+
+## Instance methods
+
+### Layout & sizing
+
+| Method | What it does |
+|---|---|
+| `view.setBounds(bounds)` | Resize and move the view to a `Rectangle` (`{ x, y, width, height }`) **relative to the window** |
+| `view.getBounds()` | Get the view's current bounds as a `Rectangle` |
+| `view.setAutoResize(options)` | Auto-resize the view as the window resizes (`{ width, height, horizontal, vertical }` booleans) |
+| `view.setBackgroundColor(color)` | Set the background color — hex, RGB(A), HSL(A), or a named CSS color |
+
+```js filename="layout.js"
+// Pin the view to fill everything except a 40px-tall toolbar at the top
+view.setBounds({ x: 0, y: 40, width: 800, height: 560 })
+
+// Keep its width fixed but let its height grow with the window
+view.setAutoResize({ width: false, height: true })
+
+// Paint the area behind the page (visible before the page renders)
+view.setBackgroundColor('#ffffff')
+```
+
+<Callout type="warning">
+`setBounds` coordinates are **relative to the parent window's content area**, not the screen. The view also draws **on top of** the window's own page — overlapping regions of the underlying `BrowserWindow` page will be hidden behind the view.
+</Callout>
+
+<EasyNote>
+`setAutoResize` is the one that saves you a `resize` listener. Tell it which edges should stretch (`horizontal`/`vertical`) or which dimensions should follow the window (`width`/`height`), and Electron keeps the view fitted as the window changes size — no manual recalculation needed.
+</EasyNote>
+
+---
+
+## Instance properties
+
+| Property | Type | What it is |
+|---|---|---|
+| `view.webContents` | `WebContents` (readonly) | The web page rendered inside this view — load URLs, run JavaScript, and listen for events here |
+
+```js filename="webcontents.js"
+// Everything about the *page* lives on view.webContents
+view.webContents.loadURL('https://example.com')
+view.webContents.openDevTools()
+view.webContents.on('did-finish-load', () => {
+  // the embedded page is ready
+})
+```
+
+<EasyNote>
+`view.webContents` is the only property a `BrowserView` exposes — and it's the important one. The view is just a rectangle on a window; the actual page (its URL, its scripts, its events) all lives on this `WebContents`, the same object a `BrowserWindow` exposes as `win.webContents`.
+</EasyNote>
+
+---
+
+## In plain words
+
+A `BrowserView` answers one question: _"How do I put a second, independent web page inside one window?"_ A `BrowserWindow` only ever shows **one** page. When you wanted a fixed toolbar with one page and the main content with another — both real web pages — you reached for `BrowserView`: a rectangle you position with `setBounds`, attach to a window with `win.setBrowserView(view)`, and fill via `view.webContents.loadURL(...)`.
+
+There's not much surface to learn: a constructor, four layout methods (`setBounds`, `getBounds`, `setAutoResize`, `setBackgroundColor`), and a single `webContents` property. No events, no static methods.
+
+But here's the headline: **`BrowserView` is deprecated.** Modern Electron replaces it with **`WebContentsView`** (the embeddable page) plus **`BaseWindow`** (a window that hosts several views) — same idea, friendlier API, and the direction the framework is heading. So: understand `BrowserView` to read older code, but reach for `WebContentsView` when you write something new.
+
+<Cards>
+  <Cards.Card title="WebContents" href="/en/api/web-contents" arrow />
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+</Cards>

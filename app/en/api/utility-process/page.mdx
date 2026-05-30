@@ -1,0 +1,232 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { IpcApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<IpcApiIllustration />}
+  title="utilityProcess"
+  subtitle="Spawn a dedicated child process for CPU-heavy or untrusted work — off the main thread, with a clean message channel back home."
+  badge="API · utilityProcess"
+/>
+
+`utilityProcess` lives in the **Main process**. It creates a separate child process from a Chromium service process, perfect for running CPU-bound or untrusted Node.js code without blocking your main process or your windows.
+
+```js filename="main.js"
+const { utilityProcess } = require('electron')
+
+// Spawn a child process from a script file
+const child = utilityProcess.fork('worker.js')
+
+child.on('spawn', () => {
+  child.postMessage({ task: 'crunch-numbers', payload: [1, 2, 3] })
+})
+
+child.on('message', (result) => {
+  // the worker sent something back
+})
+```
+
+<EasyNote>
+`utilityProcess` is like hiring a **freelancer for one job**. Your main process is busy running the app; instead of stopping to do heavy work itself, it spins up a helper, hands over the task through a single mail slot (`postMessage`), and gets the answer back the same way. When the job is done, the helper goes home (`exit`).
+</EasyNote>
+
+---
+
+## Creating a process
+
+`utilityProcess.fork()` is a **factory function** — you don't call it with `new`. It returns a `UtilityProcess` instance.
+
+| Method | What it does |
+|---|---|
+| `utilityProcess.fork(modulePath[, args][, options])` | Launch a child process from a script file and return a `UtilityProcess` |
+
+The arguments:
+
+| Argument | Type | What it is |
+|---|---|---|
+| `modulePath` | `string` | Path to the script the child process runs as its entry point |
+| `args` | `string[]` _(optional)_ | Extra arguments, available to the child as `process.argv` |
+| `options` | `Object` _(optional)_ | Configuration for the child (see below) |
+
+### `options`
+
+| Option | Type | What it does |
+|---|---|---|
+| `env` | `Object` | Environment variables for the child (defaults to `process.env`) |
+| `execArgv` | `string[]` | Arguments passed to the Node executable |
+| `cwd` | `string` | Working directory for the child process |
+| `stdio` | `string \| string[]` | Configure stdin/stdout/stderr: `'pipe'`, `'ignore'`, or `'inherit'` |
+| `serviceName` | `string` | Name shown for the process in `app.getAppMetrics()` and the OS task manager |
+| `session` | `Session` | The `Session` used for the child's network requests |
+| `partition` | `string` | A session partition string (alternative to `session`) |
+| `allowLoadingUnsignedLibraries` | `boolean` _(macOS)_ | Allow loading unsigned dynamic libraries |
+| `disclaim` | `boolean` _(macOS)_ | Disclaim TCC responsibility, inheriting it from the parent |
+| `respondToAuthRequestsFromMainProcess` | `boolean` | Route HTTP auth challenges to the main process via the `login` event |
+
+```js filename="fork-options.js"
+const { utilityProcess } = require('electron')
+const path = require('path')
+
+const child = utilityProcess.fork(path.join(__dirname, 'worker.js'), ['--mode=fast'], {
+  serviceName: 'image-resizer',   // shows up in the task manager
+  stdio: 'pipe',                  // capture stdout/stderr below
+  env: { ...process.env, WORKER: '1' },
+})
+```
+
+<Callout type="warning">
+The child's entry point must be a Node.js script, not an HTML page — `utilityProcess` runs a Node environment, not a `BrowserWindow`. To configure `stdout`/`stderr`, you must set `stdio` to `'pipe'`; otherwise those properties will be `null`.
+</Callout>
+
+---
+
+## Instance methods
+
+Call these on the value returned by `fork()`.
+
+| Method | What it does |
+|---|---|
+| `child.postMessage(message[, transfer])` | Send a message to the child process; optionally hand over `MessagePortMain` objects via `transfer` |
+| `child.kill()` | Terminate the child process — returns `true` if the kill request was sent |
+
+```js filename="message-channel.js"
+const { utilityProcess, MessageChannelMain } = require('electron')
+
+const child = utilityProcess.fork('worker.js')
+const { port1, port2 } = new MessageChannelMain()
+
+child.on('spawn', () => {
+  // Transfer one end of the channel to the child for two-way comms
+  child.postMessage({ message: 'hello' }, [port1])
+})
+
+port2.on('message', (event) => {
+  // direct port-to-port messages from the worker
+})
+port2.start()
+```
+
+```js filename="cleanup.js"
+// Always tear the worker down when you're finished with it
+function shutdown(child) {
+  if (child.pid !== undefined) {
+    child.kill()
+  }
+}
+```
+
+<Callout type="warning">
+`message` passed to `postMessage` is cloned with the [Structured Clone Algorithm](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm), so it can't contain functions or DOM nodes. Only `MessagePortMain` instances can be moved via the `transfer` array.
+</Callout>
+
+---
+
+## Instance properties
+
+| Property | Type | What it is |
+|---|---|---|
+| `child.pid` | `Integer \| undefined` (readonly) | The OS process id, or `undefined` until the process has spawned |
+| `child.stdout` | `NodeJS.ReadableStream \| null` (readonly) | The child's standard output — `null` unless `stdio` was set to `'pipe'` |
+| `child.stderr` | `NodeJS.ReadableStream \| null` (readonly) | The child's standard error — `null` unless `stdio` was set to `'pipe'` |
+
+```js filename="capture-output.js"
+const child = utilityProcess.fork('worker.js', [], { stdio: 'pipe' })
+
+// Stream the worker's logs into the main process
+child.stdout?.on('data', (data) => {
+  process.stdout.write(`[worker] ${data}`)
+})
+child.stderr?.on('data', (data) => {
+  process.stderr.write(`[worker:err] ${data}`)
+})
+```
+
+---
+
+## Instance events
+
+Listen with `child.on('event-name', handler)`.
+
+| Event | Fires when |
+|---|---|
+| `spawn` | The child process spawned successfully — safe to start sending messages |
+| `message` | The child sent a message via `process.parentPort.postMessage()` |
+| `error` | A V8 fatal error occurred in the child (gives `type`, `location`, and a diagnostic report) |
+| `exit` | The process terminated — gives the numeric exit `code` |
+| `login` | The child needs HTTP basic/proxy auth (only with `respondToAuthRequestsFromMainProcess: true`) |
+
+```js filename="lifecycle.js"
+const child = utilityProcess.fork('worker.js')
+
+child.on('spawn', () => {
+  // the process is alive — now it's safe to talk to it
+  child.postMessage({ start: true })
+})
+
+child.on('message', (data) => {
+  // worker pushed a result back to us
+})
+
+child.on('exit', (code) => {
+  // 0 means a clean exit; anything else means it crashed or was killed
+  if (code !== 0) restartWorker()
+})
+```
+
+<EasyNote>
+The lifecycle reads like a phone call: `spawn` is "they picked up", `message` is "they said something", `error` is "the line went dead with a crash", and `exit` is "they hung up". Wait for `spawn` before you start talking — sending messages too early just drops them on the floor.
+</EasyNote>
+
+```js filename="auth.js"
+// Handle HTTP auth challenges from the child in the main process
+const child = utilityProcess.fork('fetcher.js', [], {
+  respondToAuthRequestsFromMainProcess: true,
+})
+
+child.on('login', (event, authInfo, callback) => {
+  event.preventDefault()
+  callback('username', 'password')
+})
+```
+
+---
+
+## The worker side
+
+Inside the script you forked, you talk back to the parent through `process.parentPort`:
+
+```js filename="worker.js"
+// This file runs in the utility (child) process — it's plain Node.js
+process.parentPort.on('message', (event) => {
+  const { task, payload } = event.data
+
+  if (task === 'crunch-numbers') {
+    const total = payload.reduce((a, b) => a + b, 0)
+    // send the answer back to the main process
+    process.parentPort.postMessage({ total })
+  }
+})
+```
+
+<Callout type="warning">
+In the child, the message object is delivered on `event.data` — not as the first argument directly. Forgetting `.data` is the most common `utilityProcess` mistake.
+</Callout>
+
+---
+
+## In plain words
+
+`utilityProcess` exists to answer one question: **"where do I put the heavy or risky work?"**
+
+Your main process must stay responsive — it manages windows, menus, and the app lifecycle. If you run a giant computation, parse an untrusted file, or load a native module there, everything freezes. So you hand that job to a helper: `utilityProcess.fork('worker.js')` starts a fresh Node.js process whose only job is that one task.
+
+The two of them talk through a single, tidy channel. The parent uses `child.postMessage(...)` and listens on `child.on('message', ...)`; the child uses `process.parentPort.postMessage(...)` and listens on `process.parentPort.on('message', ...)`. No shared memory, no surprises — just messages passed back and forth, exactly like Web Workers in the browser.
+
+Remember three names and you've got it: **`fork`** (start the helper), **`postMessage`** (talk to it), and **`exit`** (know when it's gone). Wait for **`spawn`** before the first message, set **`stdio: 'pipe'`** if you want its logs, and call **`kill()`** when you're done.
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="Process model" href="/en/docs/processes" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+</Cards>

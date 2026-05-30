@@ -1,0 +1,125 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { SystemApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<SystemApiIllustration />}
+  title="contentTracing"
+  subtitle="Record low-level Chromium trace data across every process to hunt down performance bottlenecks and slow operations."
+  badge="API · contentTracing"
+/>
+
+The `contentTracing` module lives in the **Main process**. It taps into Chromium's built-in tracing system and collects a detailed timeline of what every process — main, renderer, GPU, utility — was doing, so you can find the slow parts of your app.
+
+```js filename="main.js"
+const { app, contentTracing } = require('electron')
+
+app.whenReady().then(async () => {
+  // Record everything for 5 seconds, then save the trace to a file
+  await contentTracing.startRecording({ included_categories: ['*'] })
+  await new Promise((resolve) => setTimeout(resolve, 5000))
+  const path = await contentTracing.stopRecording()
+  // Load `path` in chrome://tracing or the Perfetto UI to inspect it
+})
+```
+
+<EasyNote>
+`contentTracing` is a **flight recorder ("black box")** for your app. You press record, let the app run while it logs every internal operation with microsecond timestamps, then press stop and read the saved tape in a viewer. It doesn't fix anything itself — it just tells you exactly where time went.
+</EasyNote>
+
+<Callout type="info">
+The output file is a Chromium trace. Open it at `chrome://tracing` in any Chromium browser, or drag it into the [Perfetto UI](https://ui.perfetto.dev) for a richer timeline view.
+</Callout>
+
+---
+
+## Events
+
+`contentTracing` has **no events**. It's a pure command module — you call methods and `await` the Promises they return; there's nothing to subscribe to with `.on(...)`.
+
+---
+
+## Methods
+
+All methods return Promises and run in the **Main process** only. They coordinate across every child process, so a call resolves once all processes have acknowledged it.
+
+### Recording
+
+| Method | What it does |
+|---|---|
+| `contentTracing.startRecording(options)` | Start recording on all processes. Returns `Promise<void>` that resolves once recording has begun everywhere. `options` is a `TraceConfig` (e.g. `included_categories`) or the legacy `TraceCategoriesAndOptions` |
+| `contentTracing.stopRecording([resultFilePath])` | Stop recording on all processes. Returns `Promise<string>` resolving to the path of the file the trace was written to. Omit `resultFilePath` to write to a temporary file |
+
+```js filename="record.js"
+// Trace only a couple of categories instead of everything (less noise)
+await contentTracing.startRecording({
+  included_categories: ['v8', 'blink'],
+})
+
+// ... exercise the slow flow you want to measure ...
+
+// Save to a specific path so you can find it later
+const file = await contentTracing.stopRecording('/tmp/my-trace.json')
+```
+
+<Callout type="warning">
+Only **one** trace operation can run at a time. Always pair every `startRecording()` with exactly one `stopRecording()` — if you call `startRecording()` twice without stopping, or `stopRecording()` when nothing is recording, the call will reject.
+</Callout>
+
+### Inspecting
+
+| Method | What it does |
+|---|---|
+| `contentTracing.getCategories()` | Get the set of category groups available to trace. Returns `Promise<string[]>`. The list grows as more code paths run, so categories that have never executed may not appear yet |
+| `contentTracing.getTraceBufferUsage()` | Get the maximum trace-buffer usage across all processes. Returns `Promise<Object>` with `value` (number) and `percentage` (number, 0–100) of the buffer that is full |
+
+```js filename="inspect.js"
+// Discover what you're allowed to record before starting
+const categories = await contentTracing.getCategories()
+
+// While recording, poll how full the buffer is — at 100% you start losing data
+const { value, percentage } = await contentTracing.getTraceBufferUsage()
+if (percentage > 90) {
+  // Buffer almost full — stop soon or you'll drop events
+  await contentTracing.stopRecording('/tmp/trace.json')
+}
+```
+
+<EasyNote>
+The trace buffer is like a **dashcam with limited storage** — it keeps recording, but once it's full the oldest footage gets overwritten. `getTraceBufferUsage()` is the little "storage almost full" warning so you stop and save before anything is lost.
+</EasyNote>
+
+### Experimental
+
+| Method | What it does |
+|---|---|
+| `contentTracing.enableHeapProfiling([options])` _(Experimental)_ | Enable heap-memory profiling so memory data is captured in `memory-infra` traces. Returns `Promise<void>`. Must be called **before** `startRecording()` |
+
+<Callout type="warning">
+`enableHeapProfiling()` is **experimental** — its behavior and signature may change between Electron versions. Use it only for diagnostics, never in shipping production code paths.
+</Callout>
+
+---
+
+## Properties
+
+`contentTracing` exposes **no properties**. It's a stateless command surface — everything you need comes back through the Promises the methods return.
+
+---
+
+## In plain words
+
+`contentTracing` answers one question: **"Why is my app slow right here?"**
+
+The whole workflow is just two calls. You hit **`startRecording()`**, run the exact action that feels sluggish, then hit **`stopRecording()`**, which hands you back a file path. You open that file in `chrome://tracing` or Perfetto and suddenly you can _see_ every function call, paint, and network wait laid out on a timeline across all of Electron's processes — and the long bars are your bottlenecks.
+
+The other three methods are helpers around that core loop: **`getCategories()`** tells you what you're allowed to record, **`getTraceBufferUsage()`** warns you before the recording buffer overflows, and **`enableHeapProfiling()`** (experimental) adds memory data to the recording.
+
+Think of it as a flight recorder: you only turn it on when you're investigating, you keep the recording short and focused, and the value is entirely in reading the tape afterward — not in the recording itself. Two names to remember — **`startRecording`** and **`stopRecording`** — and you've got 90% of it.
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="Process model" href="/en/docs/processes" arrow />
+  <Cards.Card title="Performance" href="/en/docs/best-practices/performance" arrow />
+</Cards>

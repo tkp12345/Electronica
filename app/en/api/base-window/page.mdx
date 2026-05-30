@@ -1,0 +1,388 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { WindowApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<WindowApiIllustration />}
+  title="BaseWindow"
+  subtitle="Create native windows that host multiple views — the modern, content-agnostic foundation beneath BrowserWindow."
+  badge="API · BaseWindow"
+/>
+
+`BaseWindow` is a **class** you create with `new` in the **Main process**. It's a real OS window, but unlike `BrowserWindow` it has **no web page of its own** — instead you attach one or more `View`s (such as `WebContentsView`) to its `contentView`. This is the building block for windows that compose several pages side by side.
+
+```js filename="main.js"
+const { BaseWindow, WebContentsView } = require('electron')
+
+const win = new BaseWindow({ width: 800, height: 600 })
+
+// A BaseWindow holds views, not a single page
+const view = new WebContentsView()
+win.contentView.addChildView(view)
+view.setBounds({ x: 0, y: 0, width: 800, height: 600 })
+view.webContents.loadURL('https://electronjs.org')
+```
+
+<EasyNote>
+Think of `BaseWindow` as an **empty picture frame with a corkboard inside it**. The frame controls size, position, and window state; the corkboard (`contentView`) is where you pin one or more pictures (`View`s). `BrowserWindow` is just a `BaseWindow` that comes with a single picture already pinned for you.
+</EasyNote>
+
+---
+
+## Static methods
+
+Call these on the class itself, not on an instance.
+
+| Method | What it does |
+|---|---|
+| `BaseWindow.getAllWindows()` | All open windows as a `BaseWindow[]` |
+| `BaseWindow.getFocusedWindow()` | The currently focused window, or `null` |
+| `BaseWindow.fromId(id)` | The window with the given numeric `id`, or `null` |
+
+```js filename="reopen.js"
+// macOS: re-create a window when the Dock icon is clicked and none are open
+app.on('activate', () => {
+  if (BaseWindow.getAllWindows().length === 0) createWindow()
+})
+```
+
+---
+
+## Instance events
+
+Listen with `win.on('event-name', handler)`. Events marked _(macOS)_ / _(Windows)_ / _(Linux)_ only fire on that platform.
+
+### Lifecycle & visibility
+
+| Event | Fires when |
+|---|---|
+| `close` | The window is about to close — `preventDefault()` to cancel |
+| `closed` | The window has been closed — drop your reference, it's gone |
+| `show` | The window was shown |
+| `hide` | The window was hidden |
+| `focus` | The window gained focus |
+| `blur` | The window lost focus |
+| `query-session-end` _(Windows)_ | The OS session is about to end — `preventDefault()` to delay |
+| `session-end` _(Windows)_ | The OS session is ending (logout/shutdown) — cannot be prevented |
+
+```js filename="confirm-close.js"
+win.on('close', (event) => {
+  if (hasUnsavedWork()) {
+    event.preventDefault() // keep the window open
+    showSaveDialog()
+  }
+})
+
+win.on('closed', () => {
+  // the window is gone — release the reference so it can be GC'd
+  win = null
+})
+```
+
+<Callout type="warning">
+After `closed` fires, the window is destroyed — calling any method on it will throw. Always null out your reference inside the `closed` handler.
+</Callout>
+
+### Size, position & state
+
+| Event | Fires when |
+|---|---|
+| `maximize` | The window was maximized |
+| `unmaximize` | The window left the maximized state |
+| `minimize` | The window was minimized |
+| `restore` | The window was restored from minimized |
+| `will-resize` _(macOS/Windows)_ | Before a resize — `preventDefault()` to block it |
+| `resize` | After the window has resized |
+| `resized` _(macOS/Windows)_ | A resize gesture finished |
+| `will-move` _(macOS/Windows)_ | Before a move — `preventDefault()` to block it |
+| `move` | The window is being moved |
+| `moved` _(macOS/Windows)_ | A move gesture finished |
+| `always-on-top-changed` | The always-on-top flag toggled |
+
+### Fullscreen
+
+| Event | Fires when |
+|---|---|
+| `enter-full-screen` | Entered fullscreen |
+| `leave-full-screen` | Left fullscreen |
+
+### Gestures & platform extras
+
+| Event | Fires when |
+|---|---|
+| `app-command` _(Windows/Linux)_ | An App Command was invoked (e.g. media keys, browser back) |
+| `swipe` _(macOS)_ | A 3-finger trackpad swipe |
+| `rotate-gesture` _(macOS)_ | A trackpad rotation gesture |
+| `sheet-begin` _(macOS)_ | A window sheet opened |
+| `sheet-end` _(macOS)_ | A window sheet closed |
+| `new-window-for-tab` _(macOS)_ | The native "new tab" button was clicked |
+| `system-context-menu` _(Windows/Linux)_ | The system context menu was triggered — `preventDefault()` to suppress |
+
+<EasyNote>
+Notice what's **missing** compared to `BrowserWindow`: no `ready-to-show`, no `page-title-updated`, no `responsive` / `unresponsive`. Those are about a _web page_, and a `BaseWindow` has no page of its own. If you need them, listen on a child view's `webContents` instead.
+</EasyNote>
+
+---
+
+## Instance methods
+
+### Lifecycle
+
+| Method | What it does |
+|---|---|
+| `win.destroy()` | Force-close the window **without** firing `close` |
+| `win.close()` | Close gracefully (fires `close`, cancellable) |
+| `win.focus()` / `win.blur()` | Focus / unfocus the window |
+| `win.isFocused()` | Is this window focused? |
+| `win.isDestroyed()` | `true` if the window has been destroyed |
+
+### Content views
+
+| Method | What it does |
+|---|---|
+| `win.setContentView(view)` | Set the root `View` filling the window's content area |
+| `win.getContentView()` | Get the root content `View` |
+| `win.setAspectRatio(ratio[, extraSize])` | Lock the resize aspect ratio (`extraSize` _(macOS)_) |
+
+```js filename="multi-view.js"
+const { BaseWindow, WebContentsView } = require('electron')
+
+const win = new BaseWindow({ width: 1000, height: 600 })
+
+// Compose two pages side by side inside one window
+const left = new WebContentsView()
+const right = new WebContentsView()
+win.contentView.addChildView(left)
+win.contentView.addChildView(right)
+
+left.setBounds({ x: 0, y: 0, width: 500, height: 600 })
+right.setBounds({ x: 500, y: 0, width: 500, height: 600 })
+
+left.webContents.loadURL('https://electronjs.org')
+right.webContents.loadFile('sidebar.html')
+```
+
+<Callout type="warning">
+`BaseWindow` has **no** `loadURL` / `loadFile` and **no** `webContents`. You can't load a page directly into it — you must attach a `WebContentsView` and load into _that_ view's `webContents`. If you just want one page in a window, reach for `BrowserWindow` instead.
+</Callout>
+
+### Focus & display state
+
+| Method | What it does |
+|---|---|
+| `win.show()` | Show **and** focus the window |
+| `win.showInactive()` | Show without stealing focus |
+| `win.hide()` | Hide the window |
+| `win.isVisible()` | Is the window visible? |
+| `win.isModal()` | Is this a modal child window? |
+| `win.setEnabled(enable)` / `win.isEnabled()` | Enable/disable all window input |
+
+### Maximize / minimize / fullscreen
+
+| Method | What it does |
+|---|---|
+| `win.maximize()` / `win.unmaximize()` | Enter / leave the maximized state |
+| `win.isMaximized()` | Is the window maximized? |
+| `win.minimize()` / `win.restore()` | Minimize / restore the window |
+| `win.isMinimized()` | Is the window minimized? |
+| `win.isNormal()` | Not maximized, minimized, or fullscreen? |
+| `win.setFullScreen(flag)` / `win.isFullScreen()` | Toggle / read fullscreen |
+| `win.setSimpleFullScreen(flag)` _(macOS)_ / `win.isSimpleFullScreen()` _(macOS)_ | Toggle / read pre-Lion "simple" fullscreen |
+| `win.setFullScreenable(v)` / `win.isFullScreenable()` | Allow/read fullscreen via the maximize button |
+| `win.setKiosk(flag)` / `win.isKiosk()` | Toggle / read kiosk mode |
+| `win.isTabletMode()` _(Windows)_ | Is Windows in tablet mode? |
+
+### Size & position
+
+| Method | What it does |
+|---|---|
+| `win.setBounds(bounds[, animate])` / `win.getBounds()` | Set/get the window rectangle (`animate` _(macOS)_) |
+| `win.setContentBounds(bounds[, animate])` / `win.getContentBounds()` | Same, but for the content area only |
+| `win.getNormalBounds()` | Bounds in the normal (non-max/min) state |
+| `win.setSize(w, h[, animate])` / `win.getSize()` | Set/get the window size |
+| `win.setContentSize(w, h[, animate])` / `win.getContentSize()` | Set/get the content-area size |
+| `win.setMinimumSize(w, h)` / `win.getMinimumSize()` | Set/get the minimum size |
+| `win.setMaximumSize(w, h)` / `win.getMaximumSize()` | Set/get the maximum size |
+| `win.setPosition(x, y[, animate])` / `win.getPosition()` | Set/get position |
+| `win.center()` | Center the window on screen |
+
+```js filename="bounds.js"
+// Move and resize in one call; the rest of the rect is kept
+win.setBounds({ x: 100, y: 100, width: 1024, height: 768 })
+
+const { width, height } = win.getContentBounds() // the content area, not the frame
+```
+
+### Window capabilities (resizable, movable, …)
+
+| Method | What it does |
+|---|---|
+| `win.setResizable(v)` / `win.isResizable()` | Allow/read manual resizing |
+| `win.setMovable(v)` _(macOS/Windows)_ / `win.isMovable()` _(macOS/Windows)_ | Allow/read moving |
+| `win.setMinimizable(v)` _(macOS/Windows)_ / `win.isMinimizable()` _(macOS/Windows)_ | Allow/read minimizing |
+| `win.setMaximizable(v)` _(macOS/Windows)_ / `win.isMaximizable()` _(macOS/Windows)_ | Allow/read maximizing |
+| `win.setClosable(v)` _(macOS/Windows)_ / `win.isClosable()` _(macOS/Windows)_ | Allow/read the close button |
+| `win.setFocusable(v)` _(macOS/Windows)_ / `win.isFocusable()` _(macOS/Windows)_ | Allow/read focusing |
+
+### Appearance
+
+| Method | What it does |
+|---|---|
+| `win.setTitle(title)` / `win.getTitle()` | Set/get the window title |
+| `win.setBackgroundColor(color)` / `win.getBackgroundColor()` | Set/get the window background color (hex) |
+| `win.setHasShadow(v)` / `win.hasShadow()` | Toggle/read the window shadow |
+| `win.setOpacity(opacity)` _(Windows/macOS)_ / `win.getOpacity()` | Set/get window opacity (`0`–`1`) |
+| `win.setShape(rects)` _(Windows/Linux, Experimental)_ | Clip the window to a set of rectangles |
+| `win.setIcon(icon)` _(Windows/Linux)_ | Set the window icon |
+| `win.setVibrancy(type)` _(macOS)_ | Add a translucent vibrancy effect (`null` to remove) |
+| `win.setBackgroundMaterial(material)` _(Windows)_ | Set the Mica/acrylic backdrop material |
+| `win.invalidateShadow()` _(macOS)_ | Recompute the window shadow |
+| `win.flashFrame(flag)` | Flash the window/taskbar to get attention |
+| `win.setAlwaysOnTop(flag[, level, relativeLevel])` / `win.isAlwaysOnTop()` | Pin the window above others |
+| `win.setVisibleOnAllWorkspaces(v[, options])` _(macOS/Linux)_ / `win.isVisibleOnAllWorkspaces()` _(macOS/Linux)_ | Show on every workspace |
+| `win.setIgnoreMouseEvents(ignore[, options])` | Make the window click-through |
+| `win.setContentProtection(enable)` _(macOS/Windows)_ / `win.isContentProtected()` _(macOS/Windows)_ | Block screen capture of the window |
+
+```js filename="frameless-and-pinned.js"
+const win = new BaseWindow({ transparent: true, frame: false })
+
+win.setAlwaysOnTop(true)       // keep it on top of everything
+win.setIgnoreMouseEvents(true) // let clicks pass through to apps behind it
+```
+
+### Stacking order
+
+| Method | What it does |
+|---|---|
+| `win.setAlwaysOnTop(flag[, level, relativeLevel])` / `win.isAlwaysOnTop()` | Pin above other windows |
+| `win.moveAbove(mediaSourceId)` | Move just above another window |
+| `win.moveTop()` | Move above all other windows |
+
+### Menu bar _(Windows/Linux)_
+
+| Method | What it does |
+|---|---|
+| `win.setMenu(menu)` | Set the window's menu bar (`null` to remove) |
+| `win.removeMenu()` | Remove the menu bar |
+| `win.setAutoHideMenuBar(hide)` / `win.isMenuBarAutoHide()` | Auto-hide the menu bar (Alt to reveal) |
+| `win.setMenuBarVisibility(visible)` / `win.isMenuBarVisible()` | Show/hide and read the menu bar |
+| `win.setTitleBarOverlay(options)` | Style the Window Controls Overlay |
+
+### Parent / child windows
+
+| Method | What it does |
+|---|---|
+| `win.setParentWindow(parent)` / `win.getParentWindow()` | Set/get the parent window |
+| `win.getChildWindows()` | All child windows |
+
+### Taskbar & progress _(mostly Windows)_
+
+| Method | What it does |
+|---|---|
+| `win.setProgressBar(progress[, options])` | Show a progress bar on the taskbar/Dock icon |
+| `win.setOverlayIcon(overlay, description)` _(Windows)_ | Overlay a small icon on the taskbar button |
+| `win.setSkipTaskbar(skip)` _(macOS/Windows)_ | Hide the window from the taskbar/Dock |
+| `win.setThumbarButtons(buttons)` _(Windows)_ | Add buttons to the taskbar thumbnail toolbar |
+| `win.setThumbnailClip(region)` _(Windows)_ | Crop the taskbar thumbnail |
+| `win.setThumbnailToolTip(toolTip)` _(Windows)_ | Set the thumbnail tooltip |
+| `win.setAppDetails(options)` _(Windows)_ | Override taskbar grouping details |
+| `win.setAccentColor(accentColor)` _(Windows)_ / `win.getAccentColor()` _(Windows)_ | Set/get the title-bar accent color |
+| `win.isSnapped()` _(Windows)_ | Is the window snapped to an edge? |
+
+```js filename="progress.js"
+// Drive the taskbar/Dock progress bar from a download
+ipcMain.on('download-progress', (_event, ratio) => {
+  win.setProgressBar(ratio) // 0..1 ; pass -1 to remove
+})
+```
+
+### macOS tabs & document state
+
+| Method | What it does |
+|---|---|
+| `win.addTabbedWindow(baseWindow)` _(macOS)_ | Add a window as a native tab |
+| `win.selectPreviousTab()` / `win.selectNextTab()` _(macOS)_ | Switch tabs |
+| `win.showAllTabs()` _(macOS)_ | Show the tab overview |
+| `win.mergeAllWindows()` _(macOS)_ | Merge all windows into tabs |
+| `win.moveTabToNewWindow()` _(macOS)_ | Pop the current tab into its own window |
+| `win.toggleTabBar()` _(macOS)_ | Show/hide the tab bar |
+| `win.setRepresentedFilename(filename)` / `win.getRepresentedFilename()` _(macOS)_ | Set/get the proxy file shown in the title bar |
+| `win.setDocumentEdited(edited)` / `win.isDocumentEdited()` _(macOS)_ | Mark the document as edited (dot in the close button) |
+| `win.setSheetOffset(offsetY[, offsetX])` _(macOS)_ | Position sheets relative to the window |
+| `win.setWindowButtonVisibility(visible)` _(macOS)_ | Show/hide the traffic-light buttons |
+| `win.setWindowButtonPosition(position)` / `win.getWindowButtonPosition()` _(macOS)_ | Set/get traffic-light position |
+| `win.setHiddenInMissionControl(hidden)` / `win.isHiddenInMissionControl()` _(macOS)_ | Hide from Mission Control |
+| `win.setAutoHideCursor(autoHide)` _(macOS)_ | Hide the cursor while typing |
+| `win.setTouchBar(touchBar)` _(macOS)_ | Set the Touch Bar layout |
+| `win.previewFile(path[, displayName])` / `win.closeFilePreview()` _(macOS)_ | Open/close the Quick Look preview |
+
+### Native handles
+
+| Method | What it does |
+|---|---|
+| `win.getMediaSourceId()` | The window's media source id (for screen capture) |
+| `win.getNativeWindowHandle()` | The platform window handle as a `Buffer` |
+| `win.hookWindowMessage(message, callback)` _(Windows)_ | Intercept a Windows message |
+| `win.isWindowMessageHooked(message)` _(Windows)_ | Is a message hooked? |
+| `win.unhookWindowMessage(message)` _(Windows)_ | Remove one message hook |
+| `win.unhookAllWindowMessages()` _(Windows)_ | Remove all message hooks |
+
+---
+
+## Instance properties
+
+| Property | Type | What it is |
+|---|---|---|
+| `win.contentView` | `View` | The root view that fills the window's content area |
+| `win.id` | `Integer` (readonly) | The window's unique numeric id |
+| `win.title` | `string` | Get/set the window title |
+| `win.resizable` | `boolean` | Can the user resize it? |
+| `win.movable` | `boolean` _(macOS/Windows)_ | Can it be moved? |
+| `win.minimizable` | `boolean` _(macOS/Windows)_ | Can it be minimized? |
+| `win.maximizable` | `boolean` _(macOS/Windows)_ | Can it be maximized? |
+| `win.fullScreenable` | `boolean` | Can the maximize button toggle fullscreen? |
+| `win.closable` | `boolean` _(macOS/Windows)_ | Can it be closed? |
+| `win.focusable` | `boolean` _(Windows/macOS)_ | Can it receive focus? |
+| `win.fullScreen` | `boolean` | Is it fullscreen? |
+| `win.simpleFullScreen` | `boolean` | Is it in simple fullscreen? |
+| `win.kiosk` | `boolean` | Is kiosk mode on? |
+| `win.shadow` | `boolean` | Does it cast a shadow? |
+| `win.autoHideMenuBar` | `boolean` _(Linux/Windows)_ | Auto-hide the menu bar? |
+| `win.menuBarVisible` | `boolean` _(Windows/Linux)_ | Is the menu bar visible? |
+| `win.visibleOnAllWorkspaces` | `boolean` _(macOS/Linux)_ | Shown on every workspace? |
+| `win.accessibleTitle` | `string` | A title read only by screen readers |
+| `win.documentEdited` | `boolean` _(macOS)_ | Is the document marked as edited? |
+| `win.representedFilename` | `string` _(macOS)_ | The proxy file in the title bar |
+| `win.excludedFromShownWindowsMenu` | `boolean` _(macOS)_ | Excluded from the Window menu? |
+| `win.tabbingIdentifier` | `string` (readonly) _(macOS)_ | The tab group identifier |
+| `win.snapped` | `boolean` (readonly) _(Windows)_ | Is the window snapped to an edge? |
+
+```js filename="contentview.js"
+// The window's content is the contentView — add views to it
+const { BaseWindow, WebContentsView } = require('electron')
+
+const win = new BaseWindow()
+const view = new WebContentsView()
+win.contentView.addChildView(view)
+view.webContents.loadFile('index.html')
+```
+
+---
+
+## In plain words
+
+`BaseWindow` is the **window without the web page**. Where `BrowserWindow` is "a window with one browser inside it," `BaseWindow` is "a window with an empty content area you fill yourself." That one difference explains everything on this page.
+
+1. **The frame is the same.** Size, position, maximize/minimize, fullscreen, always-on-top, the title bar, the taskbar — all of that works exactly like `BrowserWindow`, because `BrowserWindow` actually _extends_ `BaseWindow`.
+2. **The inside is different.** There's no `loadURL`, no `webContents`. Instead you have `contentView`, and you attach `View`s to it — most often a `WebContentsView` (one page) or several of them laid out side by side.
+
+So when do you reach for it? When you need **more than one web page in a single window** — a sidebar plus a main panel, a browser-style multi-tab layout, an overlay on top of content. For everything else, `BrowserWindow` is the friendlier one-page shortcut.
+
+Remember the trade: `BaseWindow` gives you composition (**`contentView` + `addChildView`**) at the cost of doing your own page wiring; `BrowserWindow` gives you a page for free at the cost of only having one.
+
+<Cards>
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="Process model" href="/en/docs/processes" arrow />
+</Cards>

@@ -1,0 +1,171 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { IpcApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<IpcApiIllustration />}
+  title="MessagePortMain"
+  subtitle="MessagePort 의 Main 프로세스 쪽 끝 — 프로세스 사이에서 메시지를 주고받는 직통 양방향 통로예요."
+  badge="API · MessagePortMain"
+/>
+
+`MessagePortMain` 은 웹 플랫폼의 [`MessagePort`](https://developer.mozilla.org/en-US/docs/Web/API/MessagePort) 에 대응하는 **Main 프로세스** 쪽 객체예요. `new` 로 직접 만들지 않고, [`MessageChannelMain`](/ko/api/app) 이 주는 한 쌍에서 얻거나, 포트가 도착했을 때 `event.ports` 로 받아요. 각 포트는 비공개 채널의 한쪽 끝이라, 이쪽 끝에서 `postMessage` 한 내용은 반대쪽 끝에서 `message` 이벤트로 튀어나와요.
+
+```js filename="main.js"
+const { BrowserWindow, MessageChannelMain } = require('electron')
+
+const win = new BrowserWindow()
+
+// 서로 연결된 포트 한 쌍을 만들어요
+const { port1, port2 } = new MessageChannelMain()
+
+// port1 은 Main 프로세스에 남기고, port2 는 렌더러에 건네요
+win.webContents.postMessage('port', null, [port2])
+
+// 이제 port1 으로 대화해요
+port1.on('message', (event) => {
+  // event.data 는 렌더러가 보낸 값이에요
+})
+port1.start()       // 큐에 쌓인 메시지 전달 시작
+port1.postMessage({ hello: 'renderer' })
+```
+
+<EasyNote>
+`MessageChannelMain` 은 **무전기 두 대가 든 상자** 같아요. 서로 주파수가 맞춰진 단말기 두 개(`port1`, `port2`)가 들어 있죠. 하나는 내가 갖고 하나는 건네줘요. 그 뒤로는 중간에 누가 있는지 신경 쓸 필요 없어요 — 한쪽에 대고 말하면 다른 쪽으로 나와요.
+</EasyNote>
+
+<Callout type="info">
+`MessagePortMain` 은 DOM 객체가 **아니라** Node.js 의 `EventEmitter` 예요. `port.onmessage = ...` 나 `addEventListener` 가 아니라 `port.on('message', ...)` 로 들어야 해요. 렌더러 쪽 끝(`MessagePort`)은 DOM 방식이라, 두 쪽이 리스너 스타일이 다릅니다 — 누구나 한 번씩 걸려 넘어지는 부분이에요.
+</Callout>
+
+---
+
+## 인스턴스 이벤트(Instance events)
+
+`port.on('이벤트명', 핸들러)` 로 듣습니다. 포트의 이벤트는 단 두 개예요.
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `message` | 반대쪽에서 메시지가 도착했을 때. 핸들러는 `data`(보내진 값)와 `ports`(함께 전송된 `MessagePortMain[]`)를 담은 `messageEvent` 를 받아요 |
+| `close` | 반대쪽 끝이 끊겼을 때 — 채널이 죽었고 더 이상 메시지가 오지 않아요 |
+
+```js filename="receive.js"
+port1.on('message', (event) => {
+  // 상대가 보낸 페이로드
+  handlePayload(event.data)
+
+  // 상대가 포트를 함께 전송했다면 여기로 도착해요
+  for (const transferred of event.ports) {
+    wireUpSubChannel(transferred)
+  }
+})
+
+port1.on('close', () => {
+  // 반대쪽 끝이 사라짐 (창 닫힘, 포트 close 등)
+  cleanup()
+})
+
+// 중요: start() 를 부르기 전까지 메시지는 큐에 쌓여요
+port1.start()
+```
+
+<Callout type="warning">
+`port.start()` 를 부르기 전에는 `message` 이벤트가 **절대 발생하지 않아요** (`postMessage` 를 부르면 암묵적으로 포트가 시작되기도 합니다). `start()` 를 빠뜨리는 것이 채널이 "조용히 아무 일도 안 하는" 1순위 원인이에요. 메시지가 이미 보내진 _뒤에_ `message` 리스너를 붙였다면, 그 메시지들은 버퍼에 쌓여 있다가 start 하는 순간 한꺼번에 쏟아져 나와요.
+</Callout>
+
+<EasyNote>
+`start()` 는 **자동응답기의 재생 버튼을 누르는 것** 이라고 생각하세요. 채널이 생기는 순간부터 메시지는 테이프에 쌓이지만, 재생을 누르기 전엔 아무 소리도 안 들려요. `message` 리스너를 먼저 붙이고 `start()` 를 부르면 하나도 놓치지 않아요.
+</EasyNote>
+
+---
+
+## 인스턴스 메서드(Instance methods)
+
+포트의 메서드는 정확히 세 개예요 — 보내기, 시작하기, 끊기.
+
+| 메서드 | 하는 일 |
+|---|---|
+| `port.postMessage(message[, transfer])` | 반대쪽으로 값을 보내요. `message` 는 구조화 복제(structured clone)되고, `transfer` 는 소유권이 수신자에게 넘어가는 선택적 `MessagePortMain[]` 이에요 |
+| `port.start()` | 메시지 전달을 시작해요. 호출 전까지(또는 첫 `postMessage` 전까지) 들어오는 메시지는 큐에 쌓이고 `message` 이벤트가 발생하지 않아요 |
+| `port.close()` | 이 포트를 끊어요. 반대쪽 끝은 `close` 이벤트를 받고 채널은 비활성화돼요 |
+
+```js filename="send.js"
+// 평범한 값 보내기 (구조화 복제 — 객체, 배열, ArrayBuffer 등)
+port1.postMessage({ type: 'ping', at: Date.now() })
+
+// 하위 채널 하나를 통째로 반대쪽에 전송해요.
+// 전송 후 이 프로세스에서는 sub.port2 를 더 이상 쓸 수 없어요.
+const sub = new MessageChannelMain()
+port1.postMessage({ type: 'open-channel' }, [sub.port2])
+// 새 채널로 대화하려면 sub.port1 은 여기 남겨 둬요
+```
+
+<Callout type="warning">
+전송한 포트(`transfer` 배열에 넣은 것)는 떠나는 순간 보내는 쪽에서 **무력화(neutered)** 돼요 — 전송 후 사용하면 예외가 발생해요. 전송은 복사가 아니라 이동이에요. 또한 `message` 는 **구조화 복제가 가능** 해야 해요. 함수, DOM 노드, 메서드를 가진 클래스 인스턴스는 전달 과정에서 살아남지 못해요.
+</Callout>
+
+---
+
+## 인스턴스 속성(Instance properties)
+
+`MessagePortMain` 에는 **문서화된 인스턴스 속성이 없어요** — 이벤트와 메서드만 있는 순수한 객체예요. 우리가 관심 있는 값(`data`, `ports`)은 포트 자신이 아니라 `message` 핸들러로 전달되는 `messageEvent` 에 들어 있어요.
+
+---
+
+## 합쳐 보기: Main ↔ 렌더러
+
+`MessagePortMain` 의 핵심은 포트를 프로세스 경계 너머로 건네주어, 모든 메시지를 `ipcMain`/`ipcRenderer` 로 왕복시키지 않고도 두 프로세스가 직접 대화하게 만드는 거예요.
+
+```js filename="main.js"
+const { BrowserWindow, MessageChannelMain } = require('electron')
+
+function connect(win) {
+  const { port1, port2 } = new MessageChannelMain()
+
+  // port2 를 transferable 로 렌더러에 내려보내요
+  win.webContents.postMessage('port', null, [port2])
+
+  // port1 은 여기 남겨 두고 듣기 시작해요
+  port1.on('message', (event) => respond(port1, event.data))
+  port1.start()
+}
+```
+
+```js filename="preload.js"
+const { ipcRenderer } = require('electron')
+
+// 렌더러 쪽 끝은 DOM MessagePort 라 onmessage / addEventListener 를 써요
+ipcRenderer.on('port', (event) => {
+  const [port] = event.ports
+  port.onmessage = (messageEvent) => {
+    // Main 프로세스에서 온 메시지
+    render(messageEvent.data)
+  }
+  port.postMessage('renderer is ready')
+})
+```
+
+<EasyNote>
+포트가 전달되고 나면 Main 프로세스와 렌더러는 **전용 직통 전화** 를 갖게 돼요. 더 이상 메시지마다 건물 안내데스크(`ipcMain`/`ipcRenderer`)에 대고 외칠 필요 없이 자기들 회선으로 바로 통화해요. 더 빠르고, 관계없는 코드가 엿들을 일도 없어요.
+</EasyNote>
+
+---
+
+## 쉽게 풀어 설명
+
+`MessagePortMain` 은 **전화선의 한쪽 끝** 이에요. 전화기를 한 대만 따로 만들 수는 없죠 — 전화기는 연결된 한 쌍으로 와요. `new MessageChannelMain()` 이 정확히 그걸 줘요: 이미 서로 연결된 `port1` 과 `port2`. 하나는 내가 갖고, 다른 하나는 대화하고 싶은 상대(보통 렌더러, `webContents.postMessage` 로)에게 부쳐요.
+
+세 가지만 알면 API 전체가 끝나요:
+
+1. **`postMessage(값)`** — 내 수화기에 대고 말하기.
+2. **`on('message', …)` + `start()`** — 받아서 듣기. `start()` 전엔 아무것도 안 들리니, 리스너를 먼저 붙이세요.
+3. **`close()`** — 끊기. 반대쪽은 `close` 이벤트를 받아요.
+
+누구나 걸려 넘어지는 함정 하나: Main 쪽 끝(`MessagePortMain`)은 Node `EventEmitter`(`port.on('message', …)`)이고, 렌더러 쪽 끝(`MessagePort`)은 DOM 방식(`port.onmessage = …`)이에요. 같은 개념, 두 가지 방언이죠. 이것만 분명히 하면 나머지는 그냥 대화하는 일이에요.
+
+<Cards>
+  <Cards.Card title="app 모듈" href="/ko/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/ko/api/browser-window" arrow />
+  <Cards.Card title="프로세스 모델" href="/ko/docs/processes" arrow />
+</Cards>

@@ -1,0 +1,197 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="nativeImage"
+  subtitle="Create, decode, and transform images that work natively across menus, tray icons, dock badges, and dialogs."
+  badge="API · nativeImage"
+/>
+
+The `nativeImage` module creates **tray icons, dock images, window icons, and menu images** from PNG, JPEG, or (on Windows) ICO data. Many Electron APIs that take an image accept either a file path string _or_ a `NativeImage` — building one yourself gives you control over resizing, HiDPI, and macOS template images.
+
+```js filename="main.js"
+const { nativeImage } = require('electron')
+
+// Load an icon from disk
+const icon = nativeImage.createFromPath('/path/to/icon.png')
+
+// Or decode an image you already hold in memory
+const fromBuffer = nativeImage.createFromBuffer(buffer)
+```
+
+<EasyNote>
+Think of `nativeImage` as a **photo lab**. You hand it raw material — a file, a buffer, a data URL — and it hands back a finished print (`NativeImage`) that every native UI part (tray, dock, menu, dialog) knows how to display.
+</EasyNote>
+
+---
+
+## Methods
+
+These are **module-level factory methods** — call them on `nativeImage` to produce a `NativeImage`. The module itself has **no events**.
+
+### Creating images
+
+| Method | What it does |
+|---|---|
+| `nativeImage.createEmpty()` | Create an empty image (0×0) — a safe placeholder |
+| `nativeImage.createFromPath(path)` | Load a PNG/JPEG from a file path (returns empty if unreadable) |
+| `nativeImage.createFromBuffer(buffer[, options])` | Decode a `Buffer` (PNG/JPEG); `options` set `width`/`height`/`scaleFactor` for raw bitmaps |
+| `nativeImage.createFromBitmap(buffer, options)` | Build from **raw** BGRA pixel data; `options.width`/`height` required |
+| `nativeImage.createFromDataURL(dataURL)` | Decode a base64 `data:` URL |
+| `nativeImage.createFromNamedImage(imageName[, hslShift])` _(macOS)_ | Build from a system image (NSImageName / SF Symbol), optionally hue/saturation/lightness shifted |
+
+```js filename="create.js"
+const path = require('node:path')
+const { nativeImage } = require('electron')
+
+// From a file on disk
+const icon = nativeImage.createFromPath(path.join(__dirname, 'tray.png'))
+
+// From a base64 data URL (e.g. embedded in your bundle)
+const dot = nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgo...')
+
+// macOS: tint a system symbol toward a hue/saturation/lightness
+const tinted = nativeImage.createFromNamedImage('NSActionTemplate', [0.5, 0.2, 0.8])
+```
+
+### Thumbnails
+
+| Method | Platform | What it does |
+|---|---|---|
+| `nativeImage.createThumbnailFromPath(path, size)` | macOS / Windows | Promise resolving to an OS-generated thumbnail of any file type |
+
+```js filename="thumbnail.js"
+// Ask the OS for a thumbnail (works for PDFs, videos, docs — not just images)
+const thumb = await nativeImage.createThumbnailFromPath('/path/to/report.pdf', {
+  width: 256,
+  height: 256,
+})
+// Note: on Windows, size.height is ignored and scaled from size.width
+```
+
+<Callout type="warning">
+`createFromPath` and `createFromBuffer` **never throw** on bad input — they silently return an *empty* image. Always check `image.isEmpty()` before using an icon you loaded from user-supplied paths.
+</Callout>
+
+---
+
+## The NativeImage object
+
+Every factory method above returns a `NativeImage` instance. Its methods fall into two groups: **export** (turn the image back into bytes) and **transform** (resize, crop, inspect).
+
+### Export / encode
+
+| Method | What it does |
+|---|---|
+| `image.toPNG([options])` | Encode to a PNG `Buffer` (`options.scaleFactor`, default `1.0`) |
+| `image.toJPEG(quality)` | Encode to a JPEG `Buffer` (`quality` 0–100) |
+| `image.toBitmap([options])` | Raw BGRA pixel `Buffer` (`options.scaleFactor`) |
+| `image.toDataURL([options])` | A `data:image/png;base64,...` string |
+| `image.getBitmap([options])` _(Deprecated)_ | Old name for `toBitmap()` — use `toBitmap()` instead |
+| `image.getNativeHandle()` _(macOS)_ | A `Buffer` pointing to the underlying `NSImage` (weak reference) |
+
+```js filename="export.js"
+// Persist an in-memory image to disk as PNG
+const fs = require('node:fs')
+fs.writeFileSync('out.png', image.toPNG())
+
+// Or hand a data URL to a renderer over IPC
+const url = image.toDataURL()
+```
+
+### Transform
+
+| Method | What it does |
+|---|---|
+| `image.resize(options)` | Return a resized copy (`width`, `height`, `quality`: `'good'`/`'better'`/`'best'`) |
+| `image.crop(rect)` | Return a cropped copy from a `{ x, y, width, height }` rectangle |
+| `image.addRepresentation(options)` | Add a HiDPI representation (`scaleFactor`, `width`, `height`, `buffer` or `dataURL`) |
+
+```js filename="transform.js"
+// Tray icons want a small image — resize down, keeping aspect ratio
+const small = icon.resize({ width: 16, height: 16, quality: 'best' })
+
+// Crop a 100×100 square from the top-left corner
+const square = icon.crop({ x: 0, y: 0, width: 100, height: 100 })
+```
+
+### Inspect
+
+| Method | What it does |
+|---|---|
+| `image.isEmpty()` | `true` if the image has no data (e.g. a failed load) |
+| `image.getSize([scaleFactor])` | The `{ width, height }` of the image |
+| `image.getAspectRatio([scaleFactor])` | Width ÷ height |
+| `image.getScaleFactors()` | All scale factors this image carries (e.g. `[1, 2]`) |
+
+### macOS template images
+
+| Method | Platform | What it does |
+|---|---|---|
+| `image.setTemplateImage(option)` | macOS | Mark/unmark this as a template image |
+| `image.isTemplateImage()` | macOS | Is this currently a template image? |
+
+```js filename="template.js"
+// macOS: a "template" image is pure black + alpha, and the OS recolors it
+// automatically for light/dark menu bars. Perfect for monochrome tray icons.
+const trayIcon = nativeImage.createFromPath('iconTemplate.png')
+trayIcon.setTemplateImage(true)
+```
+
+<Callout type="warning">
+On macOS, any image whose filename **ends in `Template`** (e.g. `iconTemplate.png`) is treated as a template image automatically. Template images must be black-and-transparent only — colored pixels will be flattened to black.
+</Callout>
+
+---
+
+## Properties
+
+| Property | Type | What it is |
+|---|---|---|
+| `image.isMacTemplateImage` | `boolean` _(macOS)_ | Get/set whether the image is a macOS template image |
+
+---
+
+## HiDPI & high-resolution images
+
+On Retina / HiDPI screens a 32×32 icon needs 64×64 actual pixels to stay crisp. `nativeImage` handles this with the **`@Nx` filename convention**: place `icon.png` (1×) and `icon@2x.png` (2×) side by side, and loading `icon.png` automatically picks up both.
+
+```js filename="hidpi.js"
+// Folder contents:
+//   images/icon.png       (32×32)
+//   images/icon@2x.png    (64×64)
+//   images/icon@3x.png    (96×96)
+
+// One call — the right resolution is chosen per display:
+const appIcon = nativeImage.createFromPath('images/icon.png')
+```
+
+<EasyNote>
+The `@2x` trick is like keeping a small print and a poster-size version of the same photo in one envelope. The OS reaches for whichever fits the screen it's drawing on — you only write one path.
+</EasyNote>
+
+<Callout type="warning">
+Supported formats are **PNG (recommended)**, **JPEG**, and **ICO (Windows only)**. EXIF metadata is ignored on both encode and decode, so don't rely on it for orientation.
+</Callout>
+
+---
+
+## In plain words
+
+`nativeImage` is the **image currency** of Electron's native side. Trays, docks, window icons, menu items, and dialogs don't speak in `<img>` tags — they speak in `NativeImage`. This module is how you mint that currency.
+
+The mental model is two steps:
+
+1. **Get an image in.** From a file (`createFromPath`), from bytes you already have (`createFromBuffer` / `createFromDataURL`), or empty (`createEmpty`). On macOS you can even borrow a system symbol with `createFromNamedImage`.
+2. **Shape it, then use it.** Resize for a tray (`resize`), crop a region (`crop`), encode it back to a PNG to save it (`toPNG`), or mark it as a macOS template (`setTemplateImage`) so it recolors itself in dark mode.
+
+Two habits cover almost every real case: ship a `@2x` file next to your `1x` so icons stay sharp on Retina, and call `isEmpty()` after loading anything from a path you didn't hard-code. Everything else is lookup — and that's what this page is for.
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+  <Cards.Card title="Examples" href="/en/docs/examples" arrow />
+</Cards>

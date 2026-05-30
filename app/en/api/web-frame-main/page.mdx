@@ -1,0 +1,198 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { WindowApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<WindowApiIllustration />}
+  title="webFrameMain"
+  subtitle="Reach into a single frame of a loaded page — its URL, its sub-frames, and a direct line to talk to it — all from the Main process."
+  badge="API · webFrameMain"
+/>
+
+The `webFrameMain` module lives in the **Main process**. It gives you a handle to one **frame** of a rendered page — the top document or any `<iframe>` inside it — so you can read where it is, walk its frame tree, run code in it, or send it messages.
+
+```js filename="main.js"
+const { webFrameMain } = require('electron')
+
+// Get the top frame of a window's page
+const win = BrowserWindow.getFocusedWindow()
+const mainFrame = win.webContents.mainFrame
+
+console.error(mainFrame.url) // where this frame currently points
+```
+
+<EasyNote>
+A `WebContents` is the **whole web page**; a `WebFrameMain` is **one frame inside it**. A page with three `<iframe>`s has one main frame plus three child frames — four `WebFrameMain` objects, all under the same `WebContents`. This module is how the Main process grabs and talks to any one of them.
+</EasyNote>
+
+<Callout type="info">
+You never create a `WebFrameMain` with `new`. You always **receive** one — from `webContents.mainFrame`, from a frame property like `frame.parent`, from an IPC event's `event.senderFrame`, or from the static lookups below.
+</Callout>
+
+---
+
+## Static methods
+
+Call these on the `webFrameMain` module itself to look up an existing frame by its IDs.
+
+| Method | What it does |
+|---|---|
+| `webFrameMain.fromId(processId, routingId)` | The frame with that process + routing ID, or `undefined` |
+| `webFrameMain.fromFrameToken(processId, frameToken)` | The frame with that process ID + frame token, or `null` |
+
+```js filename="lookup.js"
+// An IPC message arrives — find out exactly which frame sent it
+ipcMain.on('do-thing', (event) => {
+  const frame = webFrameMain.fromId(event.processId, event.frameId)
+  if (frame) {
+    // ...we now hold the sender frame and can inspect or reply to it
+    frame.send('thing-done')
+  }
+})
+```
+
+<EasyNote>
+Think of `processId` + `routingId` as a frame's **postal address**. IPC events hand you those numbers; `fromId` turns the address back into the actual frame object so you can act on it.
+</EasyNote>
+
+---
+
+## Instance events
+
+Listen with `frame.on('event-name', handler)`.
+
+| Event | Fires when |
+|---|---|
+| `dom-ready` | The frame's document has finished loading (DOM is ready) |
+
+```js filename="dom-ready.js"
+const mainFrame = win.webContents.mainFrame
+
+mainFrame.on('dom-ready', () => {
+  // the document is parsed and ready — safe to query or inject into it
+  mainFrame.executeJavaScript('document.title')
+})
+```
+
+<Callout type="info">
+`webFrameMain` exposes a single event, `dom-ready`. Most page-level events you might be looking for (`did-finish-load`, `did-navigate`, and so on) live on the parent **`WebContents`**, not on individual frames.
+</Callout>
+
+---
+
+## Instance methods
+
+### Talking to the frame
+
+| Method | What it does |
+|---|---|
+| `frame.executeJavaScript(code[, userGesture])` | Run JS in the frame; returns a `Promise` with the result. `userGesture` (default `false`) lets it call APIs that require a user gesture |
+| `frame.send(channel, ...args)` | Send an async IPC message to this frame (serialized via Structured Clone) |
+| `frame.postMessage(channel, message[, transfer])` | Send a message, optionally transferring `MessagePortMain` objects |
+| `frame.collectJavaScriptCallStack()` _(Experimental)_ | `Promise` resolving to the frame's currently running JS call stack |
+
+```js filename="send-and-execute.js"
+// Push data down to one specific frame over IPC
+mainFrame.send('config', { theme: 'dark' })
+
+// Read something back out of the frame
+const headingCount = await mainFrame.executeJavaScript(
+  'document.querySelectorAll("h1").length'
+)
+```
+
+<Callout type="warning">
+`collectJavaScriptCallStack()` is **experimental** and its behavior can change. Note its quirk: if no JavaScript is running in the frame, the returned promise **never resolves** — always race it against a timeout rather than awaiting it bare.
+</Callout>
+
+### Lifecycle
+
+| Method | What it does |
+|---|---|
+| `frame.reload()` | Reload the frame; returns `false` only when the frame has no history to reload |
+| `frame.isDestroyed()` | `true` if the frame has been destroyed (navigated away, removed, or its `WebContents` closed) |
+
+```js filename="guard.js"
+// A frame you stored a reference to can be destroyed at any time —
+// always guard before using it
+if (!frame.isDestroyed()) {
+  frame.send('still-here')
+}
+```
+
+<Callout type="warning">
+A `WebFrameMain` can be destroyed out from under you — when the page navigates, the `<iframe>` is removed, or the window closes. Calling methods on a destroyed frame throws. Check `frame.isDestroyed()` before acting on any frame reference you held onto.
+</Callout>
+
+---
+
+## Instance properties
+
+All properties are **readonly**.
+
+### Identity & location
+
+| Property | Type | What it is |
+|---|---|---|
+| `frame.url` | `string` | The frame's current URL |
+| `frame.origin` | `string` | The frame's origin, serialized per RFC 6454 (can differ from `url`) |
+| `frame.name` | `string` | The frame's name (e.g. an `<iframe name="...">`) |
+| `frame.visibilityState` | `string` | The document's visibility state (mirrors the web `visibilityState`) |
+| `frame.detached` | `boolean` | `true` if the frame has been detached from the frame tree |
+
+### IDs & IPC
+
+| Property | Type | What it is |
+|---|---|---|
+| `frame.ipc` | `IpcMain` | An `IpcMain` instance scoped to **this frame only** |
+| `frame.frameTreeNodeId` | `Integer` | A browser-global ID, constant for the frame's whole lifetime |
+| `frame.frameToken` | `string` | A unique identifier within the renderer process |
+| `frame.processId` | `Integer` | Chromium's internal process ID (not the OS PID) |
+| `frame.osProcessId` | `Integer` | The operating-system process ID |
+| `frame.routingId` | `Integer` | A unique frame ID within the current renderer |
+
+```js filename="frame-ipc.js"
+// Scope IPC handlers to a single frame — only messages from THIS frame match
+mainFrame.ipc.handle('get-token', () => mainFrame.frameToken)
+```
+
+### Frame tree
+
+| Property | Type | What it is |
+|---|---|---|
+| `frame.top` | `WebFrameMain \| null` | The top frame in the hierarchy |
+| `frame.parent` | `WebFrameMain \| null` | The parent frame, or `null` if this is the top frame |
+| `frame.frames` | `WebFrameMain[]` | The frame's direct child frames |
+| `frame.framesInSubtree` | `WebFrameMain[]` | Every frame in this frame's subtree, **including itself** |
+
+```js filename="walk-tree.js"
+// Visit every frame in the page, parent and all descendants
+for (const child of win.webContents.mainFrame.framesInSubtree) {
+  console.error(child.url)
+}
+```
+
+<EasyNote>
+The frame tree is a **family tree**. `top` is the eldest ancestor, `parent` is the one directly above, `frames` are the direct children, and `framesInSubtree` is "this frame plus everyone below it." A page full of nested `<iframe>`s is just a deeper tree.
+</EasyNote>
+
+---
+
+## In plain words
+
+A web page isn't always one flat document. The moment you drop an `<iframe>` into it — an embedded video, an ad, a payment widget — that page becomes a little **tree** of frames. `webFrameMain` is how the Main process reaches into that tree and grabs **one branch**.
+
+Think of three jobs:
+
+1. **Find a frame.** You usually already have one — `win.webContents.mainFrame`, or `event.senderFrame` from an IPC message. When all you have is a pair of IDs, `webFrameMain.fromId(...)` turns them back into the real object.
+2. **Inspect it.** Where does it point (`url`, `origin`)? Who's its `parent`, who are its `frames`? Is it still alive (`isDestroyed()`)? Every property is read-only — you're observing, not configuring.
+3. **Talk to it.** Run code inside it with `executeJavaScript`, or message it precisely with `send` / `postMessage` and the frame-scoped `ipc`.
+
+The one rule to remember: **frames are temporary**. A navigation or a removed `<iframe>` destroys the object you were holding. Guard with `isDestroyed()` before you touch a frame you saved earlier, and you'll avoid the only real footgun here.
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+</Cards>

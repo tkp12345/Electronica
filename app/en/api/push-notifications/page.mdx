@@ -1,0 +1,116 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { NetworkApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<NetworkApiIllustration />}
+  title="pushNotifications"
+  subtitle="Register your app with Apple Push Notification service (APNS) and receive remote notifications — macOS only."
+  badge="API · pushNotifications"
+/>
+
+The `pushNotifications` module lives in the **Main process**. It lets your app sign up with Apple's **APNS** servers and listen for notifications that arrive from the network — the kind that show up even when your window is in the background.
+
+```js filename="main.js"
+const { pushNotifications } = require('electron')
+
+app.whenReady().then(async () => {
+  // Ask Apple for a device token — your server uses this to address this device
+  const token = await pushNotifications.registerForAPNSNotifications()
+  sendTokenToYourServer(token)
+})
+```
+
+<Callout type="info">
+`pushNotifications` is **macOS only**. On Windows and Linux the module exists but its methods and events do nothing. Always guard your code with `process.platform === 'darwin'`.
+</Callout>
+
+<EasyNote>
+Think of APNS as the **post office for your app**. First you tell the post office your address (`registerForAPNSNotifications` → you get a token). You hand that address to your backend, and from then on your backend can mail letters (notifications) to exactly this device — even while the app is quietly sitting in the background.
+</EasyNote>
+
+---
+
+## Events
+
+Listen with `pushNotifications.on('event-name', handler)`. Every event here is _(macOS)_ only.
+
+| Event | Fires when |
+|---|---|
+| `received-apns-notification` _(macOS)_ | A remote APNS notification arrives while the app is running. Hands you a `userInfo` object (`Record<string, unknown>`) with the notification payload |
+
+```js filename="receive.js"
+// React to a notification pushed from your backend through APNS
+pushNotifications.on('received-apns-notification', (event, userInfo) => {
+  // userInfo is the payload your server sent (aps + your custom keys)
+  handleIncomingNotification(userInfo)
+})
+```
+
+<EasyNote>
+`received-apns-notification` is the mailbox bell. It only rings while your app is actually running — the `userInfo` it hands you is whatever your server stuffed into the envelope.
+</EasyNote>
+
+---
+
+## Methods
+
+### Registration _(macOS)_
+
+| Method | What it does |
+|---|---|
+| `pushNotifications.registerForAPNSNotifications()` _(macOS)_ | Registers the app with APNS. Returns a `Promise<string>` that resolves to the **device token** (or rejects with an error string). Use the token from your server to target this device |
+| `pushNotifications.unregisterForAPNSNotifications()` _(macOS)_ | Unregisters the app from APNS. Returns `void`. You can call `registerForAPNSNotifications()` again later to re-enable |
+
+```js filename="register.js"
+async function setupPush() {
+  // Skip entirely on non-macOS platforms
+  if (process.platform !== 'darwin') return
+
+  try {
+    const token = await pushNotifications.registerForAPNSNotifications()
+    // The token is how your backend addresses THIS device — store it server-side
+    await api.saveDeviceToken(token)
+  } catch (err) {
+    // Registration can fail (no entitlement, offline, sandbox issues, ...)
+    reportPushError(err)
+  }
+}
+
+function teardownPush() {
+  if (process.platform !== 'darwin') return
+  // Stop receiving notifications (e.g. the user signed out)
+  pushNotifications.unregisterForAPNSNotifications()
+}
+```
+
+<Callout type="warning">
+APNS only works in a **properly code-signed and entitled** build. A token will not be issued for an unsigned dev build, an app without the push-notification entitlement, or one not provisioned for APNS. Test pushes on a signed build, and always handle the rejected `Promise`.
+</Callout>
+
+---
+
+## Properties
+
+This module has **no properties**. All of its surface is the single event and the two registration methods above.
+
+---
+
+## In plain words
+
+`pushNotifications` is the **macOS-only doorway to Apple's push service**. The flow is short and you'll only set it up once:
+
+1. **Get your address.** Call `registerForAPNSNotifications()`. Apple hands back a **device token** — a unique string that means "this exact Mac, this exact app." Send that token to your backend.
+2. **Wait for mail.** Your backend asks Apple to deliver a notification to that token. While your app is running, the `received-apns-notification` event fires and gives you the payload (`userInfo`).
+3. **Hang up when done.** If the user logs out or you no longer want pushes, call `unregisterForAPNSNotifications()`.
+
+Two cautions to keep in mind: it's **macOS only** (guard with `process.platform === 'darwin'`), and it needs a **signed, entitled build** to actually receive a token — so always wrap the registration call in a `try/catch`.
+
+Remember two names and you're done: **`registerForAPNSNotifications()`** (get the address) and **`received-apns-notification`** (the doorbell). Everything else is your own server logic.
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+</Cards>

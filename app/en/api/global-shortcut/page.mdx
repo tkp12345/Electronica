@@ -1,0 +1,161 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { SystemApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<SystemApiIllustration />}
+  title="globalShortcut"
+  subtitle="Listen for keyboard shortcuts that fire even when your app isn't focused — system-wide hotkeys, registered with the OS."
+  badge="API · globalShortcut"
+/>
+
+The `globalShortcut` module lives in the **Main process**. It lets you register keyboard shortcuts with the operating system so they fire **even when your app has no window in focus** — like a media player that responds to the Play/Pause key while you're working in another app.
+
+```js filename="main.js"
+const { app, globalShortcut } = require('electron')
+
+app.whenReady().then(() => {
+  // Register a system-wide hotkey: Cmd/Ctrl+Shift+K
+  const ok = globalShortcut.register('CommandOrControl+Shift+K', () => {
+    // runs even if another app is in front
+    toggleQuickCapture()
+  })
+
+  if (!ok) {
+    // another app already owns this combination
+  }
+})
+
+app.on('will-quit', () => {
+  // always clean up before quitting
+  globalShortcut.unregisterAll()
+})
+```
+
+<Callout type="warning">
+You can only use `globalShortcut` **after** the app's `ready` event has fired (use `app.whenReady()`). Calling it earlier does nothing useful, because the OS-level shortcut system isn't wired up yet.
+</Callout>
+
+<EasyNote>
+A normal key handler in a web page only hears keys while that page is in front. A **global** shortcut is like giving the operating system a sticky note: "whenever this key combo is pressed — no matter which app is on top — call me." That's why media keys can pause your music from any screen.
+</EasyNote>
+
+---
+
+## Events
+
+`globalShortcut` has **no events**. You don't subscribe to it with `.on(...)` — instead you hand it an accelerator string plus a callback, and the OS calls that callback directly when the keys are pressed.
+
+---
+
+## Methods
+
+Call these on the `globalShortcut` object itself (it's a singleton, not a class). An **accelerator** is a string like `'CommandOrControl+Shift+K'` — the same key-and-modifier format used by `Menu` items.
+
+### Registering shortcuts
+
+| Method | What it does |
+|---|---|
+| `globalShortcut.register(accelerator, callback)` | Register one shortcut. Returns `true` if it was claimed, `false` if another app already owns it (it fails **silently**). |
+| `globalShortcut.registerAll(accelerators, callback)` | Register many accelerators (a `string[]`) that all run the **same** callback. Returns nothing. |
+
+```js filename="register.js"
+// One shortcut, one handler
+const ok = globalShortcut.register('CommandOrControl+X', () => {
+  showOverlay()
+})
+
+if (!ok) {
+  // The combo is taken by another app — pick a different one or tell the user
+  notifyShortcutUnavailable('CommandOrControl+X')
+}
+
+// Several accelerators sharing one handler (e.g. two ways to trigger the same action)
+globalShortcut.registerAll(
+  ['CommandOrControl+Y', 'CommandOrControl+Z'],
+  () => undo()
+)
+```
+
+<Callout type="warning">
+Registration can **fail silently**. `register()` returns `false` (and `registerAll()` returns nothing) when the accelerator is already owned by the system or another app. Always check the return value of `register()`, or verify with `isRegistered()`, before assuming your hotkey is live.
+</Callout>
+
+### Checking & unregistering
+
+| Method | What it does |
+|---|---|
+| `globalShortcut.isRegistered(accelerator)` | `true` if **your app** currently holds this shortcut. Returns `false` if another app owns it, even right after you tried to register it. |
+| `globalShortcut.unregister(accelerator)` | Release one shortcut so the keys go back to the OS / other apps. |
+| `globalShortcut.unregisterAll()` | Release every shortcut your app registered. |
+
+```js filename="unregister.js"
+// Is our hotkey actually active?
+if (globalShortcut.isRegistered('CommandOrControl+Shift+K')) {
+  // it's ours — safe to rely on it
+}
+
+// Give back a single combo
+globalShortcut.unregister('CommandOrControl+Shift+K')
+
+// Clean up everything (do this on will-quit)
+globalShortcut.unregisterAll()
+```
+
+<Callout type="warning">
+Always call `globalShortcut.unregisterAll()` in your `app.on('will-quit', ...)` handler. Shortcuts aren't automatically released, and leaving them registered can keep stealing key combos from other apps.
+</Callout>
+
+### Suspending temporarily
+
+| Method | What it does |
+|---|---|
+| `globalShortcut.setSuspended(suspended)` | Pause (`true`) or resume (`false`) **all** registered shortcuts at once, without unregistering them. While suspended, new registrations also fail. |
+| `globalShortcut.isSuspended()` | `true` if shortcut handling is currently suspended. |
+
+```js filename="suspend.js"
+// A "rebind your hotkey" settings screen: pause global shortcuts
+// so the keys the user presses go to the settings UI, not your handlers.
+globalShortcut.setSuspended(true)
+
+// ...let the user type their new combination...
+
+globalShortcut.setSuspended(false) // resume — registrations come back to life
+```
+
+<EasyNote>
+`setSuspended(true)` is like flipping a master switch to "off" without unplugging anything. Your shortcuts are still registered and remembered — they just stop firing until you flip it back. Perfect for a settings screen where you're letting the user choose a new hotkey.
+</EasyNote>
+
+<Callout type="info">
+**macOS media keys (10.14+):** to register media accelerators like `MediaPlayPause`, `MediaNextTrack`, `MediaPreviousTrack`, or `MediaStop`, your app must be a **trusted accessibility client**. Otherwise those registrations won't work.
+</Callout>
+
+---
+
+## Properties
+
+`globalShortcut` has **no properties** — it's purely a set of methods. State (which shortcuts are active, whether handling is suspended) is read through `isRegistered()` and `isSuspended()` rather than via properties.
+
+---
+
+## In plain words
+
+`globalShortcut` answers one question: **"How do I run code when the user presses a key combo, even if my app is in the background?"**
+
+The whole module is a tiny loop you can hold in your head:
+
+1. **Wait for ready.** Everything starts inside `app.whenReady()` — the OS shortcut system isn't available before then.
+2. **Register.** `register('CommandOrControl+Shift+K', callback)` hands a hotkey to the operating system. It returns `true` if you got it, `false` if someone else already owns it. Need several keys for one action? `registerAll([...], callback)`.
+3. **Check if you need to.** `isRegistered(...)` confirms the combo is really yours; `isSuspended()` tells you if handling is paused.
+4. **Pause without losing it.** `setSuspended(true)` quietly mutes all your shortcuts (handy on a "press your new hotkey" settings screen), and `setSuspended(false)` brings them back.
+5. **Clean up.** Call `unregister(...)` for one, or `unregisterAll()` for all — and always do the latter on `will-quit`, because the OS won't tidy up for you.
+
+Think of it as a **front-desk receptionist for the keyboard**: you leave instructions ("if anyone presses Cmd+Shift+K, ring me"), the receptionist watches the door whether you're at your desk or not, and you tear up the note before you leave so the next tenant gets a clean desk.
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="Menu (accelerators)" href="/en/api/menu" arrow />
+  <Cards.Card title="Main process" href="/en/docs/processes/main" arrow />
+</Cards>

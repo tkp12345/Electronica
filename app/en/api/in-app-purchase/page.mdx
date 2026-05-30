@@ -1,0 +1,238 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { NetworkApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<NetworkApiIllustration />}
+  title="inAppPurchase"
+  subtitle="Sell digital products through the Mac App Store — fetch products, start purchases, and track transactions."
+  badge="API · inAppPurchase"
+/>
+
+The `inAppPurchase` module lives in the **Main process** and lets a Mac App Store app sell in-app products (one-time buys, consumables, subscriptions). It's a thin bridge over Apple's StoreKit, so almost everything is asynchronous: you start a purchase, then react to transaction updates as Apple processes them.
+
+<Callout type="info">
+`inAppPurchase` is **macOS only** — it works exclusively for apps distributed through the **Mac App Store**. On Windows and Linux the module exists but the methods are no-ops.
+</Callout>
+
+```js filename="setup.js"
+const { inAppPurchase } = require('electron')
+
+// 1. Make sure this user is even allowed to pay
+if (!inAppPurchase.canMakePayments()) {
+  // parental controls, restricted account, etc.
+  return
+}
+
+// 2. Listen for transaction updates as early as possible
+inAppPurchase.on('transactions-updated', (event, transactions) => {
+  for (const transaction of transactions) {
+    handleTransaction(transaction)
+  }
+})
+
+// 3. Now you can fetch products and start a purchase
+inAppPurchase.purchaseProduct('com.example.app.coins_100')
+```
+
+---
+
+## Events
+
+Listen with `inAppPurchase.on('event-name', handler)`.
+
+| Event | Fires when |
+|---|---|
+| `transactions-updated` | One or more transactions were added or changed in the payment queue (gives `event`, `transactions` — a `Transaction[]`) |
+
+```js filename="transactions.js"
+inAppPurchase.on('transactions-updated', (event, transactions) => {
+  for (const transaction of transactions) {
+    const payment = transaction.payment
+
+    switch (transaction.transactionState) {
+      case 'purchasing':
+        // payment is being processed — show a spinner, do nothing else
+        break
+
+      case 'purchased':
+        // success — unlock the product, then verify the receipt server-side
+        deliverProduct(payment.productIdentifier)
+        inAppPurchase.finishTransactionByDate(transaction.transactionDate)
+        break
+
+      case 'restored':
+        // a previously bought product is being restored on this device
+        deliverProduct(transaction.originalTransactionIdentifier)
+        inAppPurchase.finishTransactionByDate(transaction.transactionDate)
+        break
+
+      case 'failed':
+        // user cancelled or payment failed — log errorCode / errorMessage
+        inAppPurchase.finishTransactionByDate(transaction.transactionDate)
+        break
+
+      case 'deferred':
+        // waiting on external approval (e.g. Ask to Buy / parental approval)
+        break
+    }
+  }
+})
+```
+
+<EasyNote>
+Think of `transactions-updated` like a **delivery tracking notification**. You don't get the package the instant you tap "Buy" — Apple sends you status pings (`purchasing` → `purchased`, or `failed`), and your job is to react to each one. That's why you must register the listener **before** calling `purchaseProduct`, or you'll miss the very first update.
+</EasyNote>
+
+---
+
+## Methods
+
+### Checking & products
+
+| Method | What it does |
+|---|---|
+| `inAppPurchase.canMakePayments()` | Returns `boolean` — `true` if the user is allowed to make payments (not blocked by parental controls, etc.) |
+| `inAppPurchase.getProducts(productIDs)` | Returns `Promise<Product[]>` — fetches the localized descriptions and prices for the given product identifiers |
+| `inAppPurchase.getReceiptURL()` | Returns `string` — the path to the App Store receipt file for the current app |
+
+```js filename="products.js"
+// Always fetch products before showing a store UI —
+// you need Apple's localized title and currency-formatted price
+const products = await inAppPurchase.getProducts([
+  'com.example.app.coins_100',
+  'com.example.app.pro_subscription',
+])
+
+for (const product of products) {
+  // e.g. "Pro Subscription — $4.99"
+  showStoreItem(product.localizedTitle, product.formattedPrice)
+}
+```
+
+### Purchasing
+
+| Method | What it does |
+|---|---|
+| `inAppPurchase.purchaseProduct(productID[, opts])` | Returns `Promise<boolean>` — adds a product to the payment queue. Resolves `true` if the product id is valid. `opts` is either an `Integer` quantity or an object `{ quantity, username }` |
+
+```js filename="purchase.js"
+// Simple purchase — quantity defaults to 1
+const valid = await inAppPurchase.purchaseProduct('com.example.app.coins_100')
+
+// Or with a quantity and a user account identifier
+await inAppPurchase.purchaseProduct('com.example.app.coins_100', {
+  quantity: 3,
+  username: hashedUserAccountId, // opaque id, used to detect fraud
+})
+
+if (!valid) {
+  // the product id wasn't recognized by the App Store
+}
+```
+
+<Callout type="warning">
+`purchaseProduct` resolving to `true` only means the product was **added to the queue** — it does **not** mean the purchase succeeded. The real outcome arrives later through the `transactions-updated` event. Register that listener first.
+</Callout>
+
+### Finishing transactions
+
+A transaction stays in the payment queue until you finish it. If you never finish it, the user keeps getting prompted on every launch — and Apple may not credit the purchase.
+
+| Method | What it does |
+|---|---|
+| `inAppPurchase.finishAllTransactions()` | Marks **all** pending transactions as finished and removes them from the queue |
+| `inAppPurchase.finishTransactionByDate(date)` | Finishes the pending transaction(s) added on a specific date. `date` is the ISO `transactionDate` string |
+| `inAppPurchase.restoreCompletedTransactions()` | Re-delivers previously purchased non-consumable products and subscriptions (e.g. after reinstall or on a new device) |
+
+```js filename="restore.js"
+// Wire a "Restore Purchases" button — required by App Store review
+// for any app with non-consumable products or subscriptions
+restoreButton.addEventListener('click', () => {
+  inAppPurchase.restoreCompletedTransactions()
+  // restored items arrive via transactions-updated with state 'restored'
+})
+```
+
+<Callout type="warning">
+Always finish each transaction (after delivering the product and ideally verifying the receipt on your server). Unfinished transactions are re-sent on every app launch and can block future purchases.
+</Callout>
+
+---
+
+## Properties
+
+The `inAppPurchase` module has no properties — it's a function-only module. All of its state lives in the StoreKit payment queue, which you observe through the `transactions-updated` event.
+
+---
+
+## The Transaction object
+
+Each item in the `transactions` array delivered by `transactions-updated` looks like this:
+
+| Property | Type | What it is |
+|---|---|---|
+| `transactionIdentifier` | `string` | Uniquely identifies a successful payment transaction |
+| `transactionDate` | `string` | When the transaction was added to the App Store payment queue |
+| `originalTransactionIdentifier` | `string` | The identifier of the original transaction this one restored |
+| `transactionState` | `string` | One of `purchasing` / `purchased` / `failed` / `restored` / `deferred` |
+| `errorCode` | `Integer` | The error code if processing failed |
+| `errorMessage` | `string` | The error message if processing failed |
+| `payment` | `Object` | Details of the payment (see below) |
+
+The nested `payment` object:
+
+| Property | Type | What it is |
+|---|---|---|
+| `payment.productIdentifier` | `string` | The identifier of the purchased product |
+| `payment.quantity` | `Integer` | The quantity purchased |
+| `payment.applicationUsername` | `string` | An opaque identifier for the user's account on your system |
+| `payment.paymentDiscount` | `PaymentDiscount` (optional) | The discount offer applied to the payment |
+
+---
+
+## The Product object
+
+Each item returned by `getProducts()` looks like this:
+
+| Property | Type | What it is |
+|---|---|---|
+| `productIdentifier` | `string` | The string that identifies the product to the App Store |
+| `localizedDescription` | `string` | The localized description of the product |
+| `localizedTitle` | `string` | The localized name of the product |
+| `price` | `number` | The cost of the product in the local currency |
+| `formattedPrice` | `string` | The locale-formatted price (ready to display) |
+| `currencyCode` | `string` | 3-character ISO 4217 currency code |
+| `introductoryPrice` | `ProductDiscount` (optional) | Introductory pricing details, when available |
+| `discounts` | `ProductDiscount[]` | Discount offers available for the product |
+| `subscriptionGroupIdentifier` | `string` | The subscription group this product belongs to |
+| `subscriptionPeriod` | `ProductSubscriptionPeriod` (optional) | The period details for subscription products |
+| `isDownloadable` | `boolean` | `true` if downloadable content is associated with the product |
+| `downloadContentVersion` | `string` | A string identifying the version of the downloadable content |
+| `downloadContentLengths` | `number[]` | The total size of the content, in bytes |
+
+<EasyNote>
+Always show Apple's `formattedPrice`, never build the price string yourself. Apple already formats it for the user's region and currency ("$4.99", "₩6,600", "¥600") — and App Store review expects you to display exactly that.
+</EasyNote>
+
+---
+
+## In plain words
+
+`inAppPurchase` is the **cash register** for a Mac App Store app. It doesn't keep any money or inventory itself — it just talks to Apple's StoreKit and tells you what happened.
+
+The flow is always the same four beats:
+
+1. **Can they pay?** Call `canMakePayments()`. If `false`, hide your store.
+2. **What's for sale?** Call `getProducts(['id1', 'id2'])` and show Apple's `localizedTitle` and `formattedPrice`.
+3. **Ring it up.** Call `purchaseProduct('id')` — but remember, this just puts the item on the conveyor belt.
+4. **Listen for the receipt.** The `transactions-updated` event tells you the real result (`purchased`, `failed`, `restored`, `deferred`). Deliver the product, then **finish the transaction** so it leaves the queue.
+
+The two rules that trip everyone up: register the `transactions-updated` listener **before** you ever call `purchaseProduct`, and **always finish** each transaction once you've handled it. Get those two right and the rest is just reading prices off the `Product` object.
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="Mac App Store submission" href="/en/docs/distribution/mas" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+</Cards>

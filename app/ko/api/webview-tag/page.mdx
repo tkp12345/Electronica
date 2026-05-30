@@ -1,0 +1,384 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { WindowApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<WindowApiIllustration />}
+  title="<webview> 태그"
+  subtitle="앱 안에 격리된 외부 웹 페이지를 끼워 넣어요 — iframe 과 비슷하지만, 자기만의 프로세스와 제어 수단을 가져요."
+  badge="API · <webview> Tag"
+/>
+
+`<webview>` 태그는 렌더러 페이지 안에 *외부* 웹 콘텐츠(제3자 사이트, 샌드박스된 미니앱)를 끼워 넣는 **커스텀 HTML 요소** 예요. `<iframe>` 과 달리 게스트(guest)는 **별도 프로세스** 에서 돌아가고, 풍부한 메서드·속성·DOM 이벤트로 제어할 수 있어요.
+
+```html filename="renderer.html"
+<!-- 앱과 격리된 외부 사이트를 끼워 넣어요 -->
+<webview id="view" src="https://example.com/" style="width:640px; height:480px"></webview>
+```
+
+```js filename="renderer.js"
+const view = document.getElementById('view')
+
+// 메서드를 호출하기 전에 게스트 문서가 준비될 때까지 기다려요
+view.addEventListener('dom-ready', () => {
+  view.openDevTools()
+})
+```
+
+<Callout type="warning">
+Electron 팀은 **`<webview>` 를 쓰지 말 것을 권장** 해요 — 구조적으로 불안정하고 API 가 바뀔 수 있어요. 대신 `<iframe>`, `WebContentsView`, 또는 [문서의 `<webview>` 대안](/ko/docs/best-practices/security)을 쓰세요. 꼭 써야 한다면 `webviewTag` 웹 환경설정으로 **명시적으로 켜야** 해요 (Electron 5 부터 기본 꺼짐):
+
+```js filename="main.js"
+const win = new BrowserWindow({
+  webPreferences: {
+    webviewTag: true, // 기본 꺼짐 — <webview> 를 허용하려면 직접 켜요
+  },
+})
+```
+</Callout>
+
+<EasyNote>
+`<webview>` 는 **창 속의 창** 이에요. 페이지에 박아 넣은 작은 TV 라고 생각하면 돼요. 전혀 다른 "채널"(다른 웹사이트)을 보여 주고, 자기만의 리모컨(아래 메서드들)이 있으며, 그 채널에서 일어나는 일은 앱으로 새어 나오지 못해요 — 서로 다른 프로세스에서 돌아가니까요.
+</EasyNote>
+
+---
+
+## 태그 속성(Attributes)
+
+HTML 에서 요소에 직접 지정하거나 `setAttribute` 로 설정해요. 일부는 **첫 내비게이션 이전에만** 바꿀 수 있어요.
+
+| 속성 | 하는 일 |
+|---|---|
+| `src` | 보여 줄 URL. 설정하면 최상위 내비게이션 시작 (`data:` URL 도 가능) |
+| `nodeintegration` | 게스트 페이지에서 Node.js(`require`, `process`) 활성화 |
+| `nodeintegrationinsubframes` _(실험적)_ | 게스트의 하위 프레임(iframe)에서 Node.js 지원 활성화 |
+| `plugins` | 게스트에서 브라우저 플러그인 허용 (기본 꺼짐) |
+| `preload` | 다른 스크립트보다 먼저 게스트에서 실행할 스크립트 — `file:` 프로토콜 필수 |
+| `httpreferrer` | 게스트의 `Referer` URL 설정 |
+| `useragent` | 내비게이션 전 user agent 설정 (이후 변경은 `setUserAgent()` 사용) |
+| `disablewebsecurity` | 게스트의 웹 보안 끄기 (첫 내비게이션 이전에만 설정 가능) |
+| `partition` | 세션 설정. `persist:` 를 붙이면 영속화 (첫 내비게이션 이전에만 설정 가능) |
+| `allowpopups` | 게스트가 새 창(`window.open`)을 열도록 허용 |
+| `webpreferences` | 쉼표로 구분된 웹 환경설정 목록 (`window.open` 의 features 문자열과 같은 형식) |
+| `enableblinkfeatures` | **켤** Blink 기능 목록 (쉼표 구분) |
+| `disableblinkfeatures` | **끌** Blink 기능 목록 (쉼표 구분) |
+
+```html filename="hardened-webview.html"
+<!-- 잠가 둔 webview: 자기 세션, Node 없음, 격리 -->
+<webview
+  src="https://example.com/"
+  partition="persist:guest"
+  preload="file://./preload.js"
+></webview>
+```
+
+<Callout type="warning">
+**원격의 신뢰할 수 없는** 콘텐츠를 띄우는 `<webview>` 에 `nodeintegration` 이나 `disablewebsecurity` 를 켜는 건 위험해요 — 그 페이지에 호스트 머신의 열쇠를 넘기는 셈이에요. 끈 채로 두고 대신 `preload` + `contextBridge` 를 쓰세요.
+</Callout>
+
+---
+
+## DOM 이벤트(Events)
+
+`<webview>` 는 표준 DOM 이벤트를 발생시켜요 — `view.addEventListener('이벤트명', 핸들러)` 로 듣습니다. 대부분 내부 페이지의 `webContents` 이벤트를 그대로 반영해요.
+
+### 로딩 & 내비게이션 생명주기
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `load-commit` | 로드가 커밋됨 (인페이지 내비게이션·서브프레임 로드 포함) |
+| `did-start-loading` | 탭 스피너가 돌기 시작 |
+| `did-finish-load` | 내비게이션 완료, 스피너 멈춤 |
+| `did-fail-load` | 로드 실패/취소 (`errorCode`, `errorDescription` 전달) |
+| `did-frame-finish-load` | 프레임이 내비게이션을 끝냄 |
+| `did-stop-loading` | 스피너가 멈춤 |
+| `did-attach` | `<webview>` 가 임베더에 붙음 |
+| `dom-ready` | 프레임의 문서가 완전히 로드됨 — **메서드 호출 전 이걸 기다리세요** |
+
+### 내비게이션 상세
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `will-navigate` | 사용자/페이지가 시작한 내비게이션 직전 (프로그래밍 호출은 제외) |
+| `will-frame-navigate` | 임의 프레임의 내비게이션 직전 |
+| `did-start-navigation` | 임의 프레임이 내비게이션 시작 |
+| `did-redirect-navigation` | 서버 측 리다이렉트 발생 (예: 302) |
+| `did-navigate` | 메인 프레임 내비게이션 완료 (인페이지 제외) |
+| `did-frame-navigate` | 임의 프레임 내비게이션 완료 (`httpResponseCode` 전달) |
+| `did-navigate-in-page` | 인페이지 내비게이션 발생 (앵커 링크, `hashchange`) |
+
+```js filename="track-navigation.js"
+const view = document.getElementById('view')
+
+view.addEventListener('did-navigate', (e) => {
+  // 게스트에 맞춰 내 주소 표시줄 갱신
+  urlBar.value = e.url
+})
+
+view.addEventListener('did-fail-load', (e) => {
+  // 게스트가 로드되지 못하면 에러 페이지 표시
+  showError(e.errorCode, e.errorDescription)
+})
+```
+
+### 페이지 메타데이터
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `page-title-updated` | 페이지 제목 변경 (`title`, `explicitSet` 전달) |
+| `page-favicon-updated` | 새 파비콘 URL 도착 (`favicons` 전달) |
+| `did-change-theme-color` | 페이지 테마 색상 변경 (`themeColor` 전달) |
+| `update-target-url` | 마우스가 링크 위에 올라가거나 링크가 포커스됨 (`url` 전달) |
+
+### 전체화면 · 미디어 · 콘솔
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `enter-html-full-screen` | 페이지가 HTML 전체화면 진입 |
+| `leave-html-full-screen` | 페이지가 HTML 전체화면 나감 |
+| `media-started-playing` | 미디어 재생 시작 |
+| `media-paused` | 미디어 일시정지/종료 |
+| `console-message` | 게스트가 콘솔에 출력 (`level`, `message`, `line`, `sourceId` 전달) |
+
+### 찾기 · IPC · 컨텍스트 메뉴
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `found-in-page` | `findInPage()` 결과 도착 (`result` 전달) |
+| `ipc-message` | 게스트가 임베더로 비동기 메시지 전송 (`channel`, `args`, `frameId` 전달) |
+| `context-menu` | 컨텍스트 메뉴를 띄워야 함 (위치·링크·선택 등 `params` 전달) |
+
+```js filename="ipc-from-guest.js"
+// 게스트 preload 에서: ipcRenderer.sendToHost('greeting', 'hi')
+view.addEventListener('ipc-message', (e) => {
+  if (e.channel === 'greeting') {
+    handleGreeting(e.args[0])
+  }
+})
+```
+
+### 크래시 & 정리
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `close` | 게스트 페이지가 스스로 닫으려 함 |
+| `render-process-gone` | 게스트 렌더러가 크래시되거나 강제 종료됨 (`details` 전달) |
+| `destroyed` | 내부 `WebContents` 가 파괴됨 |
+
+### 개발자 도구
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `devtools-open-url` | DevTools 에서 링크 클릭 / "새 탭에서 열기" 선택 (`url` 전달) |
+| `devtools-search-query` | 선택한 텍스트에 "검색" 선택 (`query` 전달) |
+| `devtools-opened` | DevTools 열림 |
+| `devtools-closed` | DevTools 닫힘 |
+| `devtools-focused` | DevTools 포커스됨 |
+
+<EasyNote>
+`dom-ready` 는 매번 가장 먼저 손이 가는 이벤트예요. 아래 메서드들은 게스트 페이지와 대화하지만, 태그가 나타난 순간엔 게스트가 아직 준비되지 않았어요 — `dom-ready` 를 기다린 다음에야 `openDevTools()`, `executeJavaScript()` 같은 메서드를 안전하게 부를 수 있어요.
+</EasyNote>
+
+---
+
+## 메서드(Methods)
+
+`dom-ready` 이후 요소에 호출해요. 예: `view.reload()`.
+
+### 내비게이션 & 로딩
+
+| 메서드 | 하는 일 |
+|---|---|
+| `loadURL(url[, options])` | URL 로드 — 실패 시 reject 되는 `Promise` 반환 |
+| `downloadURL(url[, options])` | 내비게이션 없이 리소스 다운로드 |
+| `stop()` | 진행 중인 내비게이션 중단 |
+| `reload()` | 게스트 페이지 새로고침 |
+| `reloadIgnoringCache()` | 캐시를 무시하고 새로고침 |
+
+### 히스토리
+
+| 메서드 | 하는 일 |
+|---|---|
+| `canGoBack()` | 뒤로 갈 수 있는가? |
+| `canGoForward()` | 앞으로 갈 수 있는가? |
+| `canGoToOffset(offset)` | `offset` 만큼 이동할 수 있는가? |
+| `goBack()` | 한 항목 뒤로 |
+| `goForward()` | 한 항목 앞으로 |
+| `goToIndex(index)` | 절대 히스토리 인덱스로 이동 |
+| `goToOffset(offset)` | 상대 오프셋만큼 이동 |
+| `clearHistory()` | 내비게이션 히스토리 비우기 |
+
+### 페이지 정보
+
+| 메서드 | 하는 일 |
+|---|---|
+| `getURL()` | 게스트의 현재 URL |
+| `getTitle()` | 게스트의 현재 제목 |
+| `isLoading()` | 게스트가 아직 리소스를 로드 중인가? |
+| `isLoadingMainFrame()` | 메인 프레임(iframe 말고)이 로드 중인가? |
+| `isWaitingForResponse()` | 메인 리소스의 첫 응답을 기다리는가? |
+| `isCrashed()` | 렌더러가 크래시됐는가? |
+| `getWebContentsId()` | 게스트의 `WebContents` 숫자 id |
+
+```js filename="navigate.js"
+const view = document.getElementById('view')
+
+// 간단한 브라우저 툴바 연결
+backBtn.onclick = () => { if (view.canGoBack()) view.goBack() }
+reloadBtn.onclick = () => view.reload()
+await view.loadURL('https://example.com/')
+```
+
+### User agent
+
+| 메서드 | 하는 일 |
+|---|---|
+| `setUserAgent(userAgent)` | 게스트의 user agent 덮어쓰기 |
+| `getUserAgent()` | 현재 user agent 읽기 |
+
+### CSS & JavaScript 주입
+
+| 메서드 | 하는 일 |
+|---|---|
+| `insertCSS(css)` | CSS 주입 — 나중에 제거할 키를 담은 `Promise<string>` 반환 |
+| `removeInsertedCSS(key)` | 키로 이전에 주입한 CSS 제거 |
+| `executeJavaScript(code[, userGesture])` | 게스트에서 코드 평가 — 결과를 담은 `Promise` 반환 |
+
+```js filename="inject.js"
+// 게스트 페이지에 배너를 추가하고 제목을 가져와요
+const key = await view.insertCSS('body { filter: grayscale(1); }')
+const title = await view.executeJavaScript('document.title')
+// 나중에: await view.removeInsertedCSS(key)
+```
+
+<Callout type="warning">
+`executeJavaScript` 는 **신뢰할 수 없는 게스트 안에서** 코드를 실행해요. 그 페이지에서 되돌아온 값으로 코드 문자열을 절대 만들지 마세요 — 페이지가 스스로를 스크립팅할 통로를 열어 주는 꼴이에요. 주입하는 코드는 정적으로 유지하세요.
+</Callout>
+
+### 줌(Zoom)
+
+| 메서드 | 하는 일 |
+|---|---|
+| `setZoomFactor(factor)` | 줌 배율 설정 (`3.0` = 300%) |
+| `getZoomFactor()` | 현재 줌 배율 읽기 |
+| `setZoomLevel(level)` | 줌 레벨 설정 (`0` = 원본, 한 단계당 ±20%) |
+| `getZoomLevel()` | 현재 줌 레벨 읽기 |
+| `setVisualZoomLevelLimits(min, max)` | 핀치 줌 한계 설정 — `Promise` 반환 |
+
+### 페이지 내 찾기
+
+| 메서드 | 하는 일 |
+|---|---|
+| `findInPage(text[, options])` | 검색 시작 — 요청 id 반환, 결과는 `found-in-page` 로 도착 |
+| `stopFindInPage(action)` | 검색 중단 (`'clearSelection'` / `'keepSelection'` / `'activateSelection'`) |
+
+```js filename="find.js"
+const requestId = view.findInPage('electron')
+
+view.addEventListener('found-in-page', (e) => {
+  if (e.result.requestId === requestId) {
+    showMatches(e.result.activeMatchOrdinal, e.result.matches)
+  }
+})
+```
+
+### 오디오
+
+| 메서드 | 하는 일 |
+|---|---|
+| `setAudioMuted(muted)` | 게스트 음소거/해제 |
+| `isAudioMuted()` | 게스트가 음소거 상태인가? |
+| `isCurrentlyAudible()` | 지금 실제로 소리가 나고 있는가? |
+
+### 편집 명령
+
+| 메서드 | 하는 일 |
+|---|---|
+| `undo()` / `redo()` | 실행 취소 / 다시 실행 |
+| `cut()` / `copy()` / `paste()` | 클립보드 명령 |
+| `pasteAndMatchStyle()` | 주변 스타일에 맞춰 붙여넣기 |
+| `delete()` | 선택 영역 삭제 |
+| `selectAll()` / `unselect()` | 전체 선택 / 선택 해제 |
+| `replace(text)` | 선택 영역을 `text` 로 교체 |
+| `replaceMisspelling(text)` | 선택된 오타 단어 교체 |
+| `insertText(text)` | 포커스된 요소에 텍스트 삽입 — `Promise` 반환 |
+| `centerSelection()` | 현재 선택 영역을 가운데로 스크롤 |
+| `adjustSelection(options)` | `start` / `end` 만큼 선택 영역 늘리기/줄이기 |
+
+### 스크롤
+
+| 메서드 | 하는 일 |
+|---|---|
+| `scrollToTop()` | 게스트를 맨 위로 스크롤 |
+| `scrollToBottom()` | 게스트를 맨 아래로 스크롤 |
+
+### 개발자 도구
+
+| 메서드 | 하는 일 |
+|---|---|
+| `openDevTools()` | 게스트의 DevTools 열기 |
+| `closeDevTools()` | DevTools 닫기 |
+| `isDevToolsOpened()` | DevTools 가 붙어 있는가? |
+| `isDevToolsFocused()` | DevTools 가 포커스됐는가? |
+| `inspectElement(x, y)` | 해당 좌표의 요소 검사 시작 |
+| `inspectSharedWorker()` | 공유 워커 컨텍스트의 DevTools 열기 |
+| `inspectServiceWorker()` | 서비스 워커 컨텍스트의 DevTools 열기 |
+
+### 인쇄 & 캡처
+
+| 메서드 | 하는 일 |
+|---|---|
+| `print([options])` | 게스트 인쇄 — `Promise` 반환 |
+| `printToPDF(options)` | 게스트를 PDF 로 렌더 — `Promise<Uint8Array>` 반환 |
+| `capturePage([rect])` | 스크린샷 캡처 — `Promise<NativeImage>` 반환 |
+
+```js filename="capture.js"
+// 보이는 게스트 페이지를 PNG 로 스냅샷
+const image = await view.capturePage()
+fs.writeFileSync('shot.png', image.toPNG())
+```
+
+### IPC & 입력
+
+| 메서드 | 하는 일 |
+|---|---|
+| `send(channel, ...args)` | 게스트 렌더러로 비동기 메시지 전송 — `Promise` 반환 |
+| `sendToFrame(frameId, channel, ...args)` | 특정 프레임으로 비동기 메시지 전송 — `Promise` 반환 |
+| `sendInputEvent(event)` | 가상 마우스/휠/키보드 이벤트 전송 — `Promise` 반환 |
+
+### macOS
+
+| 메서드 | 하는 일 |
+|---|---|
+| `showDefinitionForSelection()` _(macOS)_ | 선택한 단어의 사전 팝업 표시 |
+
+<Callout type="warning">
+`<webview>` 는 내부적으로 `display: flex` 로 콘텐츠 크기를 잡아요. `display` 를 `inline-flex` 가 아닌 다른 값으로 덮어쓰면 끼워 넣은 페이지의 레이아웃이 깨질 수 있어요.
+</Callout>
+
+---
+
+## 속성(Properties)
+
+`<webview>` 태그는 자바스크립트 프로퍼티 모음이 아니라 위에 정리한 **HTML 속성** 으로 설정을 노출해요. `view.getAttribute(...)` / `view.setAttribute(...)` 로 읽거나 바꾸세요. 런타임 상태(URL, 제목, 로딩 여부, 오디오, 줌)는 위의 **메서드** 로 읽어요 — 예를 들어 `getURL()`, `getTitle()`, `isLoading()`, `getZoomFactor()` 처럼요.
+
+---
+
+## 쉽게 풀어 설명
+
+`<webview>` 는 **앱 안에 들어와 사는 또 다른 웹사이트** 예요. 자기만의 프로세스 울타리 안에 갇혀 있죠. 페이지 어디에나 끼워 넣고 자바스크립트로 조종할 수 있는, 작은 브라우저 탭처럼 동작해요.
+
+다루는 흐름은 늘 똑같아요:
+
+1. **태그를 배치** 해요 — `src` 를 주고, 안전이 중요하다면 `partition` 과 `preload` 도 함께요.
+2. **`dom-ready` 를 기다려요** — 그래야 게스트가 비로소 대화할 준비가 돼요.
+3. **메서드로 조종** 하고(`loadURL`, `reload`, `goBack`, `executeJavaScript`, `capturePage`) **DOM 이벤트로 반응** 해요(`did-navigate`, `did-fail-load`, `ipc-message`).
+
+하지만 가장 중요한 건 맨 위의 경고예요. Electron 팀은 여러분이 `<webview>` 를 **안 쓰길** 바라요. `<iframe>` 이나 `WebContentsView` 보다 무겁고 깨지기 쉬워서, 기본적으로 꺼져 있는 데는 이유가 있어요. 정말로 완전히 스크립팅할 수 있는 별도 프로세스 임베드가 필요할 때만 꺼내 쓰고 — 쓸 때는 `nodeintegration` 은 끈 채로, 게스트는 신뢰할 수 없는 대상으로 다루세요.
+
+<Cards>
+  <Cards.Card title="BrowserWindow" href="/ko/api/browser-window" arrow />
+  <Cards.Card title="app 모듈" href="/ko/api/app" arrow />
+  <Cards.Card title="보안" href="/ko/docs/best-practices/security" arrow />
+</Cards>

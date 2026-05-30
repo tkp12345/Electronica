@@ -1,0 +1,117 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { SystemApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<SystemApiIllustration />}
+  title="powerSaveBlocker"
+  subtitle="Keep the machine awake — stop the system from sleeping or dimming the screen while your app is busy."
+  badge="API · powerSaveBlocker"
+/>
+
+The `powerSaveBlocker` module lives in the **Main process**. It lets you tell the operating system "please don't go to sleep right now" — useful while downloading a big file, encoding video, or playing media so the screen doesn't dim mid-playback.
+
+```js filename="main.js"
+const { powerSaveBlocker } = require('electron')
+
+// Start a blocker and keep the returned id — you need it to stop later
+const id = powerSaveBlocker.start('prevent-display-sleep')
+
+// ...later, when the work is done
+powerSaveBlocker.stop(id)
+```
+
+<EasyNote>
+`powerSaveBlocker` is like putting a **"do not disturb" sign** on the computer's nap. The OS normally dims the screen and dozes off after a while; this module hangs the sign so it stays awake — and `stop()` takes the sign back down so it can rest again.
+</EasyNote>
+
+---
+
+## Events
+
+`powerSaveBlocker` has **no events**. It's a tiny, request/response style module — you `start` a blocker, hold onto the id, and `stop` it when you're done. There's nothing to subscribe to.
+
+<Callout type="info">
+If you want to _react_ to the system actually suspending, resuming, or going on battery, that's the job of the **`powerMonitor`** module instead — it has the `suspend`, `resume`, `on-ac`, and `on-battery` events.
+</Callout>
+
+---
+
+## Methods
+
+### Blocking & releasing
+
+| Method | What it does |
+|---|---|
+| `powerSaveBlocker.start(type)` | Start blocking low-power mode; returns an **integer id** that identifies this blocker |
+| `powerSaveBlocker.stop(id)` | Stop the blocker with the given `id`; returns a `boolean` for whether it was stopped |
+| `powerSaveBlocker.isStarted(id)` | Returns `true` if the blocker with that `id` is currently active |
+
+The `type` passed to `start()` is one of two strings:
+
+| Type | What it keeps awake |
+|---|---|
+| `prevent-app-suspension` | Stops the **system** from suspending — the app keeps running in the background, but the **screen may still turn off**. Use for file downloads, uploads, or audio playback. |
+| `prevent-display-sleep` | Stops the **display** from sleeping — keeps both the system _and_ the screen on. Use for video playback or presentations. |
+
+```js filename="download.js"
+const { powerSaveBlocker } = require('electron')
+
+let blockerId = null
+
+function startDownload() {
+  // The screen can dim — we only need the machine itself to stay awake
+  blockerId = powerSaveBlocker.start('prevent-app-suspension')
+  // begin the long-running download...
+}
+
+function finishDownload() {
+  if (blockerId !== null && powerSaveBlocker.isStarted(blockerId)) {
+    powerSaveBlocker.stop(blockerId)
+    blockerId = null
+  }
+}
+```
+
+```js filename="video.js"
+// Keep the screen lit the whole time the user is watching
+const id = powerSaveBlocker.start('prevent-display-sleep')
+
+player.on('ended', () => {
+  powerSaveBlocker.stop(id)
+})
+```
+
+<Callout type="warning">
+`prevent-display-sleep` has **higher precedence** than `prevent-app-suspension`. If you start both, the display-sleep blocker wins as long as it's active — only after it's stopped does the app-suspension blocker take over. Always keep the id `start()` returns: it's the only way to `stop()` that exact blocker, and a forgotten blocker will keep the user's machine awake (and draining battery) forever.
+</Callout>
+
+<EasyNote>
+Think of `start()` like taking a numbered ticket at a counter — the number (`id`) is your proof. You can start several blockers and each gets its own number. To release one, you hand back its number with `stop(id)`. Lose the number and you can never release that blocker.
+</EasyNote>
+
+---
+
+## Properties
+
+`powerSaveBlocker` has **no properties**. All of its state lives behind the three methods above — there's nothing to read or set directly on the module object.
+
+---
+
+## In plain words
+
+Computers are designed to save power: after a few idle minutes the screen dims and the machine drifts off to sleep. That's great for a laptop on battery — and terrible if your app is halfway through a two-hour video export or a slow download.
+
+`powerSaveBlocker` is the polite way to say "not yet." You call **`start()`** with one of two intentions:
+
+1. **"Keep the computer running"** (`prevent-app-suspension`) — the work continues even if the screen goes dark. Perfect for downloads and background audio.
+2. **"Keep the screen on too"** (`prevent-display-sleep`) — nothing dims, nothing sleeps. Perfect for video and presentations.
+
+`start()` hands you an **id**. Guard it like a coat-check ticket, because **`stop(id)`** is the only way to let the machine rest again — and **`isStarted(id)`** lets you check whether a blocker is still up before you tear it down. The golden rule: every `start()` deserves a matching `stop()`. Forget it, and you'll quietly drain someone's battery all afternoon.
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+  <Cards.Card title="Main process" href="/en/docs/processes/main" arrow />
+</Cards>

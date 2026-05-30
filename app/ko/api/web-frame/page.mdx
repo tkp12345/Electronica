@@ -1,0 +1,188 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { WindowApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<WindowApiIllustration />}
+  title="webFrame"
+  subtitle="렌더러 안에서 현재 웹 페이지가 그려지는 방식을 다듬어요 — 줌, CSS 주입, 맞춤법 검사, 프레임 탐색."
+  badge="API · webFrame"
+/>
+
+`webFrame` 은 **Renderer 프로세스** (그리고 preload 스크립트) 에 살아요. `new` 로 만들지 않는, 이미 준비된 단 하나의 객체로서 페이지가 _어떻게 그려질지_ 를 조절하게 해줘요 — 줌 레벨, 주입한 스타일시트, 맞춤법 검사기, 그리고 주변 자식 프레임들의 트리까지요.
+
+```js filename="preload.js"
+const { webFrame } = require('electron')
+
+// 페이지 전체를 120% 로 키워요
+webFrame.setZoomFactor(1.2)
+```
+
+<EasyNote>
+`webFrame` 은 **페이지를 들여다보는 렌즈** 예요. 페이지가 _무슨 내용_ 인지는 바꾸지 않아요 — 그건 DOM 의 몫이죠. 대신 그 페이지가 _어떻게 보일지_ 를 바꿔요: 얼마나 확대됐는지, 위에 어떤 스타일이 덧입혀졌는지, 입력할 때 맞춤법을 어떻게 검사할지 같은 것들이요.
+</EasyNote>
+
+<Callout type="info">
+`webFrame` 은 자신이 실행되는 프레임에만 영향을 줘요. `contextIsolation` 이 켜진 상태(기본값)에서는 **preload 스크립트** 에서 호출하고, 페이지에 필요한 것만 `contextBridge` 로 노출하세요. 창 전체를 다루는 Main 프로세스 쪽 대응물은 `win.webContents` 예요 (예: `setZoomFactor`, `insertCSS`).
+</Callout>
+
+---
+
+## 이벤트(Events)
+
+`webFrame` 에는 **이벤트가 없어요**. 메서드와 읽기 전용 속성으로만 이뤄진 평범한 객체라서 `.on(...)` 으로 구독할 대상이 없습니다. (로드/내비게이션 같은 페이지 생명주기 이벤트는 Main 프로세스의 `webContents` 에서 들어야 해요.)
+
+---
+
+## 메서드(Methods)
+
+### 줌(Zoom)
+
+| 메서드 | 하는 일 |
+|---|---|
+| `webFrame.setZoomFactor(factor)` | 줌을 배율로 설정 — `1.0` 이 100%, `1.5` 가 150% (`0.0` 이상) |
+| `webFrame.getZoomFactor()` | 현재 줌 배율 읽기 |
+| `webFrame.setZoomLevel(level)` | 줌을 레벨로 설정 — `0` 이 기본, `±1` 마다 약 20% 변화 |
+| `webFrame.getZoomLevel()` | 현재 줌 레벨 읽기 |
+| `webFrame.setVisualZoomLevelLimits(minimumLevel, maximumLevel)` | 핀치 줌의 최소/최대 범위 설정 (시각·핀치 줌은 기본 꺼짐) |
+
+```js filename="zoom.js"
+// "줌 배율"과 "줌 레벨"은 같은 다이얼의 두 가지 표현이에요:
+webFrame.setZoomFactor(1.5)  // 150%
+webFrame.setZoomLevel(2)     // 약 140% — 한 단계가 약 20%
+
+// 사용자가 페이지를 1배~3배 사이로 핀치 줌하도록 허용
+webFrame.setVisualZoomLevelLimits(1, 3)
+```
+
+<Callout type="warning">
+줌 배율은 **프레임별이며 저장되지 않아요** — 내비게이션 시 초기화됩니다. 새로고침 후에도 유지되는 창 전체 줌이 필요하면, Main 프로세스의 `win.webContents.setZoomFactor(...)` 에 설정하고 매 로드 후 다시 적용하세요.
+</Callout>
+
+### CSS · 텍스트 주입
+
+| 메서드 | 하는 일 |
+|---|---|
+| `webFrame.insertCSS(css[, options])` | 현재 페이지에 스타일시트 주입; 나중에 제거할 때 쓰는 `key` 문자열 반환 (`options.cssOrigin`: `'user'` 또는 `'author'`) |
+| `webFrame.removeInsertedCSS(key)` | `insertCSS` 로 추가한 스타일시트를 `key` 로 제거 |
+| `webFrame.insertText(text)` | 현재 포커스된 편집 가능 요소에 일반 텍스트 삽입 |
+
+```js filename="inject-css.js"
+// 스타일을 추가하고, 나중에 그 key 로 정확히 그것만 제거해요
+const key = webFrame.insertCSS('body { background: #111; color: #eee; }')
+
+// 나중에...
+webFrame.removeInsertedCSS(key)
+```
+
+### JavaScript 실행
+
+| 메서드 | 하는 일 |
+|---|---|
+| `webFrame.executeJavaScript(code[, userGesture, callback])` | 페이지에서 `code` 를 평가하고 결과를 `Promise` 로 반환 (`userGesture` 는 사용자 동작을 흉내냄) |
+| `webFrame.executeJavaScriptInIsolatedWorld(worldId, scripts[, userGesture, callback])` | 분리된 격리 JS "월드"에서 스크립트 실행 — `Promise` 반환 |
+| `webFrame.setIsolatedWorldInfo(worldId, info)` | 격리 월드의 `securityOrigin`, `csp`, `name` 설정 |
+
+```js filename="execute.js"
+// 페이지에서 코드를 실행하고 결과를 기다려요
+const title = await webFrame.executeJavaScript('document.title')
+
+// 격리 월드는 주입한 코드가 페이지 자체 스크립트와 충돌하지 않게 막아줘요
+webFrame.setIsolatedWorldInfo(1, {
+  name: 'my-extension',
+  securityOrigin: 'https://example.com/',
+})
+```
+
+<Callout type="warning">
+`executeJavaScript` 는 페이지의 메인 월드에서 실행되어 신뢰할 수 없는 페이지 코드가 접근할 수 있어요. 민감한 작업은 **격리 월드**(`executeJavaScriptInIsolatedWorld`)를 쓰고, 신뢰할 수 없는 문자열을 절대 `eval` 하지 마세요.
+</Callout>
+
+### 맞춤법 검사
+
+| 메서드 | 하는 일 |
+|---|---|
+| `webFrame.setSpellCheckProvider(language, provider)` | 커스텀 맞춤법 검사기 등록 — `provider.spellCheck(words, callback)` 가 틀린 단어를 반환 |
+| `webFrame.isWordMisspelled(word)` | 내장 사전 기준으로 단어가 틀렸으면 `true` |
+| `webFrame.getWordSuggestions(word)` | 틀린 단어에 대한 교정 제안 배열 |
+
+```js filename="spellcheck.js"
+webFrame.setSpellCheckProvider('en-US', {
+  spellCheck(words, callback) {
+    // 틀린 단어만 골라서 반환
+    callback(words.filter((w) => webFrame.isWordMisspelled(w)))
+  },
+})
+```
+
+### 프레임 탐색 (프레임 트리)
+
+| 메서드 | 하는 일 |
+|---|---|
+| `webFrame.getFrameForSelector(selector)` | CSS 선택자에 맞는 `<iframe>`/`<frame>` 의 `webFrame`, 없으면 `null` |
+| `webFrame.findFrameByName(name)` | `name` 속성으로 자식 `webFrame` 찾기, 없으면 `null` |
+| `webFrame.findFrameByToken(frameToken)` | 고유 `frameToken` 으로 `webFrame` 찾기, 없으면 `null` |
+| `webFrame.findFrameByRoutingId(routingId)` _(Deprecated)_ | 라우팅 id 로 `webFrame` 찾기, 없으면 `null` |
+
+<Callout type="warning">
+`webFrame.findFrameByRoutingId` 와 `routingId` 속성은 **deprecated** 됐어요. `frameToken` 속성과 `findFrameByToken` 을 대신 쓰세요 — 토큰은 프로세스 간에도 안정적이고 고유합니다.
+</Callout>
+
+### 리소스 · 메모리
+
+| 메서드 | 하는 일 |
+|---|---|
+| `webFrame.getResourceUsage()` | 메모리 사용량 통계 객체 (`images`, `scripts`, `cssStyleSheets`, `xslStyleSheets`, `fonts`, `other`) |
+| `webFrame.clearCache()` | 더 이상 필요 없는 메모리 해제 (예: 이전 내비게이션의 이미지) |
+
+```js filename="memory.js"
+const usage = webFrame.getResourceUsage()
+// usage.images.size, usage.scripts.liveSize, ...
+
+webFrame.clearCache() // 캐시된 리소스를 비워 메모리 회수
+```
+
+---
+
+## 속성(Properties)
+
+모든 속성은 **읽기 전용** 이에요. 프레임 트리를 따라 걷는 데 쓰여요 (각 `<iframe>` 은 그 자체로 하나의 프레임이에요).
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `webFrame.top` | `WebFrame \| null` (읽기전용) | 계층의 최상위 프레임 |
+| `webFrame.opener` | `WebFrame \| null` (읽기전용) | 이 프레임을 연 프레임 |
+| `webFrame.parent` | `WebFrame \| null` (읽기전용) | 부모 프레임 (최상위면 `null`) |
+| `webFrame.firstChild` | `WebFrame \| null` (읽기전용) | 첫 번째 자식 프레임 |
+| `webFrame.nextSibling` | `WebFrame \| null` (읽기전용) | 다음 형제 프레임 |
+| `webFrame.frameToken` | `string` (읽기전용) | 이 프레임을 식별하는 고유하고 안정적인 토큰 |
+| `webFrame.routingId` | `Integer` (읽기전용) _(Deprecated)_ | 프레임의 라우팅 id — `frameToken` 을 쓰세요 |
+
+```js filename="walk-frames.js"
+// 최상위뿐 아니라 모든 자식 프레임에 줌을 적용해요
+let frame = webFrame.firstChild
+while (frame) {
+  frame.setZoomFactor(1.2)
+  frame = frame.nextSibling
+}
+```
+
+---
+
+## 쉽게 풀어 설명
+
+웹 페이지를 한 장의 사진이라고 한다면, `webFrame` 은 **그 사진을 바라보는 방식** 이에요 — 사진 자체가 아니라요.
+
+- **얼마나 크게 볼까?** 이게 줌이에요. `setZoomFactor(1.5)` 는 모든 걸 150% 로 키우고, `setVisualZoomLevelLimits(1, 3)` 은 핀치로 얼마까지 늘릴 수 있는지를 정해요.
+- **위에 뭐가 덧입혀졌지?** 이게 CSS 예요. `insertCSS(...)` 는 페이지 위에 스타일을 덧칠하고, 돌려받은 `key` 로 나중에 정확히 그 층만 벗겨낼 수 있어요.
+- **단어 철자가 맞나?** 이게 맞춤법 검사예요. `setSpellCheckProvider` 로 직접 만든 검사기를 끼우거나, `isWordMisspelled` 로 내장 검사기에 물어볼 수 있어요.
+- **내 주위엔 어떤 프레임이 있지?** 한 페이지는 여러 `<iframe>` 을 품을 수 있고, 각각이 작은 프레임이에요. `top`, `parent`, `firstChild`, `nextSibling` 으로 그 가족 트리를 걸으며 하나씩 다듬을 수 있어요.
+
+한 가지만 기억하세요: 컨텍스트 격리가 켜진 상태(기본값이자 권장값)에서는 **preload 스크립트** 에서 `webFrame` 을 다루고, 페이지에는 꼭 필요한 작고 안전한 함수만 `contextBridge` 로 건네주세요. 새로고침 후에도 유지돼야 하는 창 전체 설정이라면, Main 프로세스의 `win.webContents` 에 설정하는 게 맞아요.
+
+<Cards>
+  <Cards.Card title="app 모듈" href="/ko/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/ko/api/browser-window" arrow />
+  <Cards.Card title="보안" href="/ko/docs/best-practices/security" arrow />
+</Cards>

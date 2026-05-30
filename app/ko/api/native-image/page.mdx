@@ -1,0 +1,197 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="nativeImage"
+  subtitle="메뉴·트레이 아이콘·Dock 배지·대화상자에서 네이티브하게 동작하는 이미지를 만들고, 디코딩하고, 변형해요."
+  badge="API · nativeImage"
+/>
+
+`nativeImage` 모듈은 PNG, JPEG, (Windows 에서는) ICO 데이터로부터 **트레이 아이콘, Dock 이미지, 창 아이콘, 메뉴 이미지** 를 만들어요. 이미지를 받는 많은 Electron API 는 파일 경로 문자열 _또는_ `NativeImage` 를 받는데, 직접 만들면 크기 조정·HiDPI·macOS 템플릿 이미지를 마음대로 제어할 수 있어요.
+
+```js filename="main.js"
+const { nativeImage } = require('electron')
+
+// 디스크에서 아이콘 로드
+const icon = nativeImage.createFromPath('/path/to/icon.png')
+
+// 이미 메모리에 있는 이미지를 디코딩
+const fromBuffer = nativeImage.createFromBuffer(buffer)
+```
+
+<EasyNote>
+`nativeImage` 는 **사진 현상소** 라고 생각하면 돼요. 원재료(파일, 버퍼, 데이터 URL)를 건네면, 모든 네이티브 UI 요소(트레이, Dock, 메뉴, 대화상자)가 표시할 줄 아는 완성된 인화물(`NativeImage`)을 돌려줘요.
+</EasyNote>
+
+---
+
+## 메서드(Methods)
+
+아래는 **모듈 레벨 팩토리 메서드** 예요 — `nativeImage` 에 호출해 `NativeImage` 를 만들어요. 모듈 자체에는 **이벤트가 없어요.**
+
+### 이미지 생성
+
+| 메서드 | 하는 일 |
+|---|---|
+| `nativeImage.createEmpty()` | 빈 이미지(0×0) 생성 — 안전한 자리표시자 |
+| `nativeImage.createFromPath(path)` | 파일 경로에서 PNG/JPEG 로드 (읽을 수 없으면 빈 이미지) |
+| `nativeImage.createFromBuffer(buffer[, options])` | `Buffer`(PNG/JPEG) 디코딩, 원시 비트맵은 `options` 로 `width`/`height`/`scaleFactor` 지정 |
+| `nativeImage.createFromBitmap(buffer, options)` | **원시** BGRA 픽셀 데이터로 생성, `options.width`/`height` 필수 |
+| `nativeImage.createFromDataURL(dataURL)` | base64 `data:` URL 디코딩 |
+| `nativeImage.createFromNamedImage(imageName[, hslShift])` _(macOS)_ | 시스템 이미지(NSImageName / SF Symbol)로 생성, 색조·채도·명도 이동 옵션 |
+
+```js filename="create.js"
+const path = require('node:path')
+const { nativeImage } = require('electron')
+
+// 디스크의 파일에서
+const icon = nativeImage.createFromPath(path.join(__dirname, 'tray.png'))
+
+// base64 데이터 URL 에서 (예: 번들에 임베드된 이미지)
+const dot = nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgo...')
+
+// macOS: 시스템 심볼을 색조/채도/명도로 틴트
+const tinted = nativeImage.createFromNamedImage('NSActionTemplate', [0.5, 0.2, 0.8])
+```
+
+### 썸네일
+
+| 메서드 | 플랫폼 | 하는 일 |
+|---|---|---|
+| `nativeImage.createThumbnailFromPath(path, size)` | macOS / Windows | 어떤 파일 타입이든 OS 가 생성한 썸네일을 주는 Promise |
+
+```js filename="thumbnail.js"
+// OS 에 썸네일을 요청 (이미지뿐 아니라 PDF·동영상·문서도 가능)
+const thumb = await nativeImage.createThumbnailFromPath('/path/to/report.pdf', {
+  width: 256,
+  height: 256,
+})
+// 참고: Windows 는 size.height 를 무시하고 size.width 기준으로 높이를 비례 조정해요
+```
+
+<Callout type="warning">
+`createFromPath` 와 `createFromBuffer` 는 잘못된 입력에도 **예외를 던지지 않고** 조용히 *빈* 이미지를 돌려줘요. 사용자가 준 경로에서 로드한 아이콘은 쓰기 전에 항상 `image.isEmpty()` 로 확인하세요.
+</Callout>
+
+---
+
+## NativeImage 객체
+
+위의 모든 팩토리 메서드는 `NativeImage` 인스턴스를 돌려줘요. 메서드는 크게 두 부류예요: **내보내기**(이미지를 다시 바이트로) 와 **변형**(크기 조정·자르기·검사).
+
+### 내보내기 / 인코딩
+
+| 메서드 | 하는 일 |
+|---|---|
+| `image.toPNG([options])` | PNG `Buffer` 로 인코딩 (`options.scaleFactor`, 기본 `1.0`) |
+| `image.toJPEG(quality)` | JPEG `Buffer` 로 인코딩 (`quality` 0–100) |
+| `image.toBitmap([options])` | 원시 BGRA 픽셀 `Buffer` (`options.scaleFactor`) |
+| `image.toDataURL([options])` | `data:image/png;base64,...` 문자열 |
+| `image.getBitmap([options])` _(Deprecated)_ | `toBitmap()` 의 옛 이름 — `toBitmap()` 을 쓰세요 |
+| `image.getNativeHandle()` _(macOS)_ | 내부 `NSImage` 를 가리키는 `Buffer`(약한 참조) |
+
+```js filename="export.js"
+// 메모리의 이미지를 PNG 로 디스크에 저장
+const fs = require('node:fs')
+fs.writeFileSync('out.png', image.toPNG())
+
+// 또는 IPC 로 렌더러에 데이터 URL 전달
+const url = image.toDataURL()
+```
+
+### 변형
+
+| 메서드 | 하는 일 |
+|---|---|
+| `image.resize(options)` | 크기를 조정한 복사본 반환 (`width`, `height`, `quality`: `'good'`/`'better'`/`'best'`) |
+| `image.crop(rect)` | `{ x, y, width, height }` 영역으로 자른 복사본 반환 |
+| `image.addRepresentation(options)` | HiDPI 표현 추가 (`scaleFactor`, `width`, `height`, `buffer` 또는 `dataURL`) |
+
+```js filename="transform.js"
+// 트레이 아이콘은 작은 이미지가 필요해요 — 비율을 유지하며 줄이기
+const small = icon.resize({ width: 16, height: 16, quality: 'best' })
+
+// 왼쪽 위에서 100×100 정사각형 자르기
+const square = icon.crop({ x: 0, y: 0, width: 100, height: 100 })
+```
+
+### 검사
+
+| 메서드 | 하는 일 |
+|---|---|
+| `image.isEmpty()` | 데이터가 없으면 `true` (예: 로드 실패) |
+| `image.getSize([scaleFactor])` | 이미지의 `{ width, height }` |
+| `image.getAspectRatio([scaleFactor])` | 너비 ÷ 높이 |
+| `image.getScaleFactors()` | 이 이미지가 가진 모든 스케일 팩터 (예: `[1, 2]`) |
+
+### macOS 템플릿 이미지
+
+| 메서드 | 플랫폼 | 하는 일 |
+|---|---|---|
+| `image.setTemplateImage(option)` | macOS | 템플릿 이미지로 표시/해제 |
+| `image.isTemplateImage()` | macOS | 현재 템플릿 이미지인가? |
+
+```js filename="template.js"
+// macOS: "템플릿" 이미지는 순수 검정 + 알파로, OS 가 밝은/어두운 메뉴 막대에
+// 맞춰 자동으로 색을 입혀요. 단색 트레이 아이콘에 딱 좋아요.
+const trayIcon = nativeImage.createFromPath('iconTemplate.png')
+trayIcon.setTemplateImage(true)
+```
+
+<Callout type="warning">
+macOS 에서는 파일 이름이 **`Template` 로 끝나는** 이미지(예: `iconTemplate.png`)는 자동으로 템플릿 이미지로 취급돼요. 템플릿 이미지는 검정·투명만 있어야 하며, 색이 있는 픽셀은 검정으로 평탄화돼요.
+</Callout>
+
+---
+
+## 속성(Properties)
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `image.isMacTemplateImage` | `boolean` _(macOS)_ | macOS 템플릿 이미지 여부 읽기/쓰기 |
+
+---
+
+## HiDPI & 고해상도 이미지
+
+Retina / HiDPI 화면에서는 32×32 아이콘이 또렷하려면 실제로 64×64 픽셀이 필요해요. `nativeImage` 는 **`@Nx` 파일 이름 규칙** 으로 이를 처리해요: `icon.png`(1×) 와 `icon@2x.png`(2×) 를 나란히 두면, `icon.png` 를 로드할 때 둘 다 자동으로 인식돼요.
+
+```js filename="hidpi.js"
+// 폴더 내용:
+//   images/icon.png       (32×32)
+//   images/icon@2x.png    (64×64)
+//   images/icon@3x.png    (96×96)
+
+// 한 번만 호출 — 디스플레이에 맞는 해상도가 자동 선택돼요:
+const appIcon = nativeImage.createFromPath('images/icon.png')
+```
+
+<EasyNote>
+`@2x` 트릭은 같은 사진의 작은 인화본과 포스터 크기 버전을 한 봉투에 함께 담아 두는 것과 같아요. OS 가 지금 그리는 화면에 맞는 쪽을 꺼내 쓰고, 여러분은 경로 하나만 적으면 돼요.
+</EasyNote>
+
+<Callout type="warning">
+지원 형식은 **PNG(권장)**, **JPEG**, **ICO(Windows 전용)** 예요. EXIF 메타데이터는 인코딩·디코딩 모두에서 무시되니 회전 정보 등을 EXIF 에 의존하지 마세요.
+</Callout>
+
+---
+
+## 쉽게 풀어 설명
+
+`nativeImage` 는 Electron 네이티브 영역의 **이미지 화폐** 예요. 트레이, Dock, 창 아이콘, 메뉴 항목, 대화상자는 `<img>` 태그로 말하지 않고 `NativeImage` 로 말해요. 이 모듈이 바로 그 화폐를 찍어 내는 곳이에요.
+
+머릿속 모델은 두 단계예요:
+
+1. **이미지를 들여오기.** 파일에서(`createFromPath`), 이미 가진 바이트에서(`createFromBuffer` / `createFromDataURL`), 또는 빈 것으로(`createEmpty`). macOS 에서는 `createFromNamedImage` 로 시스템 심볼을 빌려올 수도 있어요.
+2. **다듬고, 쓰기.** 트레이용으로 크기 조정(`resize`), 영역 자르기(`crop`), 저장하려고 다시 PNG 로 인코딩(`toPNG`), 또는 macOS 템플릿으로 표시(`setTemplateImage`)해 다크 모드에서 스스로 색을 바꾸게 하기.
+
+거의 모든 실제 상황은 습관 두 가지로 충분해요: Retina 에서 또렷하도록 `1x` 옆에 `@2x` 파일을 함께 배포하기, 그리고 직접 적지 않은 경로에서 무언가를 로드한 뒤엔 `isEmpty()` 로 확인하기. 나머지는 찾아보면 돼요 — 이 페이지가 바로 그 용도예요.
+
+<Cards>
+  <Cards.Card title="app 모듈" href="/ko/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/ko/api/browser-window" arrow />
+  <Cards.Card title="예제" href="/ko/docs/examples" arrow />
+</Cards>

@@ -1,0 +1,210 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { SystemApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<SystemApiIllustration />}
+  title="powerMonitor"
+  subtitle="React to power and idle changes — sleep, wake, battery, AC, screen lock, and thermal pressure — straight from the OS."
+  badge="API · powerMonitor"
+/>
+
+The `powerMonitor` module lives in the **Main process**. It's the OS's power desk: it tells you when the machine goes to sleep or wakes up, switches between battery and wall power, locks or unlocks the screen, or starts running hot.
+
+```js filename="main.js"
+const { app, powerMonitor } = require('electron')
+
+// powerMonitor can only be used after the 'ready' event fires
+app.whenReady().then(() => {
+  powerMonitor.on('suspend', () => {
+    // the machine is going to sleep — pause work, close connections
+    pauseSyncing()
+  })
+})
+```
+
+<Callout type="warning">
+You can only require and use `powerMonitor` **after** the `app` `ready` event. Touching it earlier (at the top of your main script, before `whenReady()`) will throw.
+</Callout>
+
+<EasyNote>
+`powerMonitor` is the **dashboard light cluster** of your app's host machine. It doesn't change anything itself — it just lights up to tell you "I'm falling asleep," "I'm on battery now," or "I'm overheating," so your code can react sensibly.
+</EasyNote>
+
+---
+
+## Events
+
+Listen with `powerMonitor.on('event-name', handler)`. Events marked _(macOS)_ / _(Windows)_ / _(Linux)_ only fire on that platform.
+
+### Sleep & wake
+
+| Event | Fires when |
+|---|---|
+| `suspend` | The system is suspending (going to sleep) |
+| `resume` | The system is resuming (waking from sleep) |
+| `shutdown` _(Linux/macOS)_ | The system is about to reboot or shut down — supports `event.preventDefault()` |
+
+```js filename="sleep.js"
+powerMonitor.on('suspend', () => {
+  // about to sleep — flush state, drop sockets
+  saveDraft()
+})
+
+powerMonitor.on('resume', () => {
+  // back awake — reconnect and re-sync
+  reconnect()
+})
+
+powerMonitor.on('shutdown', (event) => {
+  // Linux/macOS: delay shutdown long enough to clean up
+  event.preventDefault()
+  finishCriticalWork().then(() => app.quit())
+})
+```
+
+### Power source
+
+| Event | Fires when |
+|---|---|
+| `on-ac` _(macOS/Windows)_ | The system switched to AC (wall) power |
+| `on-battery` _(macOS/Windows)_ | The system switched to battery power |
+
+```js filename="power-source.js"
+powerMonitor.on('on-battery', () => {
+  // running on battery — back off background work to save energy
+  setSyncInterval('low')
+})
+
+powerMonitor.on('on-ac', () => {
+  // plugged in again — resume full-speed work
+  setSyncInterval('normal')
+})
+```
+
+<EasyNote>
+`on-battery` / `on-ac` are how good apps become battery-friendly: dim animations, slow down polling, and pause heavy background jobs the moment the user unplugs.
+</EasyNote>
+
+### Screen lock & session
+
+| Event | Fires when |
+|---|---|
+| `lock-screen` _(macOS/Windows)_ | The system is about to lock the screen |
+| `unlock-screen` _(macOS/Windows)_ | The screen has just been unlocked |
+| `user-did-become-active` _(macOS)_ | The user's login session became active |
+| `user-did-resign-active` _(macOS)_ | The user's login session became inactive |
+
+```js filename="lock.js"
+powerMonitor.on('lock-screen', () => {
+  // user stepped away — hide sensitive UI, require re-auth on return
+  blurSensitiveData()
+})
+
+powerMonitor.on('unlock-screen', () => {
+  promptForReauth()
+})
+```
+
+### Thermal & CPU (macOS / Windows)
+
+| Event | Fires when |
+|---|---|
+| `thermal-state-change` _(macOS)_ | The thermal state changed — handler gets `details.state`: `'unknown'` \| `'nominal'` \| `'fair'` \| `'serious'` \| `'critical'` |
+| `speed-limit-change` _(macOS/Windows)_ | The CPU speed limit changed — handler gets `details.limit` (a number, `0`–`100`, percent of full speed) |
+
+```js filename="thermal.js"
+powerMonitor.on('thermal-state-change', (details) => {
+  // macOS: the Mac is heating up — ease off heavy compute
+  if (details.state === 'serious' || details.state === 'critical') {
+    pauseHeavyTasks()
+  }
+})
+
+powerMonitor.on('speed-limit-change', (details) => {
+  // details.limit is the percent of full CPU speed currently allowed
+  adjustWorkload(details.limit)
+})
+```
+
+---
+
+## Methods
+
+### Idle detection
+
+| Method | Platform | What it does |
+|---|---|---|
+| `powerMonitor.getSystemIdleState(idleThreshold)` | all | Returns `'active'`, `'idle'`, `'locked'`, or `'unknown'`. `idleThreshold` is the number of **seconds** of inactivity that counts as idle |
+| `powerMonitor.getSystemIdleTime()` | all | Returns the system idle time in **seconds** (how long since the last user input) |
+
+```js filename="idle.js"
+// Consider the user "idle" after 60 seconds with no input
+const state = powerMonitor.getSystemIdleState(60)
+// 'active' | 'idle' | 'locked' | 'unknown'
+
+if (state === 'idle') {
+  pauseNotifications()
+}
+
+const seconds = powerMonitor.getSystemIdleTime() // e.g. 12
+```
+
+<Callout type="warning">
+`getSystemIdleState` and `getSystemIdleTime` take and return **seconds**, not milliseconds. Passing a millisecond value (like `60000`) means the user is never considered idle.
+</Callout>
+
+### Power & thermal state
+
+| Method | Platform | What it does |
+|---|---|---|
+| `powerMonitor.isOnBatteryPower()` | all | Returns `true` if the system is currently running on battery power |
+| `powerMonitor.getCurrentThermalState()` | macOS | Returns the current thermal state: `'unknown'` \| `'nominal'` \| `'fair'` \| `'serious'` \| `'critical'` |
+
+```js filename="battery.js"
+// Decide how aggressive to be the moment a window opens
+if (powerMonitor.isOnBatteryPower()) {
+  enablePowerSaverMode()
+}
+
+// macOS only: skip an expensive render if the machine is already hot
+if (powerMonitor.getCurrentThermalState() === 'critical') {
+  skipBackgroundRender()
+}
+```
+
+---
+
+## Properties
+
+| Property | Type | What it is |
+|---|---|---|
+| `powerMonitor.onBatteryPower` | `boolean` (readonly) | `true` while the system is running on battery — the property form of `isOnBatteryPower()`, handy for one-off reads without a call |
+
+```js filename="property.js"
+// A quick read without calling a method
+if (powerMonitor.onBatteryPower) {
+  dimUI()
+}
+```
+
+---
+
+## In plain words
+
+`powerMonitor` is the **"how is the host machine feeling right now?"** module. It never changes the machine — it just reports, and lets your app be a good citizen about it.
+
+Three kinds of questions it answers:
+
+1. **Is the machine awake?** Listen for `suspend` (going to sleep) and `resume` (waking up). Flush your work and drop network connections on `suspend`; reconnect and re-sync on `resume`. On Linux/macOS you can even delay a `shutdown`.
+2. **Is the user here, and on what power?** `getSystemIdleTime()` / `getSystemIdleState(seconds)` tell you whether they've wandered off; `lock-screen` / `unlock-screen` tell you they locked the machine; `isOnBatteryPower()` and the `on-battery` / `on-ac` events tell you to ease off when unplugged.
+3. **Is it overheating?** On macOS, `thermal-state-change` and `getCurrentThermalState()` let you back off heavy compute before the OS throttles you anyway.
+
+The golden rule: **wait for `app` `ready` before you touch it**, and remember everything idle-related is in **seconds**. Master `suspend`/`resume`, `on-battery`/`on-ac`, and `getSystemIdleState`, and you've covered nearly every real-world use.
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="Main process" href="/en/docs/processes/main" arrow />
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+</Cards>

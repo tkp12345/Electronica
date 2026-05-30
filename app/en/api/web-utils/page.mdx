@@ -1,0 +1,127 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="webUtils"
+  subtitle="Turn a web File object from a drag-and-drop or <input type=file> into a real file system path."
+  badge="API · webUtils"
+/>
+
+The `webUtils` module lives in the **Renderer process**. It's a small utility layer for bridging the web world (`File`, `Blob`) and the native world — most importantly, finding the real disk path behind a `File` the user dropped or picked.
+
+```js filename="renderer.js"
+const { webUtils } = require('electron')
+
+document.addEventListener('drop', (event) => {
+  event.preventDefault()
+  for (const file of event.dataTransfer.files) {
+    const path = webUtils.getPathForFile(file) // e.g. /Users/me/photo.png
+    sendToMain(path)
+  }
+})
+```
+
+<EasyNote>
+A browser `File` object is deliberately **anonymous** — for privacy, the web never tells a page where a file actually lives on disk. Electron, being a native app, is allowed to know. `webUtils` is the little translator that turns that anonymous `File` back into a real path like `/Users/me/photo.png`.
+</EasyNote>
+
+---
+
+## Methods
+
+There is exactly one method on `webUtils`. It is the whole module.
+
+| Method | What it does |
+|---|---|
+| `webUtils.getPathForFile(file)` | Returns the file system path a `File` object points to. Pass a non-`File` value and it throws; pass an in-memory `File` built in JS (not backed by a real file) and it returns `''`. |
+
+**Signature**
+
+```js filename="signature.js"
+// file:    a web File object (from a drop event, <input type="file">, etc.)
+// returns: string — the absolute path on disk, or '' if there is no backing file
+const path = webUtils.getPathForFile(file)
+```
+
+A complete `<input type="file">` example:
+
+```js filename="picker.js"
+const { webUtils } = require('electron')
+
+const input = document.querySelector('#file-input')
+
+input.addEventListener('change', () => {
+  for (const file of input.files) {
+    const path = webUtils.getPathForFile(file)
+    if (path) {
+      // a real file on disk — hand the path to the main process to read it
+      window.electronAPI.processFile(path)
+    } else {
+      // a File constructed in JS with no disk backing — read its bytes instead
+      file.arrayBuffer().then(handleInMemory)
+    }
+  }
+})
+```
+
+<Callout type="warning">
+**`getPathForFile` replaces the old `File.path` property.** Older Electron code read `file.path` directly — that augmentation was removed. Always go through `webUtils.getPathForFile(file)` now.
+</Callout>
+
+<Callout type="warning">
+With `contextIsolation` enabled (the secure default), call `getPathForFile` inside your **preload script** and expose the result through `contextBridge` — the renderer's isolated world has no access to `require('electron')`.
+</Callout>
+
+```js filename="preload.js"
+const { contextBridge, webUtils } = require('electron')
+
+// Expose a tiny, explicit surface — never the whole webUtils object
+contextBridge.exposeInMainWorld('electronAPI', {
+  getPathForFile: (file) => webUtils.getPathForFile(file)
+})
+```
+
+```js filename="renderer-isolated.js"
+// In the page, with context isolation on:
+const path = window.electronAPI.getPathForFile(droppedFile)
+```
+
+<EasyNote>
+Think of it like a coat check. The browser hands your page a numbered ticket (the `File` object) but won't say which coat it is. `getPathForFile` is the attendant who reads the ticket and tells you exactly which hook the coat is hanging on — the real path.
+</EasyNote>
+
+---
+
+## Events
+
+`webUtils` has **no events**. It is a pure, synchronous utility module — you call its one method and get a value back immediately.
+
+---
+
+## Properties
+
+`webUtils` has **no properties**. The entire public surface is the single `getPathForFile` method documented above.
+
+---
+
+## In plain words
+
+The web platform keeps file paths secret on purpose. When a user drags a photo onto a normal web page, the page receives a `File` object it can read the _contents_ of — but it never learns _where_ that file lives. That's good for browser privacy.
+
+Electron apps are native apps, so they're allowed to know. `webUtils` exists for one job: given a `File` the user dropped or picked, tell me its **real path on disk**. That's it — one method, `getPathForFile(file)`.
+
+Two things to remember and you've got the whole module:
+
+1. **Empty string means "no file."** If the `File` was built in JavaScript (`new File([...], 'x.txt')`) instead of coming from disk, there's no path to return, so you get `''`. Treat that as "read the bytes instead."
+2. **Context isolation changes where you call it.** With the secure default on, run `getPathForFile` in your preload and pass the path out through `contextBridge` — the page itself can't reach `require('electron')`.
+
+If you used to read `file.path` in older Electron, this is its modern, explicit replacement.
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="contextBridge & preload" href="/en/docs/tutorial/preload" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+</Cards>

@@ -1,0 +1,155 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { WindowApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<WindowApiIllustration />}
+  title="sharedTexture"
+  subtitle="Import platform GPU textures as VideoFrames and pass them between Electron processes — zero-copy, no pixels over IPC."
+  badge="API · sharedTexture"
+/>
+
+The `sharedTexture` module imports a platform-specific GPU texture handle, turns it into a standard web `VideoFrame`, and lets you ship that frame across Electron processes. Because the texture stays on the GPU, you move a _handle_ rather than copying raw pixels.
+
+```js filename="main.js"
+const { sharedTexture } = require('electron')
+
+// Import a texture you got from a native source, then hand it to a renderer
+const imported = sharedTexture.importSharedTexture({ textureInfo })
+await sharedTexture.sendSharedTexture({ frame, importedSharedTexture: imported })
+```
+
+<Callout type="warning">
+The entire `sharedTexture` module is **Experimental** and was added in Electron **v42.3.0**. The API may change or be removed in a future release — pin your Electron version and avoid relying on it in production.
+</Callout>
+
+<EasyNote>
+Think of a `VideoFrame` as a heavy crate of pixels sitting in the GPU's warehouse. Instead of forklifting the whole crate from one room (process) to another, `sharedTexture` just passes a **claim ticket** — the crate never moves. The receiving process redeems the ticket and reads the same crate in place.
+</EasyNote>
+
+---
+
+## Events
+
+The `sharedTexture` module does not emit any events. The closest thing to a "notification" is the optional `allReferencesReleased` callback you pass to `importSharedTexture`, which fires once every process has released its reference to the imported texture.
+
+---
+
+## Methods
+
+`sharedTexture` exposes only static methods on the module object. Each is tagged with the process it must run in.
+
+### Importing & sending _(Main process)_
+
+| Method | What it does |
+|---|---|
+| `sharedTexture.importSharedTexture(options)` _(Experimental)_ | Import a platform texture handle and get back a `SharedTextureImported` object |
+| `sharedTexture.sendSharedTexture(options[, ...args])` _(Experimental)_ | Send an imported texture to a renderer process; returns a `Promise<void>` |
+
+`importSharedTexture(options)` takes:
+
+- `options.textureInfo` (`SharedTextureImportTextureInfo`) — the platform-specific texture details to import.
+- `options.allReferencesReleased` (`Function`, optional) — called when every process reference to the imported texture has been released.
+
+`sendSharedTexture(options, ...args)` takes:
+
+- `options.frame` (`WebFrameMain`) — the target renderer frame.
+- `options.importedSharedTexture` (`SharedTextureImported`) — the texture you imported in the main process.
+- `...args` — extra arguments forwarded to the renderer's receiver callback.
+
+```js filename="send-texture.js"
+const { sharedTexture } = require('electron')
+
+// 1) Bring a native texture handle into Electron as an importable object
+const imported = sharedTexture.importSharedTexture({
+  textureInfo,
+  allReferencesReleased: () => {
+    // Safe to recycle the underlying GPU resource now
+    releaseNativeTexture()
+  },
+})
+
+// 2) Hand it to a renderer frame, with extra metadata as trailing args
+await sharedTexture.sendSharedTexture(
+  { frame: win.webContents.mainFrame, importedSharedTexture: imported },
+  { source: 'camera', timestamp: Date.now() },
+)
+```
+
+<Callout type="warning">
+`sendSharedTexture` enforces a **1000 ms timeout**. The renderer must have registered a receiver (via `setSharedTextureReceiver`) before you send, or the returned promise will reject. Set the receiver up first, then send.
+</Callout>
+
+### Receiving _(Renderer process)_
+
+| Method | What it does |
+|---|---|
+| `sharedTexture.setSharedTextureReceiver(callback)` _(Experimental)_ | Register a callback that receives imported textures sent from the main process |
+
+`setSharedTextureReceiver(callback)` — the `callback` receives one argument, `receivedSharedTextureData`, shaped as:
+
+- `receivedSharedTextureData.importedSharedTexture` (`SharedTextureImported`) — the texture forwarded from the main process.
+- `...args` — the extra arguments passed to `sendSharedTexture`.
+
+```js filename="renderer.js"
+const { sharedTexture } = require('electron')
+
+// Register the receiver BEFORE the main process sends anything
+sharedTexture.setSharedTextureReceiver(async (data, meta) => {
+  const { importedSharedTexture } = data
+  // Turn the imported texture into a standard web VideoFrame and draw it
+  drawToCanvas(importedSharedTexture, meta)
+})
+```
+
+<EasyNote>
+The order matters: the renderer must put out its "mailbox" (`setSharedTextureReceiver`) before the main process drops off a delivery (`sendSharedTexture`). No mailbox, no delivery — and the sender gives up after one second.
+</EasyNote>
+
+---
+
+## Properties
+
+| Property | Type | What it is |
+|---|---|---|
+| `sharedTexture.subtle` | `SharedTextureSubtle` (readonly) _(Experimental)_ | Lower-level APIs for advanced texture interactions, for users who need finer control than the high-level methods above |
+
+```js filename="subtle.js"
+const { sharedTexture } = require('electron')
+
+// Advanced, fine-grained controls live under `.subtle`
+const subtle = sharedTexture.subtle
+```
+
+---
+
+## Related objects
+
+These objects flow through the methods above. The Electron docs reference them by name but keep their members minimal:
+
+| Object | Where it appears |
+|---|---|
+| `SharedTextureImportTextureInfo` | The `textureInfo` you pass into `importSharedTexture` — the platform-specific texture details |
+| `SharedTextureImported` | Returned by `importSharedTexture`, passed to `sendSharedTexture`, and delivered to the renderer's receiver |
+| `SharedTextureSubtle` | The type of the `sharedTexture.subtle` property |
+
+---
+
+## In plain words
+
+`sharedTexture` is about moving **pictures that already live on the GPU** between Electron's processes without ever copying them through IPC.
+
+Here's the whole flow in three beats:
+
+1. **Import** (main): you have a native texture handle — say, a video frame produced by a camera SDK or a native renderer. `importSharedTexture({ textureInfo })` wraps that handle into a `SharedTextureImported` object Electron understands.
+2. **Send** (main → renderer): `sendSharedTexture({ frame, importedSharedTexture })` hands the import to a specific renderer frame. You can attach extra data as trailing arguments. It only waits one second, so the renderer has to be listening already.
+3. **Receive** (renderer): `setSharedTextureReceiver(callback)` is the renderer's mailbox. When a texture arrives, your callback gets the `importedSharedTexture` and turns it into a standard web `VideoFrame` to draw on a canvas, feed to WebGL, or composite however you like.
+
+The payoff is performance: the pixels never leave the GPU, so a 4K frame costs about the same to "send" as a tiny one. The catch is that it's brand new and **experimental** — treat it as a preview, not a foundation.
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+  <Cards.Card title="Process model" href="/en/docs/processes" arrow />
+</Cards>

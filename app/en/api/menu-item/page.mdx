@@ -1,0 +1,209 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { MenuApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<MenuApiIllustration />}
+  title="MenuItem"
+  subtitle="Define a single entry in a menu — its label, shortcut, what happens when it's clicked, and whether it's a checkbox, radio, separator, or submenu."
+  badge="API · MenuItem"
+/>
+
+`MenuItem` is a **class** you create with `new` in the **Main process**. Each instance is one row in a `Menu` — an entry the user can click, a checkbox they can toggle, a separator line, or a header that opens a submenu.
+
+```js filename="main.js"
+const { MenuItem, Menu } = require('electron')
+
+const menu = new Menu()
+
+menu.append(
+  new MenuItem({
+    label: 'Save',
+    accelerator: 'CmdOrCtrl+S',
+    click: () => saveDocument(),
+  }),
+)
+```
+
+<EasyNote>
+A `Menu` is the **whole menu**, and a `MenuItem` is **one line in it**. Think of a restaurant menu: the laminated card is the `Menu`, and each dish ("Soup — $6") is a `MenuItem`. The item carries its own text, price (shortcut), and what the kitchen does when you order it (the `click` handler).
+</EasyNote>
+
+---
+
+## Constructor
+
+Create an item by passing an options object. The two most common shapes are "do something when clicked" (`click`) and "use a built-in action" (`role`).
+
+```js filename="new-item.js"
+const item = new MenuItem({
+  label: 'Reload',
+  role: 'reload', // built-in behavior — no click handler needed
+})
+```
+
+### Behavior
+
+| Option | Type | What it does |
+|---|---|---|
+| `click` | `Function` | Called as `click(menuItem, window, event)` when the item is clicked |
+| `role` | `string` | Use a predefined OS action (overrides `click` — see the role list below) |
+| `type` | `string` | `'normal'` / `'separator'` / `'submenu'` / `'checkbox'` / `'radio'` / `'header'` / `'palette'` |
+| `submenu` | `Menu \| MenuItemConstructorOptions[]` | A nested menu; forces `type` to `'submenu'` |
+
+### Appearance & text
+
+| Option | Type | What it does |
+|---|---|---|
+| `label` | `string` | The visible text of the item |
+| `sublabel` | `string` _(macOS ≥ 14.4)_ | Secondary text shown under the label |
+| `toolTip` | `string` _(macOS)_ | Hover text for the item |
+| `icon` | `NativeImage \| string` | An icon (image or file path) shown next to the label |
+| `accelerator` | `Accelerator` | The keyboard shortcut, e.g. `'CmdOrCtrl+S'` |
+
+### State
+
+| Option | Type | What it does |
+|---|---|---|
+| `enabled` | `boolean` | `false` greys the item out and ignores clicks (default `true`) |
+| `visible` | `boolean` | `false` hides the item entirely (default `true`) |
+| `checked` | `boolean` | The checkmark / radio dot state — only for `'checkbox'` and `'radio'` |
+| `acceleratorWorksWhenHidden` | `boolean` _(macOS)_ | Let the shortcut still fire while the item is hidden (default `true`) |
+| `registerAccelerator` | `boolean` _(Linux/Windows)_ | Register the accelerator with the system, or just display it (default `true`) |
+| `sharingItem` | `SharingItem` _(macOS)_ | The item to share when `role` is `'shareMenu'` |
+
+### Identity & positioning
+
+| Option | Type | What it does |
+|---|---|---|
+| `id` | `string` | A unique id within the menu — used by the positioning options below |
+| `before` | `string[]` | Insert this item before the item(s) with these ids |
+| `after` | `string[]` | Insert this item after the item(s) with these ids |
+| `beforeGroupContaining` | `string[]` | Place this item's group before the group containing these ids |
+| `afterGroupContaining` | `string[]` | Place this item's group after the group containing these ids |
+
+```js filename="checkbox-and-radio.js"
+// A checkbox item: read the new state inside the click handler
+new MenuItem({
+  label: 'Word Wrap',
+  type: 'checkbox',
+  checked: true,
+  click: (menuItem) => setWordWrap(menuItem.checked),
+})
+
+// Radio items toggle as a group automatically
+new MenuItem({ label: 'Small', type: 'radio' })
+new MenuItem({ label: 'Medium', type: 'radio', checked: true })
+new MenuItem({ label: 'Large', type: 'radio' })
+```
+
+<Callout type="warning">
+If you set `role`, it **overrides** any `click` you also pass — the OS runs the built-in action instead of your function. Use one or the other, not both.
+</Callout>
+
+### Roles
+
+A `role` gives you the native OS behavior (with the correct default label and accelerator per platform) without writing a `click` handler. Valid values:
+
+| Group | Roles |
+|---|---|
+| Editing | `undo`, `redo`, `cut`, `copy`, `paste`, `pasteAndMatchStyle`, `delete`, `selectAll` |
+| View & zoom | `reload`, `forceReload`, `toggleDevTools`, `resetZoom`, `zoomIn`, `zoomOut`, `togglefullscreen` |
+| Window | `minimize`, `close`, `zoom`, `front` _(macOS)_, `window` _(macOS)_, `help` |
+| App _(macOS)_ | `about`, `services`, `hide`, `hideOthers`, `unhide`, `quit` |
+| Text substitution _(macOS)_ | `toggleSpellChecker`, `showSubstitutions`, `toggleSmartQuotes`, `toggleSmartDashes`, `toggleTextReplacement`, `startSpeaking`, `stopSpeaking` |
+| Whole submenus | `appMenu` _(macOS)_, `fileMenu`, `editMenu`, `viewMenu`, `shareMenu` _(macOS)_, `windowMenu` |
+| Tabs & documents _(macOS)_ | `toggleTabBar`, `selectNextTab`, `selectPreviousTab`, `showAllTabs`, `mergeAllWindows`, `moveTabToNewWindow`, `recentDocuments`, `clearRecentDocuments` |
+
+```js filename="roles.js"
+// A standard Edit menu, entirely from roles — correct on every platform
+const editMenu = new MenuItem({
+  label: 'Edit',
+  submenu: [
+    { role: 'undo' },
+    { role: 'redo' },
+    { type: 'separator' },
+    { role: 'cut' },
+    { role: 'copy' },
+    { role: 'paste' },
+  ],
+})
+```
+
+<EasyNote>
+Roles are "batteries included" menu items. Instead of wiring up copy/paste yourself, `{ role: 'copy' }` gives you the right label, the right shortcut (`⌘C` on Mac, `Ctrl+C` on Windows), and the right behavior — all for free.
+</EasyNote>
+
+---
+
+## Events
+
+`MenuItem` has **no events**. There is nothing to subscribe to with `.on(...)`. To react to a click, pass a `click` function in the constructor (or use a `role`).
+
+---
+
+## Methods
+
+`MenuItem` has **no instance methods**. You don't call methods on an item — you change its **properties** directly (see below), and the menu updates the next time it's shown.
+
+---
+
+## Properties
+
+You can change most of these at runtime; the menu reflects the change the next time it opens.
+
+| Property | Type | What it is |
+|---|---|---|
+| `menuItem.id` | `string` | The item's unique id |
+| `menuItem.label` | `string` | The visible text — change it to relabel the item |
+| `menuItem.click` | `Function` | The click handler, called as `(event, focusedWindow, focusedWebContents)` |
+| `menuItem.submenu` | `Menu \| undefined` | The nested submenu, if any |
+| `menuItem.type` | `string` | The item type (`'normal'`, `'checkbox'`, ...) |
+| `menuItem.role` | `string \| undefined` | The predefined role, if one was set |
+| `menuItem.accelerator` | `Accelerator \| null` | The keyboard shortcut |
+| `menuItem.userAccelerator` | `Accelerator \| null` (readonly) _(macOS)_ | The user-assigned shortcut; `null` until the item is added to a menu |
+| `menuItem.icon` | `NativeImage \| string` | The item's icon |
+| `menuItem.sublabel` | `string` | The secondary text under the label |
+| `menuItem.toolTip` | `string` _(macOS)_ | The hover text |
+| `menuItem.enabled` | `boolean` | Whether the item is clickable |
+| `menuItem.visible` | `boolean` | Whether the item is shown |
+| `menuItem.checked` | `boolean` | The checkbox/radio state — toggle it to flip the checkmark |
+| `menuItem.registerAccelerator` | `boolean` | Whether the accelerator is registered with the system |
+| `menuItem.sharingItem` | `SharingItem` _(macOS)_ | The item shared when `role` is `'shareMenu'` |
+| `menuItem.commandId` | `number` | A sequentially-assigned unique id used internally to route clicks |
+| `menuItem.menu` | `Menu` | The `Menu` this item belongs to |
+
+```js filename="toggle-at-runtime.js"
+// Keep a reference, then mutate it later — the menu picks up the change
+const offline = new MenuItem({ label: 'Work Offline', type: 'checkbox' })
+
+function goOnline() {
+  offline.checked = false
+  offline.enabled = true
+}
+```
+
+<Callout type="warning">
+Mutating a `MenuItem` only affects menus built with `Menu.buildFromTemplate` or assembled from item instances. For changes to appear, the menu must be re-shown (re-opened) — most platforms don't live-update an already-open menu.
+</Callout>
+
+---
+
+## In plain words
+
+A `MenuItem` is **one clickable line in a menu** — nothing more, nothing less. You hand it a `label` (what it says), and then you choose how it behaves:
+
+1. **Do my own thing.** Give it a `click` function. When the user picks it, your code runs.
+2. **Do a standard OS thing.** Give it a `role` like `'copy'` or `'quit'`, and Electron supplies the correct label, shortcut, and behavior for every platform — no code needed.
+3. **Be a special kind of row.** Set `type` to `'separator'` for a divider line, `'checkbox'` or `'radio'` for a toggle, or give it a `submenu` to nest more items underneath.
+
+There are no events and no methods here — it's a pure data object. To respond to a click you pass `click` up front; to change it later you just set its properties (`item.enabled = false`, `item.checked = true`) and reopen the menu. You'll almost always build items through `Menu.buildFromTemplate`, which takes the same option objects and creates the `MenuItem`s for you.
+
+Remember the shape: **`label`** (text), **`click` or `role`** (behavior), **`type`** (what kind of row). That's the entire class.
+
+<Cards>
+  <Cards.Card title="Menu" href="/en/api/menu" arrow />
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+</Cards>

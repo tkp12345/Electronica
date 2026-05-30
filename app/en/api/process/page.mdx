@@ -1,0 +1,201 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { SystemApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<SystemApiIllustration />}
+  title="process"
+  subtitle="Electron's superset of Node's process object — extra info and tools for whichever process you're running in."
+  badge="API · process"
+/>
+
+`process` is the same global object you know from Node.js, but Electron **adds extra properties, methods, and an event** on top of it. It's available in **every process** — main, renderer, utility — and tells you _which_ kind of process you're in, what versions you're running, and how much memory you're using.
+
+```js filename="anywhere.js"
+// No require() needed — `process` is a global in every process
+console.info(`Running as a "${process.type}" process`)
+console.info(`Electron ${process.versions.electron}, Chrome ${process.versions.chrome}`)
+```
+
+<EasyNote>
+`process` is the **ID badge and dashboard** of the program you're inside. It doesn't draw windows or open files — it answers questions like "where am I?" (`process.type`), "what version is this?" (`process.versions`), and "how much memory am I using?" (`getProcessMemoryInfo`).
+</EasyNote>
+
+---
+
+## Events
+
+Listen with `process.on('event-name', handler)`. Electron adds exactly one event to Node's process object.
+
+| Event | Fires when |
+|---|---|
+| `loaded` | Electron has loaded its internal init script and is about to load your web page or main script |
+
+```js filename="loaded.js"
+// `loaded` is handy in preload scripts: clean up Node globals you don't
+// want to leak into the web page once Electron is done initializing.
+process.once('loaded', () => {
+  delete global.require
+  delete global.module
+})
+```
+
+<EasyNote>
+`loaded` is the starting gun. It means "Electron's own setup is finished — your code is up next." In a preload script it's the perfect moment to lock things down before the page runs.
+</EasyNote>
+
+---
+
+## Methods
+
+### Diagnostics & crash testing
+
+| Method | What it does |
+|---|---|
+| `process.crash()` | Force the **main thread** of the current process to crash (for testing crash reporting) |
+| `process.hang()` | Force the **main thread** to hang (for testing the unresponsive handler) |
+
+```js filename="crash-test.js"
+// Useful only for testing your crashReporter / 'render-process-gone' handling.
+// Never ship a path that calls these in production.
+process.crash()
+```
+
+<Callout type="warning">
+`crash()` and `hang()` deliberately break the current process — they exist only to test recovery code (crash reporting, the `unresponsive` event). Don't call them in normal app flow.
+</Callout>
+
+### Timing & versions
+
+| Method | What it does |
+|---|---|
+| `process.getCreationTime()` | Milliseconds since epoch when the process was created, or `null` if unavailable |
+| `process.getSystemVersion()` | The host OS version string (e.g. `'10.15.7'`) |
+
+### Memory & CPU
+
+| Method | What it does |
+|---|---|
+| `process.getCPUUsage()` | A `CPUUsage` object: `percentCPUUsage` and `idleWakeupsPerSecond` |
+| `process.getHeapStatistics()` | V8 heap statistics for this process (all values in **kilobytes**) |
+| `process.getBlinkMemoryInfo()` | Blink's (the renderer engine's) memory allocation info, in kilobytes |
+| `process.getProcessMemoryInfo()` | `Promise<ProcessMemoryInfo>` — this process's memory usage, in kilobytes |
+| `process.getSystemMemoryInfo()` | System-wide memory statistics, in kilobytes |
+| `process.takeHeapSnapshot(filePath)` | Write a V8 heap snapshot to `filePath`; returns `true` on success |
+
+```js filename="memory.js"
+// Snapshot memory usage of the process you're in
+const { residentSet, private: priv } = await process.getProcessMemoryInfo()
+console.info(`Resident set: ${residentSet} KB, private: ${priv} KB`)
+
+// CPU load since the process started
+const { percentCPUUsage } = process.getCPUUsage()
+console.info(`CPU: ${percentCPUUsage.toFixed(1)}%`)
+```
+
+<Callout type="warning">
+Every memory figure here is in **kilobytes**, not bytes — unlike Node's own `process.memoryUsage()`, which reports bytes. Don't mix the two.
+</Callout>
+
+### System limits _(macOS/Linux)_
+
+| Method | Platform | What it does |
+|---|---|---|
+| `process.setFdLimit(maxDescriptors)` | macOS/Linux | Raise the soft limit on open file descriptors (capped by the hard limit) |
+
+---
+
+## Properties
+
+### Which process am I in?
+
+| Property | Type | What it is |
+|---|---|---|
+| `process.type` | `string` (readonly) | The process kind: `'browser'` (main), `'renderer'`, `'service-worker'`, `'worker'`, or `'utility'` |
+| `process.isMainFrame` | `boolean` (readonly) | `true` if this renderer context is the main frame (not a sub-frame/iframe) |
+| `process.contextId` | `string` (readonly) | A globally unique id for the current JavaScript context |
+| `process.contextIsolated` | `boolean` (readonly) | `true` if `contextIsolation` is enabled for this context |
+| `process.sandboxed` | `boolean` (readonly) | `true` if this renderer is sandboxed |
+
+```js filename="which-process.js"
+// The most common branch you'll write with `process`
+if (process.type === 'browser') {
+  // main-process-only code
+} else if (process.type === 'renderer') {
+  // renderer-only code
+}
+```
+
+<EasyNote>
+`process.type` is the property you'll reach for most. The same preload or shared module can run in different processes, and `type` is how it figures out where it currently is.
+</EasyNote>
+
+### Versions
+
+| Property | Type | What it is |
+|---|---|---|
+| `process.versions.electron` | `string` (readonly) | The Electron version |
+| `process.versions.chrome` | `string` (readonly) | The bundled Chromium version |
+
+```js filename="versions.js"
+// Show versions in an About panel
+const info = `Electron ${process.versions.electron} · Chromium ${process.versions.chrome} · Node ${process.versions.node}`
+```
+
+### Packaging & distribution
+
+| Property | Type | What it is |
+|---|---|---|
+| `process.defaultApp` | `boolean` (readonly) | `true` when launched as an argument to the default Electron binary (i.e. `electron .`) |
+| `process.mas` | `boolean` (readonly) _(macOS)_ | `true` in a Mac App Store build |
+| `process.windowsStore` | `boolean` (readonly) _(Windows)_ | `true` when running as a Windows Store (MSIX/AppX) package |
+| `process.resourcesPath` | `string` (readonly) | Path to the `resources` directory |
+
+### ASAR & deprecation switches
+
+| Property | Type | What it is |
+|---|---|---|
+| `process.noAsar` | `boolean` | Set `true` to disable ASAR support inside Node's built-in modules |
+| `process.noDeprecation` | `boolean` | Set `true` to silence deprecation warnings |
+| `process.throwDeprecation` | `boolean` | Set `true` to throw on deprecation warnings instead of warning |
+| `process.traceDeprecation` | `boolean` | Set `true` to print a stack trace with each deprecation warning |
+| `process.traceProcessWarnings` | `boolean` | Set `true` to print a stack trace with each process warning |
+
+### Utility process IPC
+
+| Property | Type | What it is |
+|---|---|---|
+| `process.parentPort` | `ParentPort \| null` | A `MessagePort`-like channel to the parent process — only set inside a `UtilityProcess` |
+
+```js filename="utility-process.js"
+// Inside a UtilityProcess: talk back to the main process
+process.parentPort.on('message', (event) => {
+  const [data] = event.data
+  process.parentPort.postMessage({ echoed: data })
+})
+```
+
+<EasyNote>
+`parentPort` only exists in a **utility process** (one you spawned with `utilityProcess.fork`). In the main or renderer process it's `null`, so check `process.type === 'utility'` before using it.
+</EasyNote>
+
+---
+
+## In plain words
+
+Node already gives every program a `process` object. Electron takes that same object and **clips on a few extra gadgets** that only make sense inside an Electron app. Nothing here creates windows or reads files — `process` is purely about _self-awareness_.
+
+Think of it as three kinds of questions:
+
+1. **"Where am I?"** — `process.type` tells you if you're the main process, a renderer, or a utility process. `isMainFrame`, `sandboxed`, and `contextIsolated` add more detail about a renderer's situation. The same shared file can run in several processes, and these properties are how it knows which hat it's wearing.
+2. **"What am I running?"** — `process.versions.electron` / `.chrome`, plus `defaultApp`, `mas`, and `windowsStore`, answer "which Electron, which Chromium, and how was I packaged?"
+3. **"How am I doing?"** — `getProcessMemoryInfo`, `getCPUUsage`, `getHeapStatistics`, and `takeHeapSnapshot` are your built-in performance dashboard (remember: kilobytes, not bytes). And the one event, `loaded`, fires the instant Electron's own setup finishes.
+
+Remember three names and the rest is lookup: **`process.type`** (where am I), **`process.versions`** (what am I), and **`getProcessMemoryInfo()`** (how am I doing).
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="Process model" href="/en/docs/processes" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+</Cards>

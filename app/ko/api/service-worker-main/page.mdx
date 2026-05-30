@@ -1,0 +1,168 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { IpcApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<IpcApiIllustration />}
+  title="ServiceWorkerMain"
+  subtitle="Main 프로세스에서 실행 중인 서비스 워커 하나와 직접 대화해요 — 메시지를 보내고, 정체를 읽고, 일하는 동안 살려 둬요."
+  badge="API · ServiceWorkerMain"
+/>
+
+`ServiceWorkerMain` 은 **실행 중인 서비스 워커 하나를 가리키는 Main 프로세스 핸들** 이에요. `new` 로 직접 만들지 않아요 — 심지어 `'electron'` 모듈에서 export 되지도 않아요. 대신 세션의 `serviceWorkers` 레지스트리에서 인스턴스를 돌려받고, 그걸로 워커에 IPC 메시지를 보내고, 워커의 scope/script 를 들여다보고, 작업이 진행되는 동안 워커가 꺼지지 않게 붙잡을 수 있어요.
+
+```js filename="main.js"
+const { session } = require('electron')
+
+const sw = session.defaultSession.serviceWorkers
+
+// 버전 id 로 워커의 라이브 핸들을 가져와요
+const worker = sw.getWorkerFromVersionID(versionId)
+
+if (worker) {
+  worker.send('config', { theme: 'dark' })
+}
+```
+
+<Callout type="info">
+`ServiceWorkerMain` 의 모든 멤버는 현재 Electron 에서 **실험적(Experimental)** 으로 표시돼 있어요. 메이저 버전 사이에서 모양이 바뀔 수 있으니, Electron 버전을 고정하고 업그레이드할 때 다시 확인하세요.
+</Callout>
+
+<EasyNote>
+서비스 워커는 페이지가 하나도 안 열려 있어도 브라우저가 백그라운드에서 돌리는 작은 스크립트예요 (푸시 알림, 오프라인 캐싱 같은 일을 해요). `ServiceWorkerMain` 은 Main 프로세스가 웹 페이지를 거치지 않고 그 백그라운드 스크립트에 직접 연결하는 **무전기** 예요.
+</EasyNote>
+
+---
+
+## 핸들을 얻는 방법
+
+`ServiceWorkerMain` 은 생성자도, 정적 메서드도 없어요. 인스턴스는 항상 `Session` 위에 사는 `ServiceWorkers` 객체에서 나와요:
+
+| 출처 | 반환값 | 비고 |
+|---|---|---|
+| `ses.serviceWorkers.getWorkerFromVersionID(versionId)` | `ServiceWorkerMain \| undefined` | 워커의 라이브 핸들, 실행 중이 아니면 `undefined` _(실험적)_ |
+| `ses.serviceWorkers.startWorkerForScope(scope)` | `Promise<ServiceWorkerMain>` | 해당 scope 에 등록된 워커를 시작(또는 재사용)하고 핸들로 resolve _(실험적)_ |
+
+```js filename="get-worker.js"
+const { session } = require('electron')
+const sw = session.defaultSession.serviceWorkers
+
+// 특정 scope 의 워커가 실행 중인지 확인한 뒤 대화해요
+async function wake(scope) {
+  const worker = await sw.startWorkerForScope(scope)
+  worker.send('ping', Date.now())
+  return worker
+}
+```
+
+<EasyNote>
+워커가 이미 떠 있다는 걸 알 때는 `getWorkerFromVersionID` 를 쓰세요 (예: `running-status-changed` 이벤트로 방금 시작됐다는 걸 들은 직후). 이미 실행 중이든 아니든 지금 *당장* 워커를 깨워야 할 때는 `startWorkerForScope` 를 쓰세요.
+</EasyNote>
+
+---
+
+## 이벤트(Events)
+
+`ServiceWorkerMain` 자체는 **인스턴스 이벤트가 없어요**. 생명주기 신호는 한 단계 위, 세션의 `ServiceWorkers` 객체에 있어요 — 워커가 시작/중지될 때를 거기서 듣고, 그 핸들을 가져오세요:
+
+```js filename="track-lifecycle.js"
+const { session } = require('electron')
+const sw = session.defaultSession.serviceWorkers
+
+// 'running-status-changed' 자체도 실험적이에요
+sw.on('running-status-changed', (details) => {
+  // details.runningStatus: 'starting' | 'running' | 'stopping' | 'stopped'
+  if (details.runningStatus === 'running') {
+    const worker = sw.getWorkerFromVersionID(details.versionId)
+    worker?.send('hello')
+  }
+})
+```
+
+---
+
+## 메서드(Methods)
+
+모든 인스턴스 메서드는 **실험적** 이에요.
+
+| 메서드 | 하는 일 |
+|---|---|
+| `worker.send(channel, ...args)` | `channel` 로 서비스 워커 프로세스에 비동기 IPC 메시지 전송. 인자는 구조화된 복제 알고리즘(Structured Clone)으로 직렬화 — 함수·Promise·Symbol·WeakMap·WeakSet 은 보낼 수 없음 |
+| `worker.startTask()` | 작업 단위의 시작을 표시해 워커를 살려 둠. 끝낼 때 호출할 `end()` 메서드를 가진 객체를 반환 |
+| `worker.isDestroyed()` | 내부 워커가 파괴됐으면 `true` — 이 이후 다른 메서드 호출은 안전하지 않음 |
+
+```js filename="send.js"
+// 워커로 가는 단방향 메시지 (워커 쪽에서 ipcRenderer 스타일 리스너로 받아요)
+worker.send('update-config', { locale: 'ko-KR', verbose: true })
+```
+
+서비스 워커는 놀고 있으면 브라우저가 공격적으로 중지시켜요. Main 쪽에서 비동기 작업을 시작한다면, 작업이 도중에 끊기지 않도록 task 로 감싸세요:
+
+```js filename="keep-alive.js"
+async function runJob(worker) {
+  const task = worker.startTask() // 워커를 열어 둬요
+  try {
+    worker.send('begin-sync')
+    await waitForWorkerToFinish(worker)
+  } finally {
+    task.end() // 에러가 나도 항상 풀어 줘요
+  }
+}
+```
+
+<Callout type="warning">
+`startTask()` 는 워커를 살려 두므로 메모리와 배터리를 써요. 항상 `finally` 블록에서 `task.end()` 와 짝지으세요 — 누수된 task 는 서비스 워커를 무기한 붙잡아 둘 수 있어요. 그리고 모든 게 Structured Clone 을 거치므로, 함수나 Promise 를 넘기면 `send()` 가 예외를 던져요.
+</Callout>
+
+<EasyNote>
+`startTask()` 는 닫히는 엘리베이터 문에 손을 넣는 것과 같아요. 손을 넣고 있는 동안(task 가 열려 있는 동안) 문은 열려 있고 워커는 계속 돌아요. `end()` 호출은 손을 빼는 것 — 그러면 엘리베이터(워커)는 언제든 자유롭게 닫힐 수 있어요.
+</EasyNote>
+
+---
+
+## 속성(Properties)
+
+모든 속성은 **읽기전용** 이며 **실험적** 이에요.
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `worker.ipc` | `IpcMainServiceWorker` (읽기전용) | *이* 워커에 한정된 IPC 채널 — 워커에서 **오는** 메시지에 `handle`/`on` 리스너를 등록 |
+| `worker.scope` | `string` (읽기전용) | 워커가 제어하는 scope URL (예: `https://example.com/app/`) |
+| `worker.scriptURL` | `string` (읽기전용) | 워커 스크립트 파일의 URL (예: `https://example.com/app/sw.js`) |
+| `worker.versionId` | `number` (읽기전용) | scope 안에서 이 특정 버전 워커 스크립트의 id |
+
+```js filename="ipc.js"
+// 워커에서 오는 메시지·요청을, 딱 이 워커에 한정해서 받아요
+worker.ipc.on('log', (event, line) => {
+  appendToLogFile(`[${worker.scope}] ${line}`)
+})
+
+worker.ipc.handle('get-token', async () => {
+  return await fetchFreshToken() // 워커가 이 결과를 await 해요
+})
+```
+
+<EasyNote>
+`worker.send(...)` 와 `worker.ipc` 를 하나의 전화선의 두 방향이라고 생각하세요: `send` 는 **내가 워커에게 거는 전화**, `ipc.on` / `ipc.handle` 은 **워커가 걸어올 때 받는 것** 이에요. `scope`, `scriptURL`, `versionId` 는 발신자 정보일 뿐 — 지금 전화선에 어떤 워커가 있는지 정확히 알려줘요.
+</EasyNote>
+
+---
+
+## 쉽게 풀어 설명
+
+**서비스 워커** 는 브라우저가 백그라운드에서 계속 돌리는 작은 스크립트예요 — 오프라인용 파일 캐싱, 푸시 알림 수신, 데이터 동기화를 보이는 페이지 없이 해내죠. 보통은 웹 쪽만 이 워커와 대화할 수 있어요. `ServiceWorkerMain` 은 **Main 프로세스** 가 그 안으로 손을 뻗어 워커와 직접 대화하게 해주는 문이에요.
+
+API 전체가 머릿속에 다 들어와요:
+
+1. **핸들 얻기.** `new` 로 만들지 않아요. 세션에 물어봐요: 이미 실행 중이면 `serviceWorkers.getWorkerFromVersionID(id)`, 깨워야 하면 `await serviceWorkers.startWorkerForScope(scope)`.
+2. **대화하기.** `worker.send(channel, ...args)` 로 워커에 메시지를 밀어 넣어요. `worker.ipc` 는 반대 방향 — 워커가 보내오는 메시지를 듣고 답하는 통로예요.
+3. **살려 두기.** 워커는 놀면 중지돼요. 비동기 작업을 시작했다면 `worker.startTask()` 를 호출하고, `task.end()` 를 부를 때까지 반환된 핸들을 붙잡으세요 — 엘리베이터 버튼에 손가락을 올려두는 것처럼요.
+
+여기 있는 모든 게 **실험적** 이에요. 그러니 기초가 아니라 강력한 도구로 다루세요: Electron 버전을 고정하고, 작업은 `finally` 로 감싸고, 오래 들고 있던 워커를 다시 쓰기 전에는 `isDestroyed()` 로 확인하세요.
+
+<Cards>
+  <Cards.Card title="app 모듈" href="/ko/api/app" arrow />
+  <Cards.Card title="프로세스 모델" href="/ko/docs/processes" arrow />
+  <Cards.Card title="보안" href="/ko/docs/best-practices/security" arrow />
+</Cards>

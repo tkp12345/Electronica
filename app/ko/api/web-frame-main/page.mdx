@@ -1,0 +1,198 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { WindowApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<WindowApiIllustration />}
+  title="webFrameMain"
+  subtitle="로드된 페이지의 프레임 하나를 직접 다뤄요 — URL, 하위 프레임, 그리고 그 프레임과 직접 통하는 통로까지 Main 프로세스에서요."
+  badge="API · webFrameMain"
+/>
+
+`webFrameMain` 모듈은 **Main 프로세스** 에 살아요. 렌더링된 페이지의 **프레임** 하나 — 최상위 문서나 그 안의 `<iframe>` — 를 가리키는 핸들을 줘서, 그 프레임이 어디를 가리키는지 읽고, 프레임 트리를 순회하고, 코드를 실행하거나 메시지를 보낼 수 있게 해줘요.
+
+```js filename="main.js"
+const { webFrameMain } = require('electron')
+
+// 한 창의 페이지에서 최상위 프레임 가져오기
+const win = BrowserWindow.getFocusedWindow()
+const mainFrame = win.webContents.mainFrame
+
+console.error(mainFrame.url) // 이 프레임이 현재 가리키는 곳
+```
+
+<EasyNote>
+`WebContents` 는 **페이지 전체** 이고, `WebFrameMain` 은 **그 안의 프레임 하나** 예요. `<iframe>` 세 개가 있는 페이지에는 최상위 프레임 하나에 자식 프레임 셋 — 즉 같은 `WebContents` 아래 네 개의 `WebFrameMain` 객체가 있어요. 이 모듈은 Main 프로세스가 그중 아무거나 하나를 붙잡아 대화하는 방법이에요.
+</EasyNote>
+
+<Callout type="info">
+`WebFrameMain` 은 `new` 로 직접 만들지 않아요. 항상 **건네받아요** — `webContents.mainFrame` 에서, `frame.parent` 같은 프레임 속성에서, IPC 이벤트의 `event.senderFrame` 에서, 또는 아래의 정적 조회 메서드에서요.
+</Callout>
+
+---
+
+## 정적 메서드(Static methods)
+
+ID 로 기존 프레임을 찾을 때 `webFrameMain` 모듈 자체에서 호출해요.
+
+| 메서드 | 하는 일 |
+|---|---|
+| `webFrameMain.fromId(processId, routingId)` | 해당 프로세스 + 라우팅 ID 의 프레임, 없으면 `undefined` |
+| `webFrameMain.fromFrameToken(processId, frameToken)` | 해당 프로세스 ID + 프레임 토큰의 프레임, 없으면 `null` |
+
+```js filename="lookup.js"
+// IPC 메시지가 도착 — 정확히 어떤 프레임이 보냈는지 찾아요
+ipcMain.on('do-thing', (event) => {
+  const frame = webFrameMain.fromId(event.processId, event.frameId)
+  if (frame) {
+    // 이제 보낸 프레임을 손에 쥐었으니 살펴보거나 답할 수 있어요
+    frame.send('thing-done')
+  }
+})
+```
+
+<EasyNote>
+`processId` + `routingId` 를 프레임의 **우편 주소** 라고 생각하세요. IPC 이벤트가 그 숫자들을 건네주고, `fromId` 가 주소를 다시 실제 프레임 객체로 바꿔 줘서 작업할 수 있게 해줘요.
+</EasyNote>
+
+---
+
+## 인스턴스 이벤트(Instance events)
+
+`frame.on('이벤트명', 핸들러)` 로 듣습니다.
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `dom-ready` | 프레임의 문서 로딩이 끝남 (DOM 준비 완료) |
+
+```js filename="dom-ready.js"
+const mainFrame = win.webContents.mainFrame
+
+mainFrame.on('dom-ready', () => {
+  // 문서가 파싱되어 준비됨 — 안전하게 조회하거나 주입할 수 있어요
+  mainFrame.executeJavaScript('document.title')
+})
+```
+
+<Callout type="info">
+`webFrameMain` 이 노출하는 이벤트는 `dom-ready` 하나예요. 흔히 찾는 페이지 단위 이벤트(`did-finish-load`, `did-navigate` 등)는 개별 프레임이 아니라 부모인 **`WebContents`** 에 있어요.
+</Callout>
+
+---
+
+## 인스턴스 메서드(Instance methods)
+
+### 프레임과 대화하기
+
+| 메서드 | 하는 일 |
+|---|---|
+| `frame.executeJavaScript(code[, userGesture])` | 프레임에서 JS 실행; 결과를 담은 `Promise` 반환. `userGesture`(기본 `false`)를 켜면 사용자 제스처가 필요한 API 도 호출 가능 |
+| `frame.send(channel, ...args)` | 이 프레임으로 비동기 IPC 메시지 전송 (Structured Clone 으로 직렬화) |
+| `frame.postMessage(channel, message[, transfer])` | 메시지 전송, 선택적으로 `MessagePortMain` 객체 이전 |
+| `frame.collectJavaScriptCallStack()` _(실험적)_ | 프레임에서 현재 실행 중인 JS 콜 스택을 담은 `Promise` |
+
+```js filename="send-and-execute.js"
+// 특정 프레임 하나에 IPC 로 데이터 내려보내기
+mainFrame.send('config', { theme: 'dark' })
+
+// 프레임에서 무언가를 읽어 오기
+const headingCount = await mainFrame.executeJavaScript(
+  'document.querySelectorAll("h1").length'
+)
+```
+
+<Callout type="warning">
+`collectJavaScriptCallStack()` 은 **실험적** 이라 동작이 바뀔 수 있어요. 한 가지 함정: 프레임에서 실행 중인 JavaScript 가 없으면 반환된 promise 가 **영원히 resolve 되지 않아요**. 그냥 await 하지 말고 항상 타임아웃과 race 시키세요.
+</Callout>
+
+### 생명주기
+
+| 메서드 | 하는 일 |
+|---|---|
+| `frame.reload()` | 프레임 리로드; 리로드할 히스토리가 없을 때만 `false` 반환 |
+| `frame.isDestroyed()` | 프레임이 파괴되었으면 `true` (다른 곳으로 이동, 제거됨, 또는 `WebContents` 닫힘) |
+
+```js filename="guard.js"
+// 저장해 둔 프레임 참조는 언제든 파괴될 수 있어요 —
+// 쓰기 전에 항상 확인하세요
+if (!frame.isDestroyed()) {
+  frame.send('still-here')
+}
+```
+
+<Callout type="warning">
+`WebFrameMain` 은 내 손 안에서 갑자기 파괴될 수 있어요 — 페이지가 이동하거나, `<iframe>` 이 제거되거나, 창이 닫힐 때요. 파괴된 프레임의 메서드를 호출하면 예외가 나요. 예전에 붙잡아 둔 프레임 참조로 작업하기 전에 `frame.isDestroyed()` 를 확인하세요.
+</Callout>
+
+---
+
+## 인스턴스 속성(Instance properties)
+
+모든 속성은 **읽기전용** 이에요.
+
+### 정체성 & 위치
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `frame.url` | `string` | 프레임의 현재 URL |
+| `frame.origin` | `string` | RFC 6454 기준으로 직렬화된 프레임 origin (`url` 과 다를 수 있음) |
+| `frame.name` | `string` | 프레임 이름 (예: `<iframe name="...">`) |
+| `frame.visibilityState` | `string` | 문서의 가시성 상태 (웹의 `visibilityState` 와 동일) |
+| `frame.detached` | `boolean` | 프레임이 프레임 트리에서 분리되었으면 `true` |
+
+### ID & IPC
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `frame.ipc` | `IpcMain` | **이 프레임에만** 한정된 `IpcMain` 인스턴스 |
+| `frame.frameTreeNodeId` | `Integer` | 프레임 수명 내내 변하지 않는 브라우저 전역 ID |
+| `frame.frameToken` | `string` | 렌더러 프로세스 안에서의 고유 식별자 |
+| `frame.processId` | `Integer` | Chromium 내부 프로세스 ID (OS PID 아님) |
+| `frame.osProcessId` | `Integer` | 운영체제 프로세스 ID |
+| `frame.routingId` | `Integer` | 현재 렌더러 내 고유 프레임 ID |
+
+```js filename="frame-ipc.js"
+// IPC 핸들러를 프레임 하나로 한정 — 오직 이 프레임의 메시지만 매칭돼요
+mainFrame.ipc.handle('get-token', () => mainFrame.frameToken)
+```
+
+### 프레임 트리
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `frame.top` | `WebFrameMain \| null` | 계층의 최상위 프레임 |
+| `frame.parent` | `WebFrameMain \| null` | 부모 프레임, 최상위면 `null` |
+| `frame.frames` | `WebFrameMain[]` | 직속 자식 프레임들 |
+| `frame.framesInSubtree` | `WebFrameMain[]` | 이 프레임의 서브트리에 있는 모든 프레임, **자기 자신 포함** |
+
+```js filename="walk-tree.js"
+// 페이지의 모든 프레임을 방문 — 부모와 모든 자손
+for (const child of win.webContents.mainFrame.framesInSubtree) {
+  console.error(child.url)
+}
+```
+
+<EasyNote>
+프레임 트리는 **가계도** 예요. `top` 은 가장 위 조상, `parent` 는 바로 위, `frames` 는 직속 자식들, `framesInSubtree` 는 "이 프레임 + 그 아래 모두" 예요. 중첩된 `<iframe>` 이 가득한 페이지는 그저 더 깊은 트리일 뿐이에요.
+</EasyNote>
+
+---
+
+## 쉽게 풀어 설명
+
+웹 페이지가 항상 평평한 문서 하나인 건 아니에요. `<iframe>` 하나 — 임베드된 영상, 광고, 결제 위젯 — 를 넣는 순간 그 페이지는 작은 프레임 **트리** 가 돼요. `webFrameMain` 은 Main 프로세스가 그 트리에 손을 뻗어 **가지 하나** 를 붙잡는 방법이에요.
+
+세 가지 일을 떠올려 보세요:
+
+1. **프레임 찾기.** 보통 이미 하나 가지고 있어요 — `win.webContents.mainFrame`, 또는 IPC 메시지의 `event.senderFrame`. 가진 게 ID 한 쌍뿐일 때는 `webFrameMain.fromId(...)` 가 그걸 다시 실제 객체로 바꿔 줘요.
+2. **살펴보기.** 어디를 가리키나(`url`, `origin`)? 누가 `parent` 이고 누가 `frames` 인가? 아직 살아 있나(`isDestroyed()`)? 모든 속성은 읽기전용이라 — 설정하는 게 아니라 관찰하는 거예요.
+3. **대화하기.** `executeJavaScript` 로 안에서 코드를 실행하거나, `send` / `postMessage` 와 프레임 한정 `ipc` 로 정확히 그 프레임에만 메시지를 보내요.
+
+기억할 단 하나의 규칙: **프레임은 일시적이에요**. 페이지 이동이나 제거된 `<iframe>` 은 내가 붙잡고 있던 객체를 파괴해요. 예전에 저장한 프레임을 건드리기 전에 `isDestroyed()` 로 확인하면, 여기서 유일하게 진짜 위험한 함정을 피할 수 있어요.
+
+<Cards>
+  <Cards.Card title="app 모듈" href="/ko/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/ko/api/browser-window" arrow />
+  <Cards.Card title="보안" href="/ko/docs/best-practices/security" arrow />
+</Cards>

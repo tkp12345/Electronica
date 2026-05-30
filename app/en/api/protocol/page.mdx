@@ -1,0 +1,164 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { NetworkApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<NetworkApiIllustration />}
+  title="protocol"
+  subtitle="Register and intercept custom URL schemes — serve your own app:// world straight from the Main process."
+  badge="API · protocol"
+/>
+
+The `protocol` module lives in the **Main process**. It lets you teach Electron new URL schemes — like `app://`, `media://`, or even your own custom `myapp://` — and decide exactly what comes back when a page asks for one.
+
+```js filename="main.js"
+const { app, protocol, net } = require('electron')
+const path = require('node:path')
+
+app.whenReady().then(() => {
+  // Serve files from disk whenever the page requests "app://..."
+  protocol.handle('app', (request) => {
+    const url = new URL(request.url)
+    return net.fetch('file://' + path.join(__dirname, url.pathname))
+  })
+})
+```
+
+<EasyNote>
+`protocol` is the **post office for your app's own addresses**. The browser inside your window only knows `http://`, `https://`, `file://` and a few others out of the box. With `protocol` you open a new branch — say `app://` — and you're the postmaster who decides what every envelope addressed to it contains.
+</EasyNote>
+
+---
+
+## Events
+
+The `protocol` module has **no events**. It's a pure registration API — you tell it about a scheme once, and from then on Electron routes matching requests to your handler. There is nothing to subscribe to.
+
+---
+
+## Methods
+
+`protocol` is a **singleton module**, not a class — you never call `new protocol()`. There are two eras of methods:
+
+- The **modern API** (`handle` / `unhandle` / `isProtocolHandled`) built on the standard web `Request`/`Response` objects. Use this for all new code.
+- The **legacy API** (`registerFileProtocol`, `interceptStringProtocol`, …) kept for backward compatibility. **All of it is deprecated** — see the warning below.
+
+### Modern API
+
+| Method | What it does |
+|---|---|
+| `protocol.handle(scheme, handler)` | Register a handler that returns a `Response` (or `Promise<Response>`) for every request to `scheme` |
+| `protocol.unhandle(scheme)` | Remove the handler previously set with `handle` |
+| `protocol.isProtocolHandled(scheme)` | `true` if `scheme` currently has a handler registered |
+
+```js filename="handle.js"
+const { protocol, net } = require('electron')
+
+// Turn "media://albums/cover.jpg" into a real file on disk
+protocol.handle('media', (request) => {
+  const url = new URL(request.url)
+  const filePath = path.join(MEDIA_ROOT, url.host, url.pathname)
+  return net.fetch('file://' + filePath)
+})
+
+// You can also build a Response by hand
+protocol.handle('about', () =>
+  new Response('<h1>Hello</h1>', {
+    headers: { 'content-type': 'text/html' },
+  }),
+)
+```
+
+<EasyNote>
+A handler is just a function: a `Request` comes in, a `Response` goes out — the exact same `Request`/`Response` objects you already know from the web `fetch()` API. The easiest way to produce that `Response` is `net.fetch()`, which can read `file://` paths and remote URLs alike.
+</EasyNote>
+
+### Privileged schemes (call before `ready`)
+
+| Method | What it does |
+|---|---|
+| `protocol.registerSchemesAsPrivileged(customSchemes)` | Mark schemes as standard / secure / supporting Fetch, streaming media, service workers, CSP bypass, etc. — **must run before the `ready` event** |
+
+```js filename="privileged.js"
+// Must be called at the top level, before app is ready
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'app',
+    privileges: {
+      standard: true,        // behaves like http (origin, relative URLs)
+      secure: true,          // treated as a secure context (allows service workers, etc.)
+      supportFetchAPI: true, // pages can fetch('app://...')
+      stream: true,          // allows streaming media responses
+    },
+  },
+])
+```
+
+<Callout type="warning">
+`registerSchemesAsPrivileged` only works if it runs **before** the `ready` event. Put it at the top level of your main script — not inside `app.whenReady()`. Schemes registered after `ready` silently won't get their privileges.
+</Callout>
+
+### Legacy registration & interception _(all Deprecated)_
+
+These methods predate `handle`. Each one is tied to a single response shape (file, string, buffer, …), where the modern `handle` covers all of them at once.
+
+| Method | What it did | Replaced by |
+|---|---|---|
+| `protocol.registerFileProtocol(scheme, handler)` _(Deprecated)_ | Respond to a scheme with a file from disk | `protocol.handle` |
+| `protocol.registerStringProtocol(scheme, handler)` _(Deprecated)_ | Respond with a string | `protocol.handle` |
+| `protocol.registerBufferProtocol(scheme, handler)` _(Deprecated)_ | Respond with a `Buffer` | `protocol.handle` |
+| `protocol.registerHttpProtocol(scheme, handler)` _(Deprecated)_ | Respond by proxying an HTTP request | `protocol.handle` |
+| `protocol.registerStreamProtocol(scheme, handler)` _(Deprecated)_ | Respond with a readable stream | `protocol.handle` |
+| `protocol.unregisterProtocol(scheme)` _(Deprecated)_ | Remove a registered scheme | `protocol.unhandle` |
+| `protocol.isProtocolRegistered(scheme)` _(Deprecated)_ | Is the scheme registered? | `protocol.isProtocolHandled` |
+| `protocol.interceptFileProtocol(scheme, handler)` _(Deprecated)_ | Override an existing scheme, responding with a file | `protocol.handle` |
+| `protocol.interceptStringProtocol(scheme, handler)` _(Deprecated)_ | Override an existing scheme with a string | `protocol.handle` |
+| `protocol.interceptBufferProtocol(scheme, handler)` _(Deprecated)_ | Override an existing scheme with a `Buffer` | `protocol.handle` |
+| `protocol.interceptHttpProtocol(scheme, handler)` _(Deprecated)_ | Override an existing scheme via HTTP | `protocol.handle` |
+| `protocol.interceptStreamProtocol(scheme, handler)` _(Deprecated)_ | Override an existing scheme with a stream | `protocol.handle` |
+| `protocol.uninterceptProtocol(scheme)` _(Deprecated)_ | Remove an interceptor and restore the original | `protocol.unhandle` |
+| `protocol.isProtocolIntercepted(scheme)` _(Deprecated)_ | Is the scheme being intercepted? | `protocol.isProtocolHandled` |
+
+<Callout type="warning">
+Every `register*Protocol` / `intercept*Protocol` method above is **deprecated**. They were replaced by the single `protocol.handle(scheme, handler)` in Electron 25+, which works with standard web `Request`/`Response` objects. Migrate to `handle` for any new code — the legacy methods may be removed in a future major release.
+</Callout>
+
+```js filename="migrate.js"
+// Old (deprecated) — one method per response type
+protocol.registerFileProtocol('app', (request, callback) => {
+  const url = request.url.slice('app://'.length)
+  callback({ path: path.join(__dirname, url) })
+})
+
+// New — one method, return a standard Response
+protocol.handle('app', (request) => {
+  const url = new URL(request.url)
+  return net.fetch('file://' + path.join(__dirname, url.pathname))
+})
+```
+
+---
+
+## Properties
+
+The `protocol` module has **no properties**. All of its behavior is driven by the methods above.
+
+---
+
+## In plain words
+
+Think of the browser inside an Electron window as a delivery system. By default it only knows how to deliver a handful of address types: `http://`, `https://`, `file://`, `data:`. The `protocol` module lets you **invent a brand-new address type** and become the courier for it.
+
+There are really just two things to learn:
+
+1. **Announce the scheme early.** If your scheme needs to behave like a real website — its own origin, relative links, service workers, `fetch()` from the page — call **`registerSchemesAsPrivileged`** at the very top of your main script, before `ready`. This is the "register a new ZIP code with the post office" step.
+2. **Answer the requests.** Call **`protocol.handle('app', handler)`**, where your handler takes a `Request` and returns a `Response`. The simplest handler just forwards to `net.fetch('file://…')` to serve a file from disk. This is "decide what's inside every envelope."
+
+The most common real-world use is loading your packaged app from `app://` instead of `file://`, which gives you a proper web origin (so cookies, storage, and relative URLs all behave). And if you stumble on old code full of `registerFileProtocol` or `interceptStringProtocol` — those still work, but they're deprecated. The whole family collapses into one modern method: **`handle`**.
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+</Cards>

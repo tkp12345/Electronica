@@ -1,0 +1,143 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { SystemApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<SystemApiIllustration />}
+  title="desktopCapturer"
+  subtitle="Enumerate the screens and windows the user can share, so your app can record or stream them."
+  badge="API · desktopCapturer"
+/>
+
+The `desktopCapturer` module lives in the **Main process**. It answers one question: _"What screens and windows can I capture right now?"_ — and hands you a list of sources, each with an `id` you feed into the renderer's `getUserMedia` / `getDisplayMedia` to actually grab the video.
+
+```js filename="main.js"
+const { desktopCapturer } = require('electron')
+
+const sources = await desktopCapturer.getSources({ types: ['screen', 'window'] })
+// each source: { id, name, thumbnail, display_id, appIcon }
+sources.forEach((source) => {
+  // source.id -> use as chromeMediaSourceId in the renderer
+})
+```
+
+<EasyNote>
+`desktopCapturer` is the **channel guide**, not the TV. It just tells you _which_ screens and windows exist and gives each one a name, a thumbnail, and an `id`. Actually turning a source into a live video stream is done in the renderer with `getUserMedia` / `getDisplayMedia` — `desktopCapturer` only points you at what to capture.
+</EasyNote>
+
+---
+
+## Methods
+
+The module has a **single** method. There are no events and no properties.
+
+| Method | What it does |
+|---|---|
+| `desktopCapturer.getSources(options)` | Returns a `Promise<DesktopCapturerSource[]>` listing all capturable screens and/or windows |
+
+### `getSources` options
+
+| Option | Type | What it does |
+|---|---|---|
+| `types` | `string[]` | **Required.** Which kinds to list: `'screen'`, `'window'`, or both |
+| `thumbnailSize` | `Size` | Desired thumbnail size. Defaults to `150×150`. Set width/height to `0` to skip thumbnail generation (faster) |
+| `fetchWindowIcons` | `boolean` | When `true`, fills in each window's `appIcon`. Defaults to `false`. Always `null` for screen sources |
+
+```js filename="get-sources.js"
+const { desktopCapturer } = require('electron')
+
+// List every screen and window, skip thumbnails for speed, include app icons
+const sources = await desktopCapturer.getSources({
+  types: ['screen', 'window'],
+  thumbnailSize: { width: 0, height: 0 },
+  fetchWindowIcons: true,
+})
+
+const primaryScreen = sources.find((s) => s.name === 'Entire Screen')
+```
+
+### The `DesktopCapturerSource` object
+
+Each item in the returned array describes one capturable source.
+
+| Field | Type | What it is |
+|---|---|---|
+| `id` | `string` | The source identifier — use it as the `chromeMediaSourceId` constraint in the renderer. Format: `window:XX:YY` or `screen:ZZ:0` |
+| `name` | `string` | A screen is named `Entire Screen` or `Screen <index>`; a window's name matches its title |
+| `thumbnail` | `NativeImage` | A preview image. Its size is **not guaranteed** to match the requested `thumbnailSize` |
+| `display_id` | `string` | Matches the `id` of the corresponding Display from the `screen` API. Empty string if unavailable |
+| `appIcon` | `NativeImage` | The icon of the app that owns the window — or `null` for screen sources (only populated when `fetchWindowIcons: true`) |
+
+### The recommended flow: `setDisplayMediaRequestHandler`
+
+Since Electron 17, the safest way to enable screen sharing is to let the **renderer** call the standard web API `navigator.mediaDevices.getDisplayMedia()`, and answer the request in the **main** process with a source from `desktopCapturer`.
+
+```js filename="picker.js"
+const { session, desktopCapturer } = require('electron')
+
+session.defaultSession.setDisplayMediaRequestHandler(
+  (request, callback) => {
+    desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
+      // Grant the first screen, with loopback (system) audio
+      callback({ video: sources[0], audio: 'loopback' })
+    })
+  },
+  // Let the OS show its own native picker where available (macOS/Windows)
+  { useSystemPicker: true }
+)
+```
+
+```js filename="renderer.js"
+// Renderer process — the standard web API triggers the handler above
+const stream = await navigator.mediaDevices.getDisplayMedia({
+  audio: true,
+  video: { width: 320, height: 240, frameRate: 30 },
+})
+```
+
+<EasyNote>
+Think of `setDisplayMediaRequestHandler` as the **bouncer at the door**. The web page politely asks "may I record the screen?" via the standard `getDisplayMedia()`, and your main process decides which source to hand back — instead of the page reaching for screens directly.
+</EasyNote>
+
+<Callout type="warning">
+`getSources()` lists windows and screens the user may consider private. Treat it like a permission-gated capability: never auto-grant capture. Show a picker, let the user choose, and avoid logging window titles (`source.name`) — they can leak sensitive content.
+</Callout>
+
+<Callout type="warning">
+**macOS** requires the user to grant **Screen Recording** permission in System Settings. Check it first with `systemPreferences.getMediaAccessStatus('screen')`; if it isn't `'granted'`, capture returns black frames. Capturing **system audio** on macOS 14.2+ needs `NSAudioCaptureUsageDescription` in your `Info.plist`.
+</Callout>
+
+<Callout type="warning">
+**Linux (PipeWire/Wayland)** returns a **single** source chosen through the OS portal — you cannot enumerate every window/screen like on macOS or Windows. Design your UI to expect one source rather than a full list.
+</Callout>
+
+---
+
+## Events
+
+`desktopCapturer` emits **no events**. It is a one-shot query module — you call `getSources()` and await the result.
+
+---
+
+## Properties
+
+`desktopCapturer` exposes **no properties**.
+
+---
+
+## In plain words
+
+`desktopCapturer` does exactly one small but important job: it gives you the **menu of things you're allowed to record**. Call `getSources({ types: ['screen', 'window'] })` and you get back a list — every monitor, every open window — each with a friendly `name`, a little `thumbnail` preview, and a unique `id`.
+
+That `id` is the whole point. By itself `desktopCapturer` records nothing; you pass the `id` to the renderer, where the browser's `getUserMedia`/`getDisplayMedia` turns it into a real, live video stream. Main process picks _what_; renderer captures _it_.
+
+For anything new, prefer the modern path: let the page call standard `navigator.mediaDevices.getDisplayMedia()`, and answer it in the main process with `session.setDisplayMediaRequestHandler` (optionally `useSystemPicker: true` to show the OS's own native picker). And never forget the human in the loop — on macOS the user must grant Screen Recording permission first, and on every platform you should let people choose what they share.
+
+Two names cover almost everything: **`getSources()`** (what can I capture?) and **`setDisplayMediaRequestHandler`** (how do I hand it to the page safely?).
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+</Cards>

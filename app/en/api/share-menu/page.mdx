@@ -1,0 +1,167 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { MenuApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<MenuApiIllustration />}
+  title="ShareMenu"
+  subtitle="Pop up the native macOS Share sheet so users can send text, files, and URLs to Messages, Mail, AirDrop, and more."
+  badge="API · ShareMenu"
+/>
+
+`ShareMenu` is a **class** you create with `new` in the **Main process**. Each instance wraps one `SharingItem` — the bundle of text, files, and URLs you want to share — and pops up the system Share sheet when you call `popup()`.
+
+```js filename="main.js"
+const { ShareMenu } = require('electron')
+
+const shareMenu = new ShareMenu({
+  texts: ['Check out this app!'],
+  urls: ['https://electronjs.org'],
+})
+
+shareMenu.popup()
+```
+
+<Callout type="info">
+`ShareMenu` is **macOS only**. On Windows and Linux there is no equivalent native Share sheet, so guard your code with `process.platform === 'darwin'` before creating one.
+</Callout>
+
+<EasyNote>
+Think of `ShareMenu` as the **macOS "Share" button** you see all over the OS — in Safari, Photos, Finder. You hand it a parcel (the `SharingItem`: some text, some files, some links), and macOS shows the standard list of places that parcel can go: Messages, Mail, AirDrop, Notes, and so on.
+</EasyNote>
+
+---
+
+## Constructor
+
+```js filename="constructor.js"
+new ShareMenu(sharingItem)
+```
+
+| Argument | Type | What it is |
+|---|---|---|
+| `sharingItem` | `SharingItem` | The bundle of content to share (text, files, URLs) |
+
+### The `SharingItem` object
+
+A `SharingItem` is a plain object. All three fields are optional — include whichever kinds of content you want to share.
+
+| Property | Type | What it is |
+|---|---|---|
+| `texts` | `string[]` _(optional)_ | An array of text strings to share |
+| `filePaths` | `string[]` _(optional)_ | An array of absolute file paths to share |
+| `urls` | `string[]` _(optional)_ | An array of URLs to share |
+
+```js filename="sharing-item.js"
+// Share a screenshot file together with a caption and a link
+const shareMenu = new ShareMenu({
+  texts: ['My latest export'],
+  filePaths: ['/Users/me/Pictures/export.png'],
+  urls: ['https://example.com/gallery'],
+})
+```
+
+<EasyNote>
+The `SharingItem` is the "what" and the `ShareMenu` is the "how". You describe _what_ to share once in the constructor, then macOS handles _how_ — it decides which apps can accept text vs. files vs. URLs and only shows the ones that fit.
+</EasyNote>
+
+---
+
+## Instance methods
+
+`ShareMenu` exposes exactly two methods — one to open the Share sheet, one to close it.
+
+| Method | What it does |
+|---|---|
+| `shareMenu.popup([options])` | Pops up the Share sheet as a context menu inside a `BrowserWindow` |
+| `shareMenu.closePopup([browserWindow])` | Closes the Share sheet in the given window |
+
+### `shareMenu.popup([options])`
+
+Opens the Share sheet. The optional `options` object positions and configures it:
+
+| Option | Type | What it does |
+|---|---|---|
+| `browserWindow` | `BrowserWindow` _(optional)_ | The window to show the menu in. Defaults to the focused window |
+| `x` | `number` _(optional)_ | X coordinate to show the menu at. Defaults to the current mouse cursor position |
+| `y` | `number` _(optional)_ | Y coordinate to show the menu at. Defaults to the current mouse cursor position |
+| `positioningItem` | `number` _(optional, macOS)_ | Index of the menu item to position under the mouse cursor. Defaults to `-1` |
+| `callback` | `Function` _(optional)_ | Called once the menu is closed |
+
+```js filename="popup.js"
+const { ShareMenu, BrowserWindow, ipcMain } = require('electron')
+
+// Show the Share sheet where the user right-clicked
+ipcMain.on('share', (event, position) => {
+  const win = BrowserWindow.fromWebContents(event.sender)
+
+  const shareMenu = new ShareMenu({
+    texts: ['Sharing from my Electron app'],
+    urls: ['https://electronjs.org'],
+  })
+
+  shareMenu.popup({
+    browserWindow: win,
+    x: position.x,
+    y: position.y,
+    callback: () => {
+      // Runs after the sheet closes (whether or not the user shared)
+    },
+  })
+})
+```
+
+### `shareMenu.closePopup([browserWindow])`
+
+Closes the Share sheet programmatically — handy if you need to dismiss it from elsewhere in your code.
+
+| Argument | Type | What it does |
+|---|---|---|
+| `browserWindow` | `BrowserWindow` _(optional)_ | The window whose menu to close. Defaults to the focused window |
+
+```js filename="close-popup.js"
+// Dismiss the sheet without waiting for the user
+shareMenu.closePopup(win)
+```
+
+<Callout type="warning">
+Build a **fresh `ShareMenu` each time** you want to share something new. The content is fixed at construction time via the `SharingItem`, so reusing one instance just re-shares the same old parcel.
+</Callout>
+
+---
+
+## Instance events
+
+`ShareMenu` has **no events**. To run code after the sheet closes, pass a `callback` to `popup()` instead.
+
+---
+
+## Instance properties
+
+`ShareMenu` exposes **no public properties**. Everything it needs is captured in the `SharingItem` you pass to the constructor.
+
+---
+
+## Static methods
+
+`ShareMenu` has **no static methods**. You always work with an instance created via `new ShareMenu(sharingItem)`.
+
+---
+
+## In plain words
+
+`ShareMenu` is the macOS **Share button** in object form. You've used it a hundred times without thinking about it: tap "Share" anywhere in macOS and a familiar sheet slides up offering Messages, Mail, AirDrop, Notes, and whatever else can handle what you're sharing.
+
+The whole API is two steps:
+
+1. **Pack the parcel.** Describe what you're sharing as a `SharingItem` — any mix of `texts`, `filePaths`, and `urls` — and hand it to `new ShareMenu(...)`.
+2. **Open the sheet.** Call `popup()` (optionally with a `browserWindow` and `x`/`y` so it appears right where the user clicked). macOS takes it from there, showing only the destinations that can accept your content.
+
+Two things to remember: it's **macOS only** (always guard with `process.platform === 'darwin'`), and you make a **new instance per share** because the content is locked in at construction time. There are no events and no properties — just `popup()` and, if you ever need it, `closePopup()`.
+
+<Cards>
+  <Cards.Card title="Menu" href="/en/api/menu" arrow />
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+</Cards>

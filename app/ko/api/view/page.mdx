@@ -1,0 +1,199 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { WindowApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<WindowApiIllustration />}
+  title="View"
+  subtitle="창 안에 넣는 모든 것의 기본 빌딩 블록 — 위치와 레이어를 가진 사각형으로, 중첩하고 보이고 숨기고 꾸밀 수 있어요."
+  badge="API · View"
+/>
+
+`View` 는 **Main 프로세스** 에서 `new` 로 만드는 **기반 클래스** 예요. 경계(bounds), 배경, 자식 뷰 목록을 가진 평범한 네이티브 사각형으로, `WebContentsView` 같은 더 풍부한 뷰들이 이 클래스를 확장해요. 뷰를 창의 콘텐츠 뷰에 붙이고 서로 위로 쌓아 올려 사용해요.
+
+```js filename="main.js"
+const { app, BaseWindow, View, WebContentsView } = require('electron')
+
+app.whenReady().then(() => {
+  const win = new BaseWindow({ width: 800, height: 600 })
+
+  // 레이아웃 컨테이너로 쓰는 평범한 View
+  const root = new View()
+  win.setContentView(root)
+
+  // 그 안에 웹 페이지를 중첩
+  const web = new WebContentsView()
+  root.addChildView(web)
+  web.setBounds({ x: 0, y: 0, width: 800, height: 600 })
+  web.webContents.loadURL('https://electronjs.org')
+})
+```
+
+<Callout type="info">
+`View` 는 반드시 `app` 모듈이 `ready` 를 보낸 **이후** 에 생성해야 해요. 그 전에 만들면 네이티브 UI 계층이 아직 초기화되지 않아 실패해요.
+</Callout>
+
+<EasyNote>
+`View` 는 **투명한 아세테이트 한 장** 이라고 생각하세요. 그 자체로는 거의 아무것도 그리지 않지만, 크기를 정하고 위치를 잡고 배경색을 주고 그 위에 다른 장들을 쌓을 수 있어요. 창 화면은 결국 이 장들을 뒤에서 앞으로 쌓아 그린 것이에요.
+</EasyNote>
+
+---
+
+## 다른 클래스와의 관계
+
+`View` 를 그대로 쓰는 일은 드물어요. 실제로 내용을 채우는 뷰들의 부모 클래스이며, `BaseWindow`(단일 웹 페이지 대신 뷰들을 담는 창)와 짝을 이뤄요.
+
+| 클래스 | `View` 위에 더해 주는 것 |
+|---|---|
+| `WebContentsView` | 웹 페이지(`webContents`)를 렌더링하는 뷰 |
+| `BaseWindow` | `contentView` 가 직접 구성하는 `View` 인 네이티브 창 |
+| `BrowserWindow` | 고전적인 단일 페이지 창 (`BaseWindow` + 웹 뷰 기반) |
+
+<Callout type="warning">
+`View` 와 `WebContentsView` 는 **사용 중단(deprecated)** 된 `BrowserView` 의 현대적 대체예요. `BrowserView` 를 쓰려고 한다면, 대신 `BaseWindow` 안에 `View`/`WebContentsView` 트리를 구성하세요.
+</Callout>
+
+---
+
+## 정적 메서드(Static methods)
+
+`View` 에는 정적 메서드가 없어요. `new View()` 로 인스턴스를 직접 생성하면 돼요.
+
+---
+
+## 인스턴스 이벤트(Instance events)
+
+`view.on('이벤트명', 핸들러)` 로 듣습니다. `View` 는 단 하나의 이벤트를 제공해요.
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `bounds-changed` | 레이아웃 동작의 결과로 뷰의 경계가 바뀜 — 새 사각형은 `view.getBounds()` 로 읽어요 |
+
+```js filename="bounds-changed.js"
+const view = new View()
+
+// 레이아웃이 이 뷰를 옮기거나 크기를 바꿀 때마다 반응
+view.on('bounds-changed', () => {
+  const { x, y, width, height } = view.getBounds()
+  layoutChildren(width, height) // 안에 있는 것들을 다시 배치
+})
+```
+
+<EasyNote>
+`bounds-changed` 는 **자식들을 다시 배치하라** 는 신호예요. `View` 는 자식을 자동으로 레이아웃하지 않으므로, 부모 크기가 바뀌면 여기서 듣고 각 자식에 직접 `setBounds` 를 호출해요.
+</EasyNote>
+
+---
+
+## 인스턴스 메서드(Instance methods)
+
+### 자식 & 계층
+
+| 메서드 | 하는 일 |
+|---|---|
+| `view.addChildView(view[, index])` | 자식 뷰 추가. 이미 자식이면 맨 위로 이동. `index` 로 스택 내 위치 지정 |
+| `view.removeChildView(view)` | 자식 뷰 제거 (자식이 아니면 무시) |
+
+```js filename="children.js"
+const root = new View()
+const background = new View()
+const overlay = new WebContentsView()
+
+// 자식은 추가 순서대로 뒤에서 앞으로 쌓여요
+root.addChildView(background)          // 맨 아래
+root.addChildView(overlay)             // 맨 위
+
+// 또는 스택의 맨 아래에 명시적으로 배치
+root.addChildView(background, 0)
+
+// 끝났으면 떼어내기
+root.removeChildView(overlay)
+```
+
+<Callout type="warning">
+자식 뷰는 추가한 순서대로 쌓여요 — 나중에 추가한 자식이 먼저 추가한 것 **위에** 그려져요. `addChildView` 는 뷰를 복사하지 않고 부모를 다시 지정해요. 이미 부모가 있는 뷰를 추가하면 그 뷰가 이동돼요.
+</Callout>
+
+### 경계 & 레이아웃
+
+| 메서드 | 하는 일 |
+|---|---|
+| `view.setBounds(bounds[, options])` | 뷰의 사각형을 설정(부모 기준). `options.animate` 로 변화를 애니메이션 처리 |
+| `view.getBounds()` | 부모 기준 현재 `Rectangle` 가져오기 |
+
+```js filename="bounds.js"
+// 사방에 12px 여백을 두고 부모를 채움
+view.setBounds({ x: 12, y: 12, width: 776, height: 576 })
+
+// 새 사각형으로 부드럽게 애니메이션
+view.setBounds(
+  { x: 0, y: 0, width: 400, height: 300 },
+  { animate: true }
+)
+
+const current = view.getBounds() // { x, y, width, height }
+```
+
+<Callout type="warning">
+경계는 화면이 아니라 **부모 뷰** 기준이에요. 뷰를 중첩하면 각 자식의 `(0, 0)` 은 부모의 좌상단이므로, 깊이 중첩된 뷰를 배치할 때는 오프셋을 잊지 마세요.
+</Callout>
+
+### 외형 & 표시
+
+| 메서드 | 하는 일 |
+|---|---|
+| `view.setBackgroundColor(color)` | 배경색 설정 — hex, RGB, ARGB, HSL, HSLA, CSS 색 이름 지원 |
+| `view.setBorderRadius(radius)` | 모서리를 `radius` 픽셀만큼 둥글게 (잘려 나간 모서리도 클릭은 받음) |
+| `view.setVisible(visible)` | 뷰 표시/숨김 (`true`/`false`) |
+| `view.getVisible()` | 뷰가 그려질지 여부 (`boolean`) |
+
+```js filename="appearance.js"
+view.setBackgroundColor('#1e1e1e')   // hex
+view.setBackgroundColor('rgba(0, 0, 0, 0.5)') // 반투명
+view.setBorderRadius(8)              // 둥근 모서리
+
+view.setVisible(false)               // 제거하지 않고 숨김
+const shown = view.getVisible()      // 그려질 상태면 true
+```
+
+<EasyNote>
+`setVisible(false)` 는 뷰를 트리에 남겨 둔 채 그리기만 멈춰요 — 패널을 다시 만들지 않고 켜고 끌 때 편리해요. `removeChildView` 는 정말로 더 이상 필요 없을 때 쓰는 더 강한 망치예요.
+</EasyNote>
+
+---
+
+## 인스턴스 속성(Instance properties)
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `view.children` | `View[]` (읽기전용) | 이 뷰에 붙은 자식 뷰 목록(뒤에서 앞으로) |
+
+```js filename="children-prop.js"
+const root = new View()
+root.addChildView(new View())
+root.addChildView(new WebContentsView())
+
+root.children.length // 2 — 읽기전용. 변경은 addChildView/removeChildView 로
+```
+
+---
+
+## 쉽게 풀어 설명
+
+`View` 는 Electron 이 주는 **가장 단순한 UI 조각** 이에요. 자기가 어디 앉아 있는지, 무슨 색인지, 보이는지, 안에 어떤 사각형들이 있는지를 아는 사각형 — 그게 클래스의 거의 전부예요.
+
+두 가지 방식으로 쓰게 돼요:
+
+1. **컨테이너로.** 루트 `View` 를 만들어 `BaseWindow` 의 콘텐츠 뷰로 지정한 뒤, 그 위에 진짜 내용을 `addChildView` 로 올려요 — 보통 `WebContentsView`(웹 페이지) 하나, 또는 오버레이·사이드바·툴바를 위해 여러 장을 겹쳐서요.
+2. **기반 클래스로.** 실제로 채우게 되는 뷰들 — 특히 `WebContentsView` — 이 여기 있는 모든 것을 상속해요. 그래서 `setBounds`, `addChildView`, `setVisible`, 그리고 `bounds-changed` 이벤트가 그 뷰들에서도 똑같이 동작해요.
+
+머릿속 모델은 **여러 장의 시트** 예요. 각 자식은 앞 자식 위에 그려지고, 부모 기준으로 `setBounds` 가 위치를 정해요. 자동 레이아웃은 없어요 — 창 크기가 바뀌면 `bounds-changed` 를 잡아 자식들을 직접 다시 배치해요.
+
+세 가지만 기억하면 나머지는 찾아보면 돼요: **`addChildView`**(내용 쌓기), **`setBounds`**(위치 잡기), **`bounds-changed`**(크기 바뀔 때 재배치). 그리고 `BrowserView` 를 찾아 여기 왔다면 — 이게 바로 그 현대적 대체예요.
+
+<Cards>
+  <Cards.Card title="app 모듈" href="/ko/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/ko/api/browser-window" arrow />
+  <Cards.Card title="프로세스 모델" href="/ko/docs/processes" arrow />
+</Cards>

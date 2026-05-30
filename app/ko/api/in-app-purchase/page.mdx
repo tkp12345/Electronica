@@ -1,0 +1,238 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { NetworkApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<NetworkApiIllustration />}
+  title="inAppPurchase"
+  subtitle="Mac App Store 에서 디지털 상품을 판매해요 — 상품 조회, 구매 시작, 거래 추적까지."
+  badge="API · inAppPurchase"
+/>
+
+`inAppPurchase` 모듈은 **Main 프로세스** 에 살며, Mac App Store 앱이 인앱 상품(일회성 구매, 소모성 아이템, 구독)을 판매할 수 있게 해줘요. Apple 의 StoreKit 위에 얇게 얹힌 다리이기 때문에 거의 모든 동작이 비동기예요. 구매를 시작한 뒤, Apple 이 처리하는 동안 거래 업데이트에 반응하는 방식이에요.
+
+<Callout type="info">
+`inAppPurchase` 는 **macOS 전용** 이에요 — **Mac App Store** 로 배포한 앱에서만 동작해요. Windows·Linux 에서는 모듈이 존재하긴 하지만 메서드가 아무 일도 하지 않아요.
+</Callout>
+
+```js filename="setup.js"
+const { inAppPurchase } = require('electron')
+
+// 1. 이 사용자가 결제할 수 있는 상태인지부터 확인
+if (!inAppPurchase.canMakePayments()) {
+  // 자녀 보호 기능, 제한된 계정 등
+  return
+}
+
+// 2. 거래 업데이트 리스너를 가능한 한 일찍 등록
+inAppPurchase.on('transactions-updated', (event, transactions) => {
+  for (const transaction of transactions) {
+    handleTransaction(transaction)
+  }
+})
+
+// 3. 이제 상품을 조회하고 구매를 시작할 수 있어요
+inAppPurchase.purchaseProduct('com.example.app.coins_100')
+```
+
+---
+
+## 이벤트(Events)
+
+`inAppPurchase.on('이벤트명', 핸들러)` 로 듣습니다.
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `transactions-updated` | 결제 큐에서 하나 이상의 거래가 추가되거나 변경됨 (`event`, `transactions` — `Transaction[]` 전달) |
+
+```js filename="transactions.js"
+inAppPurchase.on('transactions-updated', (event, transactions) => {
+  for (const transaction of transactions) {
+    const payment = transaction.payment
+
+    switch (transaction.transactionState) {
+      case 'purchasing':
+        // 결제 처리 중 — 스피너만 보여 주고 아무것도 하지 않아요
+        break
+
+      case 'purchased':
+        // 성공 — 상품을 지급한 뒤, 서버에서 영수증을 검증하세요
+        deliverProduct(payment.productIdentifier)
+        inAppPurchase.finishTransactionByDate(transaction.transactionDate)
+        break
+
+      case 'restored':
+        // 이전에 구매한 상품이 이 기기에서 복원되는 중
+        deliverProduct(transaction.originalTransactionIdentifier)
+        inAppPurchase.finishTransactionByDate(transaction.transactionDate)
+        break
+
+      case 'failed':
+        // 사용자가 취소했거나 결제 실패 — errorCode / errorMessage 기록
+        inAppPurchase.finishTransactionByDate(transaction.transactionDate)
+        break
+
+      case 'deferred':
+        // 외부 승인 대기 중 (예: '구입 요청' / 보호자 승인)
+        break
+    }
+  }
+})
+```
+
+<EasyNote>
+`transactions-updated` 는 **택배 배송 알림** 같은 거예요. "구매" 를 누르는 순간 물건이 바로 오지 않듯이, Apple 이 상태 알림(`purchasing` → `purchased`, 또는 `failed`)을 차례로 보내 주고, 우리는 그 알림마다 반응하면 돼요. 그래서 `purchaseProduct` 를 호출하기 **전에** 반드시 리스너를 먼저 등록해야 해요. 그렇지 않으면 첫 번째 업데이트를 놓쳐요.
+</EasyNote>
+
+---
+
+## 메서드(Methods)
+
+### 확인 & 상품 조회
+
+| 메서드 | 하는 일 |
+|---|---|
+| `inAppPurchase.canMakePayments()` | `boolean` 반환 — 사용자가 결제할 수 있으면 `true` (자녀 보호 기능 등으로 막히지 않았는지) |
+| `inAppPurchase.getProducts(productIDs)` | `Promise<Product[]>` 반환 — 주어진 상품 식별자의 현지화된 설명·가격을 가져옴 |
+| `inAppPurchase.getReceiptURL()` | `string` 반환 — 현재 앱의 App Store 영수증 파일 경로 |
+
+```js filename="products.js"
+// 스토어 UI 를 보여 주기 전에 항상 상품을 먼저 조회하세요 —
+// Apple 이 현지화한 이름과 통화 형식 가격이 필요해요
+const products = await inAppPurchase.getProducts([
+  'com.example.app.coins_100',
+  'com.example.app.pro_subscription',
+])
+
+for (const product of products) {
+  // 예: "Pro 구독 — ₩6,600"
+  showStoreItem(product.localizedTitle, product.formattedPrice)
+}
+```
+
+### 구매
+
+| 메서드 | 하는 일 |
+|---|---|
+| `inAppPurchase.purchaseProduct(productID[, opts])` | `Promise<boolean>` 반환 — 상품을 결제 큐에 추가. 상품 id 가 유효하면 `true` 로 resolve. `opts` 는 `Integer` 수량이거나 `{ quantity, username }` 객체 |
+
+```js filename="purchase.js"
+// 간단한 구매 — quantity 는 기본값 1
+const valid = await inAppPurchase.purchaseProduct('com.example.app.coins_100')
+
+// 수량과 사용자 계정 식별자를 함께 전달
+await inAppPurchase.purchaseProduct('com.example.app.coins_100', {
+  quantity: 3,
+  username: hashedUserAccountId, // 부정 결제 탐지에 쓰이는 불투명 id
+})
+
+if (!valid) {
+  // App Store 가 상품 id 를 인식하지 못함
+}
+```
+
+<Callout type="warning">
+`purchaseProduct` 가 `true` 로 resolve 된다고 해서 구매가 성공한 건 **아니에요** — 단지 상품이 **큐에 추가됐다** 는 뜻이에요. 실제 결과는 나중에 `transactions-updated` 이벤트로 도착해요. 그 리스너를 먼저 등록하세요.
+</Callout>
+
+### 거래 마무리
+
+거래는 우리가 마무리(finish)할 때까지 결제 큐에 남아 있어요. 마무리하지 않으면 사용자는 앱을 켤 때마다 같은 안내를 받게 되고, Apple 이 구매를 정산해 주지 않을 수도 있어요.
+
+| 메서드 | 하는 일 |
+|---|---|
+| `inAppPurchase.finishAllTransactions()` | **모든** 대기 중 거래를 마무리하고 큐에서 제거 |
+| `inAppPurchase.finishTransactionByDate(date)` | 특정 날짜에 추가된 대기 거래를 마무리. `date` 는 ISO 형식의 `transactionDate` 문자열 |
+| `inAppPurchase.restoreCompletedTransactions()` | 이전에 구매한 비소모성 상품·구독을 다시 지급 (예: 재설치 후 또는 새 기기에서) |
+
+```js filename="restore.js"
+// "구매 복원" 버튼 연결 — 비소모성 상품이나 구독이 있는 앱은
+// App Store 심사에서 반드시 요구돼요
+restoreButton.addEventListener('click', () => {
+  inAppPurchase.restoreCompletedTransactions()
+  // 복원된 항목은 'restored' 상태로 transactions-updated 를 통해 도착해요
+})
+```
+
+<Callout type="warning">
+각 거래는 (상품을 지급하고 가능하면 서버에서 영수증을 검증한 뒤) 항상 마무리하세요. 마무리하지 않은 거래는 앱을 켤 때마다 다시 전달되고, 이후 구매를 막을 수 있어요.
+</Callout>
+
+---
+
+## 속성(Properties)
+
+`inAppPurchase` 모듈에는 속성이 없어요 — 함수만 있는 모듈이에요. 모든 상태는 StoreKit 결제 큐에 있고, 우리는 그걸 `transactions-updated` 이벤트로 관찰해요.
+
+---
+
+## Transaction 객체
+
+`transactions-updated` 가 전달하는 `transactions` 배열의 각 항목은 이렇게 생겼어요:
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `transactionIdentifier` | `string` | 성공한 결제 거래를 고유하게 식별 |
+| `transactionDate` | `string` | 거래가 App Store 결제 큐에 추가된 시각 |
+| `originalTransactionIdentifier` | `string` | 이 거래가 복원한 원본 거래의 식별자 |
+| `transactionState` | `string` | `purchasing` / `purchased` / `failed` / `restored` / `deferred` 중 하나 |
+| `errorCode` | `Integer` | 처리 실패 시 에러 코드 |
+| `errorMessage` | `string` | 처리 실패 시 에러 메시지 |
+| `payment` | `Object` | 결제 상세 정보 (아래 참고) |
+
+중첩된 `payment` 객체:
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `payment.productIdentifier` | `string` | 구매한 상품의 식별자 |
+| `payment.quantity` | `Integer` | 구매 수량 |
+| `payment.applicationUsername` | `string` | 내 시스템상 사용자 계정에 대한 불투명 식별자 |
+| `payment.paymentDiscount` | `PaymentDiscount` (선택) | 결제에 적용된 할인 혜택 |
+
+---
+
+## Product 객체
+
+`getProducts()` 가 반환하는 각 항목은 이렇게 생겼어요:
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `productIdentifier` | `string` | App Store 에서 상품을 식별하는 문자열 |
+| `localizedDescription` | `string` | 현지화된 상품 설명 |
+| `localizedTitle` | `string` | 현지화된 상품 이름 |
+| `price` | `number` | 현지 통화 기준 상품 가격 |
+| `formattedPrice` | `string` | 로케일에 맞춰 형식화된 가격 (그대로 표시 가능) |
+| `currencyCode` | `string` | ISO 4217 기준 3자리 통화 코드 |
+| `introductoryPrice` | `ProductDiscount` (선택) | 제공되는 경우의 도입 가격 상세 |
+| `discounts` | `ProductDiscount[]` | 상품에 적용 가능한 할인 혜택 목록 |
+| `subscriptionGroupIdentifier` | `string` | 이 상품이 속한 구독 그룹 |
+| `subscriptionPeriod` | `ProductSubscriptionPeriod` (선택) | 구독 상품의 기간 상세 |
+| `isDownloadable` | `boolean` | 상품에 다운로드 콘텐츠가 연결돼 있으면 `true` |
+| `downloadContentVersion` | `string` | 다운로드 콘텐츠의 버전을 나타내는 문자열 |
+| `downloadContentLengths` | `number[]` | 콘텐츠의 총 크기(바이트) |
+
+<EasyNote>
+가격은 직접 문자열로 만들지 말고 항상 Apple 의 `formattedPrice` 를 보여 주세요. Apple 이 이미 사용자의 지역·통화에 맞게 형식화해 줘요("$4.99", "₩6,600", "¥600"). App Store 심사도 정확히 그 값을 표시하길 기대해요.
+</EasyNote>
+
+---
+
+## 쉽게 풀어 설명
+
+`inAppPurchase` 는 Mac App Store 앱의 **금전 등록기** 예요. 직접 돈이나 재고를 들고 있지는 않고, Apple 의 StoreKit 과 대화하며 무슨 일이 일어났는지 알려 줄 뿐이에요.
+
+흐름은 언제나 네 박자예요:
+
+1. **결제할 수 있나요?** `canMakePayments()` 를 호출해요. `false` 면 스토어를 숨기세요.
+2. **무엇을 파나요?** `getProducts(['id1', 'id2'])` 로 조회해 Apple 의 `localizedTitle` 과 `formattedPrice` 를 보여 줘요.
+3. **계산해요.** `purchaseProduct('id')` 를 호출해요 — 다만 이건 그저 상품을 컨베이어 벨트에 올려 놓는 것뿐이에요.
+4. **영수증을 기다려요.** 실제 결과는 `transactions-updated` 이벤트가 알려 줘요(`purchased`, `failed`, `restored`, `deferred`). 상품을 지급한 뒤 **거래를 마무리** 해서 큐에서 빠지게 하세요.
+
+모두가 헷갈리는 두 가지 규칙: `purchaseProduct` 를 호출하기 **전에** `transactions-updated` 리스너를 먼저 등록할 것, 그리고 처리한 거래는 **항상 마무리할 것**. 이 둘만 지키면 나머지는 `Product` 객체에서 가격을 읽어 오는 일이 전부예요.
+
+<Cards>
+  <Cards.Card title="app 모듈" href="/ko/api/app" arrow />
+  <Cards.Card title="Mac App Store 제출" href="/ko/docs/distribution/mas" arrow />
+  <Cards.Card title="보안" href="/ko/docs/best-practices/security" arrow />
+</Cards>

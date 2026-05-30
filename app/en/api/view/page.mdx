@@ -1,0 +1,199 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { WindowApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<WindowApiIllustration />}
+  title="View"
+  subtitle="The base building block for everything you put inside a window — a positioned, layered rectangle you can nest, show, hide, and style."
+  badge="API · View"
+/>
+
+`View` is the **base class** you create with `new` in the **Main process**. It's a plain native rectangle with bounds, a background, and a list of child views — the foundation that richer views like `WebContentsView` extend. You attach views to a window's content view and stack them on top of each other.
+
+```js filename="main.js"
+const { app, BaseWindow, View, WebContentsView } = require('electron')
+
+app.whenReady().then(() => {
+  const win = new BaseWindow({ width: 800, height: 600 })
+
+  // A plain View used as a layout container
+  const root = new View()
+  win.setContentView(root)
+
+  // Nest a web page inside it
+  const web = new WebContentsView()
+  root.addChildView(web)
+  web.setBounds({ x: 0, y: 0, width: 800, height: 600 })
+  web.webContents.loadURL('https://electronjs.org')
+})
+```
+
+<Callout type="info">
+`View` must be constructed **after** the `app` module emits `ready`. Creating one earlier will fail because the native UI layer isn't initialized yet.
+</Callout>
+
+<EasyNote>
+Think of a `View` as a **transparent sheet of acetate**. By itself it draws almost nothing — but you can size it, position it, give it a background color, and stack other sheets on top. A window's screen is just a stack of these sheets, painted back-to-front.
+</EasyNote>
+
+---
+
+## How it relates to other classes
+
+`View` is rarely used bare. It's the parent class for the views you actually fill with content, and it pairs with `BaseWindow` (a window that holds views instead of a single web page).
+
+| Class | What it adds on top of `View` |
+|---|---|
+| `WebContentsView` | A view that renders a web page (`webContents`) |
+| `BaseWindow` | A native window whose `contentView` is a `View` you build up |
+| `BrowserWindow` | The classic single-page window (built on `BaseWindow` + a web view) |
+
+<Callout type="warning">
+`View` and `WebContentsView` are the modern replacement for the **deprecated** `BrowserView`. If you're reaching for `BrowserView`, use a `View`/`WebContentsView` tree inside a `BaseWindow` instead.
+</Callout>
+
+---
+
+## Static methods
+
+`View` has no static methods. You create instances directly with `new View()`.
+
+---
+
+## Instance events
+
+Listen with `view.on('event-name', handler)`. `View` exposes a single event.
+
+| Event | Fires when |
+|---|---|
+| `bounds-changed` | The view's bounds changed as a result of a layout operation — read the new rectangle with `view.getBounds()` |
+
+```js filename="bounds-changed.js"
+const view = new View()
+
+// React whenever layout moves or resizes this view
+view.on('bounds-changed', () => {
+  const { x, y, width, height } = view.getBounds()
+  layoutChildren(width, height) // re-flow whatever lives inside
+})
+```
+
+<EasyNote>
+`bounds-changed` is your cue to **re-flow children**. A `View` doesn't auto-layout its kids, so when the parent resizes you listen here and call `setBounds` on each child yourself.
+</EasyNote>
+
+---
+
+## Instance methods
+
+### Children & hierarchy
+
+| Method | What it does |
+|---|---|
+| `view.addChildView(view[, index])` | Add a child view; if it's already a child, move it to the top. `index` inserts at a position in the stack |
+| `view.removeChildView(view)` | Remove a child view (no-op if it isn't a child) |
+
+```js filename="children.js"
+const root = new View()
+const background = new View()
+const overlay = new WebContentsView()
+
+// Children stack back-to-front in insertion order
+root.addChildView(background)          // bottom
+root.addChildView(overlay)             // top
+
+// Or place one explicitly at the bottom of the stack
+root.addChildView(background, 0)
+
+// Detach when you're done
+root.removeChildView(overlay)
+```
+
+<Callout type="warning">
+Child views are stacked in the order you add them — later children paint **on top** of earlier ones. `addChildView` does not copy the view; it re-parents it. Adding a view that already has a parent moves it.
+</Callout>
+
+### Bounds & layout
+
+| Method | What it does |
+|---|---|
+| `view.setBounds(bounds[, options])` | Set the view's rectangle (relative to its parent). `options.animate` can animate the change |
+| `view.getBounds()` | Get the view's current `Rectangle` relative to its parent |
+
+```js filename="bounds.js"
+// Fill the parent, leaving a 12px gutter on every side
+view.setBounds({ x: 12, y: 12, width: 776, height: 576 })
+
+// Smoothly animate into a new rectangle
+view.setBounds(
+  { x: 0, y: 0, width: 400, height: 300 },
+  { animate: true }
+)
+
+const current = view.getBounds() // { x, y, width, height }
+```
+
+<Callout type="warning">
+Bounds are relative to the **parent view**, not the screen. If you nest views, each child's `(0, 0)` is the top-left of its parent, so remember to offset accordingly when positioning deeply nested views.
+</Callout>
+
+### Appearance & visibility
+
+| Method | What it does |
+|---|---|
+| `view.setBackgroundColor(color)` | Set the background color — accepts hex, RGB, ARGB, HSL, HSLA, or named CSS colors |
+| `view.setBorderRadius(radius)` | Round the corners by `radius` pixels (the cutout corners still capture clicks) |
+| `view.setVisible(visible)` | Show or hide the view (`true`/`false`) |
+| `view.getVisible()` | Whether the view should be drawn (`boolean`) |
+
+```js filename="appearance.js"
+view.setBackgroundColor('#1e1e1e')   // hex
+view.setBackgroundColor('rgba(0, 0, 0, 0.5)') // semi-transparent
+view.setBorderRadius(8)              // rounded corners
+
+view.setVisible(false)               // hide without removing
+const shown = view.getVisible()      // true if it would be drawn
+```
+
+<EasyNote>
+`setVisible(false)` keeps the view in the tree but stops drawing it — handy for toggling a panel on and off without rebuilding it. `removeChildView` is the heavier hammer for when you're truly done with it.
+</EasyNote>
+
+---
+
+## Instance properties
+
+| Property | Type | What it is |
+|---|---|---|
+| `view.children` | `View[]` (readonly) | The list of child views attached to this view, back-to-front |
+
+```js filename="children-prop.js"
+const root = new View()
+root.addChildView(new View())
+root.addChildView(new WebContentsView())
+
+root.children.length // 2 — read-only; use addChildView/removeChildView to change it
+```
+
+---
+
+## In plain words
+
+A `View` is the **plainest piece of UI Electron gives you**: a rectangle that knows where it sits, what color it is, whether it's visible, and what other rectangles live inside it. That's almost the entire class.
+
+You'll use it in two ways:
+
+1. **As a container.** Make a root `View`, set it as a `BaseWindow`'s content view, then `addChildView` real content on top — usually a `WebContentsView` (a web page) or several of them layered for overlays, sidebars, and toolbars.
+2. **As a base class.** The views you actually fill — `WebContentsView` above all — inherit everything here. So `setBounds`, `addChildView`, `setVisible`, and the `bounds-changed` event work the same on them.
+
+The mental model is **a stack of sheets**: each child paints on top of the one before it, positioned by `setBounds` relative to its parent. There's no automatic layout — when the window resizes you'll catch `bounds-changed` and re-position the children yourself.
+
+Remember three things and the rest is lookup: **`addChildView`** (stack content), **`setBounds`** (place it), and **`bounds-changed`** (re-flow when the size changes). And if you came here looking for `BrowserView` — this is its modern replacement.
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+  <Cards.Card title="Process model" href="/en/docs/processes" arrow />
+</Cards>

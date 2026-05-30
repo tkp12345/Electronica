@@ -1,0 +1,208 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { NetworkApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<NetworkApiIllustration />}
+  title="autoUpdater"
+  subtitle="Let your app download and install its own updates — quietly, in the background, straight from your update server."
+  badge="API · autoUpdater"
+/>
+
+The `autoUpdater` module lives in the **Main process** and is an `EventEmitter`. It wraps the native update frameworks — **Squirrel.Mac** on macOS and **Squirrel.Windows / MSIX** on Windows — so a running app can check a server, download a newer build, and swap itself out on the next launch.
+
+```js filename="main.js"
+const { autoUpdater } = require('electron')
+
+autoUpdater.setFeedURL({ url: 'https://updates.example.com/latest' })
+
+autoUpdater.on('update-downloaded', () => {
+  autoUpdater.quitAndInstall() // restart into the new version
+})
+
+autoUpdater.checkForUpdates()
+```
+
+<Callout type="info">
+`autoUpdater` works on **macOS and Windows only**. There is no built-in updater for Linux — distribute through the system package manager (apt, dnf, Snap, Flatpak, etc.) instead.
+</Callout>
+
+<EasyNote>
+`autoUpdater` is the **app's automatic mechanic**. While you keep driving, it quietly checks whether a newer model exists, fetches the parts in the background, and the next time you park (relaunch) it swaps everything over. You never visit the shop yourself.
+</EasyNote>
+
+---
+
+## Events
+
+Listen with `autoUpdater.on('event-name', handler)`. The whole flow is event-driven: you start a check, then react as each stage completes. All events fire on **macOS and Windows**.
+
+### Update flow
+
+| Event | Fires when |
+|---|---|
+| `checking-for-update` | A check started — the module is contacting the feed URL |
+| `update-available` | A newer version was found — **the download starts automatically** |
+| `update-not-available` | The server reports you're already up to date |
+| `update-downloaded` | The update finished downloading and is ready to install |
+| `before-quit-for-update` | After you call `quitAndInstall()`, just before windows close |
+| `error` | Anything went wrong during checking, downloading, or installing (gives an `Error`) |
+
+```js filename="update-flow.js"
+autoUpdater.on('checking-for-update', () => {
+  // good place to show a small "checking…" indicator
+})
+
+autoUpdater.on('update-available', () => {
+  // a newer build exists — download has already begun
+})
+
+autoUpdater.on('update-not-available', () => {
+  // nothing to do, you're on the latest
+})
+
+autoUpdater.on('error', (error) => {
+  // never let an update failure crash the app
+  notifyUser(`Update failed: ${error.message}`)
+})
+```
+
+The `update-downloaded` event carries the details of the new release:
+
+```js filename="update-downloaded.js"
+autoUpdater.on(
+  'update-downloaded',
+  (event, releaseNotes, releaseName, releaseDate, updateURL) => {
+    // On Squirrel.Windows only `releaseName` is provided
+    showRestartPrompt({
+      notes: releaseNotes,
+      version: releaseName,
+      date: releaseDate,
+    })
+  }
+)
+```
+
+<EasyNote>
+Notice there is no "download-progress" event here. `autoUpdater` is fire-and-forget: once `update-available` fires, the download happens on its own and you simply wait for `update-downloaded`. If you need a progress bar, that's a sign you want a higher-level library like `electron-updater`.
+</EasyNote>
+
+<Callout type="warning">
+The arguments of `update-downloaded` are positional, and **Squirrel.Windows only fills in `releaseName`** — `releaseNotes`, `releaseDate`, and `updateURL` may be empty there. Don't rely on them being present on every platform.
+</Callout>
+
+---
+
+## Methods
+
+The module exposes a tiny, deliberately minimal surface — four methods that map directly onto "where do I update from?", "is there an update?", and "install it now."
+
+### Configuring the feed
+
+| Method | What it does |
+|---|---|
+| `autoUpdater.setFeedURL(options)` | Set the update server and **initialize** the updater. Must be called before checking. |
+| `autoUpdater.getFeedURL()` | Return the currently configured feed URL as a `string` |
+
+`setFeedURL(options)` accepts an object:
+
+| Option | Type | Platform | Meaning |
+|---|---|---|---|
+| `url` | `string` | all | The update server URL (or a direct MSIX file link on Windows) |
+| `headers` | `Record<string, string>` | macOS | Extra HTTP request headers sent to the server |
+| `serverType` | `string` | macOS | `'json'` or `'default'` — the response format the server speaks |
+| `allowAnyVersion` | `boolean` | Windows | Allow installing any version, including downgrades (MSIX only) |
+
+```js filename="set-feed-url.js"
+// macOS-style JSON feed with auth headers
+autoUpdater.setFeedURL({
+  url: 'https://updates.example.com/feed?platform=darwin',
+  serverType: 'json',
+  headers: { Authorization: `Bearer ${token}` },
+})
+
+const current = autoUpdater.getFeedURL() // read it back
+```
+
+### Checking & installing
+
+| Method | What it does |
+|---|---|
+| `autoUpdater.checkForUpdates()` | Ask the server whether an update exists. Available updates **download automatically**. |
+| `autoUpdater.quitAndInstall()` | Close all windows, quit the app, and install the downloaded update, then relaunch |
+
+```js filename="check-and-install.js"
+autoUpdater.setFeedURL({ url: feedUrl })
+
+// Re-check on a timer so long-running apps stay current
+setInterval(() => {
+  autoUpdater.checkForUpdates()
+}, 60 * 60 * 1000) // every hour
+
+autoUpdater.on('update-downloaded', () => {
+  // quitAndInstall is optional — the update also installs on the next normal restart
+  autoUpdater.quitAndInstall()
+})
+```
+
+<Callout type="warning">
+`checkForUpdates()` requires a prior `setFeedURL()` call, and calling it again while a download is in progress can trigger a **duplicate download**. Guard it behind a flag and don't call it repeatedly in quick succession.
+</Callout>
+
+<Callout type="warning">
+You usually don't even need `quitAndInstall()` — a downloaded update is applied automatically the next time the user restarts the app. Only call it when you want to force the update *now*.
+</Callout>
+
+---
+
+## Properties
+
+`autoUpdater` exposes **no public properties** — all interaction happens through its methods and events.
+
+---
+
+## Platform notes
+
+### macOS
+
+- Built on the **Squirrel.Mac** framework.
+- The application **must be code-signed**, or auto-updates will silently fail.
+- App Transport Security applies; an HTTP (non-HTTPS) feed may require `NSAllowsArbitraryLoads` in your `Info.plist`.
+
+### Windows
+
+- Auto-detects the packaging format: **Squirrel.Windows** or **MSIX**.
+- On first run, your installer launches the app with the `--squirrel-firstrun` flag — avoid checking for updates during that window (or add a ~10-second delay) so the install can settle.
+- Call [`app.setAppUserModelId()`](/en/api/app) so taskbar pinning and update detection behave correctly.
+- For MSIX you can point `url` at a direct file link and use `allowAnyVersion` to permit downgrades.
+
+```js filename="windows-firstrun.js"
+// Skip the very first launch right after install on Windows
+const isFirstRun = process.argv.includes('--squirrel-firstrun')
+
+if (!isFirstRun) {
+  autoUpdater.setFeedURL({ url: feedUrl })
+  autoUpdater.checkForUpdates()
+}
+```
+
+---
+
+## In plain words
+
+`autoUpdater` answers one question for your app: **"Is there a newer version of me, and can you install it?"**
+
+The whole thing is just a short conversation made of events:
+
+1. You point it at a server once with **`setFeedURL()`**.
+2. You ask **`checkForUpdates()`**. It replies with either `update-not-available` (you're current) or `update-available` (and quietly starts downloading).
+3. When the download finishes you get **`update-downloaded`**. At that point the update is already staged — it'll apply on the next restart, or right now if you call **`quitAndInstall()`**.
+
+That's genuinely all four methods and six events. It is intentionally bare-bones: no progress bar, no version diffing, no Linux. Most real-world apps wrap it in a higher-level library (like `electron-updater`) that adds those niceties, but underneath it's still this same simple loop. Remember three names — **`setFeedURL`**, **`checkForUpdates`**, **`update-downloaded`** — and you understand the entire module.
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+</Cards>

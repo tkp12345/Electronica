@@ -1,0 +1,181 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { WindowApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<WindowApiIllustration />}
+  title="WebContentsView"
+  subtitle="Embed a web page (a WebContents) as a positioned, layered view inside a window — the modern replacement for BrowserView."
+  badge="API · WebContentsView"
+/>
+
+`WebContentsView` is a **class** you create with `new` in the **Main process**. Each instance is a rectangular view that hosts one web page (a `WebContents`), which you can size, position, layer, and nest inside a `BaseWindow`. It extends the base [`View`](https://www.electronjs.org/docs/latest/api/view) class.
+
+```js filename="main.js"
+const { BaseWindow, WebContentsView } = require('electron')
+
+const win = new BaseWindow({ width: 800, height: 600 })
+
+const view = new WebContentsView()
+win.contentView.addChildView(view)
+
+view.setBounds({ x: 0, y: 0, width: 800, height: 600 })
+view.webContents.loadURL('https://electronjs.org')
+```
+
+<EasyNote>
+Think of a `WebContentsView` as a **photo placed on a corkboard**. The corkboard is the window (`BaseWindow`); each photo is a view you can pin anywhere, resize, and stack on top of others. The picture printed on the photo is `view.webContents` — the actual web page.
+</EasyNote>
+
+<Callout type="info">
+`WebContentsView` (with `BaseWindow`) is the **modern replacement for the deprecated `BrowserView`**. If you're still using `BrowserView` or `win.addBrowserView(...)`, migrate to `WebContentsView` for all new code.
+</Callout>
+
+---
+
+## Constructor
+
+```js filename="new.js"
+new WebContentsView([options])
+```
+
+| Option | Type | What it does |
+|---|---|---|
+| `webPreferences` | `WebPreferences` (optional) | Settings for the page's features (preload script, sandbox, context isolation, …) |
+| `webContents` | `WebContents` (optional) | Adopt an existing `WebContents` instead of creating a new one. A `WebContents` can live in only **one** `WebContentsView` at a time |
+
+```js filename="with-preload.js"
+const path = require('node:path')
+
+// Create a view whose page loads through a hardened preload script
+const view = new WebContentsView({
+  webPreferences: {
+    preload: path.join(__dirname, 'preload.js'),
+    contextIsolation: true,
+    sandbox: true,
+  },
+})
+```
+
+<Callout type="warning">
+Passing an existing `webContents` **moves** it — it cannot be displayed in two views simultaneously. Adopt one only if you intend to transfer ownership.
+</Callout>
+
+---
+
+## Static methods
+
+`WebContentsView` has **no static methods** of its own. To find a window from a page, use the helpers on `BaseWindow` / `BrowserWindow` (for example `BaseWindow.fromWebContents(view.webContents)`).
+
+---
+
+## Instance events
+
+`WebContentsView` defines **no events of its own**, but it inherits one from the base `View` class. Listen with `view.on('event-name', handler)`.
+
+| Event | Fires when |
+|---|---|
+| `bounds-changed` | The view's bounds changed as a result of being laid out |
+
+```js filename="bounds-changed.js"
+view.on('bounds-changed', () => {
+  // The layout engine repositioned this view — re-sync any overlays
+  repositionOverlay(view.getBounds())
+})
+```
+
+<EasyNote>
+The real action lives on **`view.webContents`**, not the view itself. Page-level events — `did-finish-load`, `did-navigate`, `dom-ready`, `page-title-updated`, and so on — all fire on `view.webContents`, exactly the same object you get from `win.webContents`.
+</EasyNote>
+
+---
+
+## Instance methods
+
+These come from the base `View` class. Call them on the view instance.
+
+### Layout & geometry
+
+| Method | What it does |
+|---|---|
+| `view.setBounds(bounds[, options])` | Set the view's rectangle relative to its parent (`options.animate` plus easing for an animated transition) |
+| `view.getBounds()` | Get the current bounds as a `Rectangle` relative to the parent |
+
+```js filename="bounds.js"
+// Pin the view to fill its window, leaving room for a 48px toolbar on top
+view.setBounds({ x: 0, y: 48, width: 800, height: 552 })
+
+const { width, height } = view.getBounds()
+```
+
+### Children (nesting views)
+
+| Method | What it does |
+|---|---|
+| `view.addChildView(view[, index])` | Add a child view; if it's already a child, move it to the top. `index` controls stacking order |
+| `view.removeChildView(view)` | Remove a child view (no-op if it isn't a child) |
+
+```js filename="layering.js"
+// Stack a sidebar view beneath a content view inside one window
+win.contentView.addChildView(sidebarView)
+win.contentView.addChildView(contentView) // drawn on top of the sidebar
+```
+
+### Appearance & visibility
+
+| Method | What it does |
+|---|---|
+| `view.setBackgroundColor(color)` | Set the background color (Hex, RGB, RGBA, HSL, HSLA, or a named CSS color) |
+| `view.setBorderRadius(radius)` | Round the view's corners by `radius` pixels |
+| `view.setVisible(visible)` | Show or hide the view (`boolean`) |
+| `view.getVisible()` | Whether the view should be drawn (`boolean`) |
+
+```js filename="appearance.js"
+view.setBackgroundColor('#1e1e1e') // dark backdrop behind a transparent page
+view.setBorderRadius(12)            // rounded corners
+view.setVisible(false)              // hide without removing from the tree
+```
+
+<Callout type="warning">
+`WebContentsView` does **not** have its own `loadURL` / `loadFile`. Load pages through the page object: `view.webContents.loadURL(...)` or `view.webContents.loadFile(...)`.
+</Callout>
+
+---
+
+## Instance properties
+
+| Property | Type | What it is |
+|---|---|---|
+| `view.webContents` | `WebContents` (readonly) | The page hosted by this view — use it to load URLs, run scripts, open DevTools, and listen to page events |
+| `view.children` | `View[]` (readonly) | The view's child views (inherited from `View`) |
+
+```js filename="webcontents.js"
+// The view is the frame; webContents is the page inside it
+view.webContents.loadFile('index.html')
+view.webContents.openDevTools()
+view.webContents.on('did-finish-load', () => {
+  // page is ready
+})
+```
+
+---
+
+## In plain words
+
+A `WebContentsView` is **a web page you can place like a panel** inside a window. Where a `BrowserWindow` is one window with one page baked in, `WebContentsView` lets you put _many_ pages into a single window — a sidebar here, the main content there, a floating overlay on top — and move, resize, layer, and hide each one independently.
+
+There are really only two things to keep straight:
+
+1. **The view** — that's the `WebContentsView` itself, inherited from `View`. Where does it sit (`setBounds`)? What's stacked above or below it (`addChildView`)? Is it visible, what color is its backdrop, are its corners rounded? Those are the geometry-and-looks methods.
+2. **The page inside** — that's `view.webContents`, the same kind of object you'd get from any window. You load HTML with `view.webContents.loadFile(...)`, listen to `did-finish-load`, open DevTools — all the page work happens there.
+
+The usual recipe: make a `BaseWindow`, create one or more `WebContentsView`s, `addChildView` them, give each a rectangle with `setBounds`, and `loadURL`/`loadFile` through `webContents`. If you've used the old `BrowserView`, this is its better-behaved successor — same idea, cleaner API, and not deprecated.
+
+Remember three names and the rest is lookup: **`addChildView`** (put it in the window), **`setBounds`** (place and size it), and **`view.webContents`** (talk to the page).
+
+<Cards>
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+</Cards>

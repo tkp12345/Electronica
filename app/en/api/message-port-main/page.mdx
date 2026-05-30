@@ -1,0 +1,171 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { IpcApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<IpcApiIllustration />}
+  title="MessagePortMain"
+  subtitle="The Main-process end of a MessagePort — a direct, two-way pipe for passing messages between processes."
+  badge="API · MessagePortMain"
+/>
+
+`MessagePortMain` is the **Main process** counterpart of the web platform's [`MessagePort`](https://developer.mozilla.org/en-US/docs/Web/API/MessagePort). You never build one with `new` — you get one from a [`MessageChannelMain`](/en/api/app) pair, or as `event.ports` when a port arrives on a [`MessagePort`](https://www.electronjs.org/docs/latest/api/message-port-main). Each port is one end of a private channel; whatever you `postMessage` on this end pops out as a `message` event on the other end.
+
+```js filename="main.js"
+const { BrowserWindow, MessageChannelMain } = require('electron')
+
+const win = new BrowserWindow()
+
+// Make a connected pair of ports
+const { port1, port2 } = new MessageChannelMain()
+
+// Keep port1 in the Main process, hand port2 to the renderer
+win.webContents.postMessage('port', null, [port2])
+
+// Now talk through port1
+port1.on('message', (event) => {
+  // event.data is whatever the renderer sent
+})
+port1.start()       // begin delivering queued messages
+port1.postMessage({ hello: 'renderer' })
+```
+
+<EasyNote>
+A `MessageChannelMain` is like a **walkie-talkie set in a box**: it comes with two handsets (`port1` and `port2`) already tuned to each other. You keep one and give the other away. After that, neither side cares who's in the middle — speak into one handset, it comes out the other.
+</EasyNote>
+
+<Callout type="info">
+`MessagePortMain` is a Node.js `EventEmitter`, **not** a DOM object. Listen with `port.on('message', ...)`, not `port.onmessage = ...` or `addEventListener`. The renderer end (`MessagePort`) is the DOM kind, so the two sides use different listener styles — that catches everyone once.
+</Callout>
+
+---
+
+## Instance events
+
+Listen with `port.on('event-name', handler)`. A port has just two events.
+
+| Event | Fires when |
+|---|---|
+| `message` | A message arrives from the other end. The handler gets a `messageEvent` with `data` (the value sent) and `ports` (any `MessagePortMain[]` transferred along with it) |
+| `close` | The remote end was disconnected — the channel is dead and no more messages will come |
+
+```js filename="receive.js"
+port1.on('message', (event) => {
+  // The payload the other side sent
+  handlePayload(event.data)
+
+  // If the other side transferred more ports, they arrive here
+  for (const transferred of event.ports) {
+    wireUpSubChannel(transferred)
+  }
+})
+
+port1.on('close', () => {
+  // The other end went away (window closed, port closed, etc.)
+  cleanup()
+})
+
+// IMPORTANT: messages stay queued until you call start()
+port1.start()
+```
+
+<Callout type="warning">
+The `message` event will **never fire** until you call `port.start()` (calling `postMessage` also implicitly starts the port). Forgetting `start()` is the number-one reason a channel "silently does nothing." If you attach your `message` listener _after_ messages have already been sent, they were buffered and will all flush the moment you start.
+</Callout>
+
+<EasyNote>
+Think of `start()` as **pressing play on an answering machine**. Messages pile up on the tape the instant the channel exists, but you don't hear a thing until you hit play. Attach your `message` listener first, then call `start()`, and nothing gets lost.
+</EasyNote>
+
+---
+
+## Instance methods
+
+A port has exactly three methods — send, start, and hang up.
+
+| Method | What it does |
+|---|---|
+| `port.postMessage(message[, transfer])` | Send a value to the other end. `message` is structured-cloned; `transfer` is an optional `MessagePortMain[]` whose ownership moves to the receiver |
+| `port.start()` | Begin delivering messages. Until called (or until the first `postMessage`), incoming messages stay queued and no `message` event fires |
+| `port.close()` | Disconnect this port. The other end receives a `close` event and the channel becomes inactive |
+
+```js filename="send.js"
+// Send a plain value (structured clone — objects, arrays, ArrayBuffers, etc.)
+port1.postMessage({ type: 'ping', at: Date.now() })
+
+// Transfer a whole sub-channel to the other side.
+// After transfer, THIS process can no longer use `sub.port2`.
+const sub = new MessageChannelMain()
+port1.postMessage({ type: 'open-channel' }, [sub.port2])
+// keep sub.port1 here to talk on the new channel
+```
+
+<Callout type="warning">
+A transferred port (anything you put in the `transfer` array) is **neutered** on the sending side the moment it leaves — using it after transfer throws. Transfer is a move, not a copy. Also note `message` must be **structured-cloneable**: functions, DOM nodes, and class instances with methods won't survive the trip.
+</Callout>
+
+---
+
+## Instance properties
+
+`MessagePortMain` exposes **no documented instance properties** — it's a pure event-and-method object. The values you care about (`data`, `ports`) live on the `messageEvent` passed to the `message` handler, not on the port itself.
+
+---
+
+## Putting it together: Main ↔ Renderer
+
+The whole point of `MessagePortMain` is handing a port across the process boundary so two processes can talk directly, without round-tripping every message through `ipcMain`/`ipcRenderer`.
+
+```js filename="main.js"
+const { BrowserWindow, MessageChannelMain } = require('electron')
+
+function connect(win) {
+  const { port1, port2 } = new MessageChannelMain()
+
+  // Send port2 down to the renderer as a transferable
+  win.webContents.postMessage('port', null, [port2])
+
+  // Keep port1 here and start listening
+  port1.on('message', (event) => respond(port1, event.data))
+  port1.start()
+}
+```
+
+```js filename="preload.js"
+const { ipcRenderer } = require('electron')
+
+// The renderer end is a DOM MessagePort, so it uses onmessage / addEventListener
+ipcRenderer.on('port', (event) => {
+  const [port] = event.ports
+  port.onmessage = (messageEvent) => {
+    // got a message from the Main process
+    render(messageEvent.data)
+  }
+  port.postMessage('renderer is ready')
+})
+```
+
+<EasyNote>
+Once the port is delivered, the Main process and the renderer have a **private hotline**. They no longer have to shout through the building's front desk (`ipcMain`/`ipcRenderer`) for every message — they just talk on their own line. That's faster and keeps unrelated code from listening in.
+</EasyNote>
+
+---
+
+## In plain words
+
+`MessagePortMain` is **one end of a phone line**. You can't manufacture a lone phone — phones come in connected pairs, which is exactly what `new MessageChannelMain()` hands you: `port1` and `port2`, already wired to each other. You keep one and mail the other to whoever you want to talk to (usually a renderer, via `webContents.postMessage`).
+
+Three things, and you've got the whole API:
+
+1. **`postMessage(value)`** — speak into your handset.
+2. **`on('message', …)` + `start()`** — pick up and listen. Nothing is heard until you `start()`, so attach your listener first.
+3. **`close()`** — hang up. The other side gets a `close` event.
+
+The one gotcha that bites everyone: the Main end (`MessagePortMain`) is a Node `EventEmitter` (`port.on('message', …)`), while the renderer end (`MessagePort`) is the DOM kind (`port.onmessage = …`). Same idea, two dialects. Get that straight and the rest is just talking.
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+  <Cards.Card title="Process model" href="/en/docs/processes" arrow />
+</Cards>

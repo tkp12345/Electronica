@@ -1,0 +1,384 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { WindowApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<WindowApiIllustration />}
+  title="<webview> Tag"
+  subtitle="Embed a separate, isolated web page inside your app — like an iframe, but running in its own process with its own controls."
+  badge="API · <webview> Tag"
+/>
+
+The `<webview>` tag is a **custom HTML element** you place in a renderer page to embed *external* web content (a third-party site, a sandboxed mini-app) inside your own. Unlike an `<iframe>`, the guest runs in a **separate process** and can be driven with a rich set of methods, attributes, and DOM events.
+
+```html filename="renderer.html"
+<!-- Embed an external site, isolated from your app -->
+<webview id="view" src="https://example.com/" style="width:640px; height:480px"></webview>
+```
+
+```js filename="renderer.js"
+const view = document.getElementById('view')
+
+// Wait until the guest document is ready before calling methods
+view.addEventListener('dom-ready', () => {
+  view.openDevTools()
+})
+```
+
+<Callout type="warning">
+The Electron team **recommends not using `<webview>`** — it is architecturally fragile and its API may change. Prefer an `<iframe>`, a `WebContentsView`, or the [`<webview>` alternatives in the docs](/en/docs/best-practices/security). If you must use it, you have to **explicitly enable it** with the `webviewTag` web preference (it has been off by default since Electron 5):
+
+```js filename="main.js"
+const win = new BrowserWindow({
+  webPreferences: {
+    webviewTag: true, // off by default — opt in to allow <webview>
+  },
+})
+```
+</Callout>
+
+<EasyNote>
+A `<webview>` is a **window-within-a-window**. Think of it as a small TV embedded in your page: it shows a completely different "channel" (another website), it has its own remote (the methods below), and what happens on that channel can't leak into your app — they run in different processes.
+</EasyNote>
+
+---
+
+## Tag attributes
+
+Set these directly on the element in HTML (or via `setAttribute`). Several can only be changed **before the first navigation**.
+
+| Attribute | What it does |
+|---|---|
+| `src` | The URL to show. Setting it starts a top-level navigation; also accepts `data:` URLs |
+| `nodeintegration` | Enable Node.js (`require`, `process`) in the guest page |
+| `nodeintegrationinsubframes` _(Experimental)_ | Enable Node.js support in sub-frames (iframes) of the guest |
+| `plugins` | Allow browser plugins in the guest page (off by default) |
+| `preload` | A script to run before any other script in the guest — must use the `file:` protocol |
+| `httpreferrer` | Set the `Referer` URL for the guest page |
+| `useragent` | Set the user agent before navigating (use `setUserAgent()` to change it afterward) |
+| `disablewebsecurity` | Turn off web security for the guest (only settable before the first navigation) |
+| `partition` | Set the session; prefix with `persist:` to persist it (only settable before the first navigation) |
+| `allowpopups` | Let the guest open new windows (`window.open`) |
+| `webpreferences` | A comma-separated list of web preferences, same format as the `window.open` features string |
+| `enableblinkfeatures` | Comma-separated list of Blink features to **enable** |
+| `disableblinkfeatures` | Comma-separated list of Blink features to **disable** |
+
+```html filename="hardened-webview.html"
+<!-- A locked-down webview: own session, no Node, isolated -->
+<webview
+  src="https://example.com/"
+  partition="persist:guest"
+  preload="file://./preload.js"
+></webview>
+```
+
+<Callout type="warning">
+Enabling `nodeintegration` or `disablewebsecurity` on a `<webview>` loading **remote, untrusted** content is dangerous — it hands that page the keys to the host machine. Keep them off and use a `preload` + `contextBridge` instead.
+</Callout>
+
+---
+
+## DOM events
+
+A `<webview>` fires standard DOM events — listen with `view.addEventListener('event-name', handler)`. Most mirror the `webContents` events of the page inside.
+
+### Loading & navigation lifecycle
+
+| Event | Fires when |
+|---|---|
+| `load-commit` | A load has committed (includes in-page navigations and subframe loads) |
+| `did-start-loading` | The tab spinner started spinning |
+| `did-finish-load` | Navigation finished and the spinner stopped |
+| `did-fail-load` | A load failed or was cancelled (gives `errorCode`, `errorDescription`) |
+| `did-frame-finish-load` | A frame finished navigating |
+| `did-stop-loading` | The spinner stopped |
+| `did-attach` | The `<webview>` attached to its embedder |
+| `dom-ready` | The document in the frame is fully loaded — **wait for this before calling methods** |
+
+### Navigation details
+
+| Event | Fires when |
+|---|---|
+| `will-navigate` | A user/page-initiated navigation is about to start (not programmatic) |
+| `will-frame-navigate` | A navigation is about to start in any frame |
+| `did-start-navigation` | Any frame started navigating |
+| `did-redirect-navigation` | A server-side redirect happened (e.g. a 302) |
+| `did-navigate` | A main-frame navigation finished (not in-page) |
+| `did-frame-navigate` | Any frame finished navigating (gives `httpResponseCode`) |
+| `did-navigate-in-page` | An in-page navigation happened (anchor links, `hashchange`) |
+
+```js filename="track-navigation.js"
+const view = document.getElementById('view')
+
+view.addEventListener('did-navigate', (e) => {
+  // Update your own URL bar to match the guest
+  urlBar.value = e.url
+})
+
+view.addEventListener('did-fail-load', (e) => {
+  // Show an error page when the guest can't load
+  showError(e.errorCode, e.errorDescription)
+})
+```
+
+### Page metadata
+
+| Event | Fires when |
+|---|---|
+| `page-title-updated` | The page title changed (gives `title`, `explicitSet`) |
+| `page-favicon-updated` | New favicon URLs arrived (gives `favicons`) |
+| `did-change-theme-color` | The page's theme color changed (gives `themeColor`) |
+| `update-target-url` | The mouse hovered a link / a link got focus (gives `url`) |
+
+### Fullscreen, media & console
+
+| Event | Fires when |
+|---|---|
+| `enter-html-full-screen` | The page entered HTML fullscreen |
+| `leave-html-full-screen` | The page left HTML fullscreen |
+| `media-started-playing` | Media started playing |
+| `media-paused` | Media was paused or finished |
+| `console-message` | The guest logged to its console (gives `level`, `message`, `line`, `sourceId`) |
+
+### Find, IPC & context menu
+
+| Event | Fires when |
+|---|---|
+| `found-in-page` | A `findInPage()` result is available (gives `result`) |
+| `ipc-message` | The guest sent an async message to the embedder (gives `channel`, `args`, `frameId`) |
+| `context-menu` | A context menu should be shown (gives `params` with position, link, selection, …) |
+
+```js filename="ipc-from-guest.js"
+// In the guest preload: ipcRenderer.sendToHost('greeting', 'hi')
+view.addEventListener('ipc-message', (e) => {
+  if (e.channel === 'greeting') {
+    handleGreeting(e.args[0])
+  }
+})
+```
+
+### Crashes & teardown
+
+| Event | Fires when |
+|---|---|
+| `close` | The guest page tried to close itself |
+| `render-process-gone` | The guest renderer crashed or was killed (gives `details`) |
+| `destroyed` | The underlying `WebContents` was destroyed |
+
+### DevTools
+
+| Event | Fires when |
+|---|---|
+| `devtools-open-url` | A link was clicked / "Open in new tab" chosen in DevTools (gives `url`) |
+| `devtools-search-query` | "Search" was chosen for selected text (gives `query`) |
+| `devtools-opened` | DevTools opened |
+| `devtools-closed` | DevTools closed |
+| `devtools-focused` | DevTools was focused |
+
+<EasyNote>
+`dom-ready` is the event you'll reach for first, every time. The methods below talk to the guest page, but the guest isn't ready the instant the tag appears — wait for `dom-ready`, then it's safe to call `openDevTools()`, `executeJavaScript()`, and friends.
+</EasyNote>
+
+---
+
+## Methods
+
+Call these on the element after `dom-ready`, e.g. `view.reload()`.
+
+### Navigation & loading
+
+| Method | What it does |
+|---|---|
+| `loadURL(url[, options])` | Load a URL — returns a `Promise` that rejects if the page fails to load |
+| `downloadURL(url[, options])` | Download a resource without navigating to it |
+| `stop()` | Stop any pending navigation |
+| `reload()` | Reload the guest page |
+| `reloadIgnoringCache()` | Reload while bypassing the cache |
+
+### History
+
+| Method | What it does |
+|---|---|
+| `canGoBack()` | Can the guest go back? |
+| `canGoForward()` | Can the guest go forward? |
+| `canGoToOffset(offset)` | Can the guest jump by `offset` entries? |
+| `goBack()` | Go back one entry |
+| `goForward()` | Go forward one entry |
+| `goToIndex(index)` | Jump to an absolute history index |
+| `goToOffset(offset)` | Jump by a relative offset |
+| `clearHistory()` | Clear the navigation history |
+
+### Page info
+
+| Method | What it does |
+|---|---|
+| `getURL()` | The guest's current URL |
+| `getTitle()` | The guest's current title |
+| `isLoading()` | Is the guest still loading resources? |
+| `isLoadingMainFrame()` | Is the main frame (not just iframes) loading? |
+| `isWaitingForResponse()` | Waiting on the first response of the main resource? |
+| `isCrashed()` | Has the renderer crashed? |
+| `getWebContentsId()` | The numeric `WebContents` id of the guest |
+
+```js filename="navigate.js"
+const view = document.getElementById('view')
+
+// Wire up a simple browser toolbar
+backBtn.onclick = () => { if (view.canGoBack()) view.goBack() }
+reloadBtn.onclick = () => view.reload()
+await view.loadURL('https://example.com/')
+```
+
+### User agent
+
+| Method | What it does |
+|---|---|
+| `setUserAgent(userAgent)` | Override the guest's user agent |
+| `getUserAgent()` | Read the current user agent |
+
+### CSS & JavaScript injection
+
+| Method | What it does |
+|---|---|
+| `insertCSS(css)` | Inject CSS — returns a `Promise<string>` key for later removal |
+| `removeInsertedCSS(key)` | Remove previously inserted CSS by its key |
+| `executeJavaScript(code[, userGesture])` | Evaluate code in the guest — returns a `Promise` with the result |
+
+```js filename="inject.js"
+// Add a banner to the guest page and grab its title
+const key = await view.insertCSS('body { filter: grayscale(1); }')
+const title = await view.executeJavaScript('document.title')
+// later: await view.removeInsertedCSS(key)
+```
+
+<Callout type="warning">
+`executeJavaScript` runs code **inside the untrusted guest**. Never build the code string from values that came back out of that same page — you'd be handing it a way to script itself. Keep the injected code static.
+</Callout>
+
+### Zoom
+
+| Method | What it does |
+|---|---|
+| `setZoomFactor(factor)` | Set the zoom factor (`3.0` = 300%) |
+| `getZoomFactor()` | Read the current zoom factor |
+| `setZoomLevel(level)` | Set the zoom level (`0` = original; each step is ±20%) |
+| `getZoomLevel()` | Read the current zoom level |
+| `setVisualZoomLevelLimits(min, max)` | Set the pinch-to-zoom limits — returns a `Promise` |
+
+### Find in page
+
+| Method | What it does |
+|---|---|
+| `findInPage(text[, options])` | Start a search — returns a request id; results arrive via `found-in-page` |
+| `stopFindInPage(action)` | Stop searching (`'clearSelection'` / `'keepSelection'` / `'activateSelection'`) |
+
+```js filename="find.js"
+const requestId = view.findInPage('electron')
+
+view.addEventListener('found-in-page', (e) => {
+  if (e.result.requestId === requestId) {
+    showMatches(e.result.activeMatchOrdinal, e.result.matches)
+  }
+})
+```
+
+### Audio
+
+| Method | What it does |
+|---|---|
+| `setAudioMuted(muted)` | Mute / unmute the guest |
+| `isAudioMuted()` | Is the guest muted? |
+| `isCurrentlyAudible()` | Is audio actually playing right now? |
+
+### Editing commands
+
+| Method | What it does |
+|---|---|
+| `undo()` / `redo()` | Undo / redo |
+| `cut()` / `copy()` / `paste()` | Clipboard commands |
+| `pasteAndMatchStyle()` | Paste and match surrounding style |
+| `delete()` | Delete the selection |
+| `selectAll()` / `unselect()` | Select everything / clear the selection |
+| `replace(text)` | Replace the selection with `text` |
+| `replaceMisspelling(text)` | Replace the misspelled word under the selection |
+| `insertText(text)` | Insert text into the focused element — returns a `Promise` |
+| `centerSelection()` | Scroll the current selection to the center |
+| `adjustSelection(options)` | Grow/shrink the selection by `start` / `end` amounts |
+
+### Scrolling
+
+| Method | What it does |
+|---|---|
+| `scrollToTop()` | Scroll the guest to the top |
+| `scrollToBottom()` | Scroll the guest to the bottom |
+
+### Developer tools
+
+| Method | What it does |
+|---|---|
+| `openDevTools()` | Open DevTools for the guest |
+| `closeDevTools()` | Close DevTools |
+| `isDevToolsOpened()` | Are DevTools attached? |
+| `isDevToolsFocused()` | Are DevTools focused? |
+| `inspectElement(x, y)` | Start inspecting the element at the given coordinates |
+| `inspectSharedWorker()` | Open DevTools for the shared worker context |
+| `inspectServiceWorker()` | Open DevTools for the service worker context |
+
+### Printing & capture
+
+| Method | What it does |
+|---|---|
+| `print([options])` | Print the guest — returns a `Promise` |
+| `printToPDF(options)` | Render the guest to a PDF — returns a `Promise<Uint8Array>` |
+| `capturePage([rect])` | Capture a screenshot — returns a `Promise<NativeImage>` |
+
+```js filename="capture.js"
+// Snapshot just the visible guest page to a PNG
+const image = await view.capturePage()
+fs.writeFileSync('shot.png', image.toPNG())
+```
+
+### IPC & input
+
+| Method | What it does |
+|---|---|
+| `send(channel, ...args)` | Send an async message to the guest renderer — returns a `Promise` |
+| `sendToFrame(frameId, channel, ...args)` | Send an async message to a specific frame — returns a `Promise` |
+| `sendInputEvent(event)` | Send a synthetic mouse / wheel / keyboard event — returns a `Promise` |
+
+### macOS
+
+| Method | What it does |
+|---|---|
+| `showDefinitionForSelection()` _(macOS)_ | Show the dictionary popup for the selected word |
+
+<Callout type="warning">
+The `<webview>` uses `display: flex` internally to size its contents. If you override its `display` with anything other than `inline-flex`, the embedded page may not lay out correctly.
+</Callout>
+
+---
+
+## Properties
+
+The `<webview>` tag exposes its configuration through the **HTML attributes** listed above rather than a set of JavaScript properties; read or change them with `view.getAttribute(...)` / `view.setAttribute(...)`. The runtime state (URL, title, loading status, audio, zoom) is read through the **methods** above — for example `getURL()`, `getTitle()`, `isLoading()`, `getZoomFactor()`.
+
+---
+
+## In plain words
+
+A `<webview>` is **another website living inside your app**, fenced off in its own process. It behaves a lot like a tiny browser tab you can embed anywhere on your page and steer from JavaScript.
+
+The shape of working with it is always the same:
+
+1. **Place the tag** with a `src` (and, if you care about safety, a `partition` and a `preload`).
+2. **Wait for `dom-ready`** — only then is the guest actually there to talk to.
+3. **Drive it with methods** — `loadURL`, `reload`, `goBack`, `executeJavaScript`, `capturePage` — and **react with DOM events** — `did-navigate`, `did-fail-load`, `ipc-message`.
+
+But the most important thing to remember is the warning at the top: the Electron team would rather you **didn't** use `<webview>`. It's heavier and more fragile than an `<iframe>` or a `WebContentsView`, and it's disabled by default for a reason. Reach for it only when you genuinely need a separate-process embed you can fully script — and when you do, keep `nodeintegration` off and treat the guest as untrusted.
+
+<Cards>
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+</Cards>

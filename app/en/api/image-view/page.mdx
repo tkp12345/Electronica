@@ -1,0 +1,161 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { WindowApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<WindowApiIllustration />}
+  title="ImageView"
+  subtitle="A lightweight native View that simply displays an image — perfect for splash screens you swap out once your real content loads."
+  badge="API · ImageView"
+/>
+
+`ImageView` is a **class** you create with `new` in the **Main process**. It's a `View` whose only job is to draw a single image, so you can show something instantly (like a splash screen) while a heavier `WebContentsView` finishes loading behind it.
+
+```js filename="main.js"
+const { app, BaseWindow, ImageView, nativeImage } = require('electron')
+
+app.whenReady().then(() => {
+  const win = new BaseWindow({ width: 800, height: 600 })
+
+  const splash = new ImageView()
+  splash.setImage(nativeImage.createFromPath('splash.png'))
+  splash.setBounds({ x: 0, y: 0, width: 800, height: 600 })
+
+  win.contentView.addChildView(splash)
+})
+```
+
+<Callout type="warning">
+`ImageView` is **experimental**. The API may change or be removed in a future Electron release, and it cannot be subclassed in your own code. It's available in Electron `>=37.0.0` and `^36.4.0`.
+</Callout>
+
+<EasyNote>
+Think of `ImageView` as a **single photo in a frame** — no web engine, no JavaScript, no scrolling. It just shows one picture. That's exactly why it's so cheap to display the instant your window opens, before the real content is ready.
+</EasyNote>
+
+---
+
+## How it fits together
+
+`ImageView` **extends `View`** — the same lightweight base class used for native view composition inside a `BaseWindow`. That means an `ImageView` is laid out, positioned, and nested using the standard `View` methods (`setBounds`, `addChildView`, …), and it adds exactly one method of its own: `setImage`.
+
+```js filename="splash-then-content.js"
+const { BaseWindow, ImageView, WebContentsView, nativeImage } = require('electron')
+
+const win = new BaseWindow({ width: 1024, height: 768 })
+
+// 1) Show a splash image immediately
+const splash = new ImageView()
+splash.setImage(nativeImage.createFromPath('splash.png'))
+splash.setBounds({ x: 0, y: 0, width: 1024, height: 768 })
+win.contentView.addChildView(splash)
+
+// 2) Load the real page underneath, swap when it's ready
+const content = new WebContentsView()
+content.setBounds({ x: 0, y: 0, width: 1024, height: 768 })
+content.webContents.loadURL('https://example.com')
+
+content.webContents.once('did-finish-load', () => {
+  win.contentView.addChildView(content)      // place the real content
+  win.contentView.removeChildView(splash)    // remove the splash
+})
+```
+
+---
+
+## Constructor
+
+| Constructor | What it does |
+|---|---|
+| `new ImageView()` | Creates a new `ImageView`. Takes **no options** — set the image afterwards with `setImage`. |
+
+---
+
+## Instance events
+
+`ImageView` defines **no events of its own**. It does inherit the events of its `View` base class:
+
+| Event | Fires when |
+|---|---|
+| `bounds-changed` | The view's bounds changed during a layout pass |
+
+```js filename="bounds-changed.js"
+splash.on('bounds-changed', () => {
+  // the view was repositioned/resized during layout
+})
+```
+
+---
+
+## Instance methods
+
+### Own method
+
+| Method | What it does |
+|---|---|
+| `imageView.setImage(image)` | Sets the image to display. `image` is a `NativeImage`; only formats supported by `NativeImage` work. _(Experimental)_ |
+
+```js filename="set-image.js"
+const { nativeImage } = require('electron')
+
+// From a file on disk...
+imageView.setImage(nativeImage.createFromPath('logo.png'))
+
+// ...or from a data URL / buffer
+imageView.setImage(nativeImage.createFromDataURL(dataUrl))
+```
+
+<Callout type="warning">
+`setImage` only accepts formats that `NativeImage` understands (PNG, JPEG, and a few others). Passing an unsupported format — or a path that doesn't exist — gives you an empty image, not an error. Build your `NativeImage` first and check it isn't `isEmpty()`.
+</Callout>
+
+### Inherited from `View`
+
+Because `ImageView` extends `View`, every `View` method is available too:
+
+| Method | What it does |
+|---|---|
+| `imageView.addChildView(view[, index])` | Add a child `View` (optionally at an index; re-adding moves it to the top) |
+| `imageView.removeChildView(view)` | Remove a child `View` (no-op if it isn't a child) |
+| `imageView.setBounds(bounds[, options])` | Set position & size relative to the parent (`options.animate` to animate) |
+| `imageView.getBounds()` | Get the current bounds as a `Rectangle` |
+| `imageView.setBackgroundColor(color)` | Set the background color (hex, RGB(A), HSL(A), or a CSS color name) |
+| `imageView.setBorderRadius(radius)` | Round the corners by `radius` pixels (cut-out areas still capture clicks) |
+| `imageView.setVisible(visible)` | Show or hide the view |
+| `imageView.getVisible()` | Is the view set to be drawn? |
+
+```js filename="layout.js"
+// Position the image, round its corners, give it a backdrop
+splash.setBounds({ x: 0, y: 0, width: 800, height: 600 })
+splash.setBackgroundColor('#0b0b0b')
+splash.setBorderRadius(12)
+```
+
+---
+
+## Instance properties
+
+`ImageView` defines **no properties of its own**. It inherits one from `View`:
+
+| Property | Type | What it is |
+|---|---|---|
+| `imageView.children` | `View[]` (readonly) | The view's child views, back-to-front |
+
+---
+
+## In plain words
+
+`ImageView` is the **simplest view Electron offers**: a frame that holds one picture and nothing else. No web page, no scripting, no overhead — just an image painted on screen.
+
+There's really only one move to learn. Create it with `new ImageView()`, hand it a `NativeImage` with **`setImage`**, and position it with the inherited **`setBounds`**. That's the whole API.
+
+The reason it exists is timing. A real web page (`WebContentsView`) takes a moment to load. So you put up an `ImageView` splash _instantly_, load the heavy content behind it, and on `did-finish-load` you swap them — `addChildView(content)` then `removeChildView(splash)`. The user sees your logo right away and never stares at a blank window.
+
+One thing to keep in mind: it's **experimental** and can't be subclassed, so treat it as a handy building block rather than a foundation you build a whole app on. For the page itself, reach for `WebContentsView`.
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+  <Cards.Card title="Process model" href="/en/docs/processes" arrow />
+</Cards>

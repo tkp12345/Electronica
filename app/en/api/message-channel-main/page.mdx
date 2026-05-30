@@ -1,0 +1,183 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { IpcApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<IpcApiIllustration />}
+  title="MessageChannelMain"
+  subtitle="Create a pair of connected ports in the Main process — a private two-way pipe you can hand to renderers, worker windows, or other processes."
+  badge="API · MessageChannelMain"
+/>
+
+`MessageChannelMain` is a **class** you create with `new` in the **Main process**. It's the main-process-side equivalent of the DOM [`MessageChannel`](https://developer.mozilla.org/en-US/docs/Web/API/MessageChannel) object. Its one and only job is to create a pair of connected [`MessagePortMain`](#messageportmain) objects — `port1` and `port2` — that you can then send to different places to wire up a direct channel between them.
+
+```js filename="main.js"
+const { BrowserWindow, MessageChannelMain } = require('electron')
+
+const w = new BrowserWindow()
+
+// One channel gives you two linked ends
+const { port1, port2 } = new MessageChannelMain()
+
+// Hand one end to the renderer; keep the other in Main
+w.webContents.postMessage('port', null, [port2])
+
+// Anything posted on port1 arrives on port2, and vice versa
+port1.postMessage({ some: 'message' })
+```
+
+<EasyNote>
+A `MessageChannelMain` is like a **walkie-talkie set sold as a pair**. You open the box (`new MessageChannelMain()`) and get two handsets, `port1` and `port2`. They're already tuned to the same private frequency. Keep one, give the other to a friend (a renderer, a worker), and whatever one says, the other hears — nobody else is on that channel.
+</EasyNote>
+
+---
+
+## Constructor
+
+| Constructor | What it does |
+|---|---|
+| `new MessageChannelMain()` | Creates a new channel and returns an object with two connected ports, `port1` and `port2` |
+
+The two ports are entangled: a message sent on one is received on the other. There are no options to pass.
+
+---
+
+## Instance properties
+
+A `MessageChannelMain` instance has exactly two properties — the two ends of the channel.
+
+| Property | Type | What it is |
+|---|---|---|
+| `channel.port1` | `MessagePortMain` (readonly) | One end of the channel |
+| `channel.port2` | `MessagePortMain` (readonly) | The other end of the channel, connected to `port1` |
+
+```js filename="ports.js"
+const { port1, port2 } = new MessageChannelMain()
+
+// Whatever you do with one is mirrored on the other —
+// they are two ends of the same private wire.
+```
+
+<Callout type="info">
+`MessageChannelMain` itself has **no events and no methods** — it's purely a factory for the two ports. All the real work happens on the `MessagePortMain` objects below.
+</Callout>
+
+---
+
+## MessagePortMain
+
+`MessagePortMain` is the Main-process equivalent of the DOM [`MessagePort`](https://developer.mozilla.org/en-US/docs/Web/API/MessagePort). You don't construct it directly — you get instances from `MessageChannelMain` (as `port1` / `port2`) or as the `ports` attached to an incoming message. It extends Node's `EventEmitter`.
+
+### Instance events
+
+Listen with `port.on('event-name', handler)`.
+
+| Event | Fires when | Payload |
+|---|---|---|
+| `message` | The port receives a message from the other end | An event object with `data` (`any`) and `ports` (`MessagePortMain[]`) |
+| `close` | The remote end of the port becomes disconnected | _(none)_ |
+
+```js filename="receive.js"
+const { port1, port2 } = new MessageChannelMain()
+
+port2.on('message', (event) => {
+  // event.data is whatever the other end posted
+  handle(event.data)
+  // event.ports holds any MessagePortMain objects transferred alongside it
+})
+
+port2.on('close', () => {
+  // the other side went away — stop using this port
+  cleanup()
+})
+
+// Start delivering queued messages (see the warning below)
+port2.start()
+```
+
+<EasyNote>
+The `message` event is the handset's **speaker**, and `postMessage` is its **microphone**. `close` is the little click you hear when the person on the other end hangs up — your cue to stop talking into a dead line.
+</EasyNote>
+
+### Instance methods
+
+| Method | What it does |
+|---|---|
+| `port.postMessage(message[, transfer])` | Send `message` to the other end. Optionally pass `transfer` — an array of `MessagePortMain[]` — to hand ownership of those ports to the other side |
+| `port.start()` | Begin delivering messages. Incoming messages are **queued** until you call this |
+| `port.close()` | Disconnect the port so it's no longer active |
+
+```js filename="transfer.js"
+// You can ship a fresh port *through* an existing port —
+// this is how you build a mesh of processes talking directly.
+const { port1, port2 } = new MessageChannelMain()
+const sub = new MessageChannelMain()
+
+// Send sub.port2 to whoever is on the other end of port1
+port1.postMessage({ kind: 'new-channel' }, [sub.port2])
+
+// Now `sub.port1` (kept here) talks directly to the receiver of sub.port2
+sub.port1.postMessage('hello over the sub-channel')
+```
+
+<Callout type="warning">
+Messages are **queued until you call `port.start()`** (or, on the renderer side, until you assign an `onmessage` handler, which calls `start()` for you). If you attach a listener with `port.on('message', ...)` but never call `port.start()`, your handler will never fire and messages pile up silently.
+</Callout>
+
+<Callout type="warning">
+`MessagePortMain` objects are **transferable, not copyable**. Once you pass a port in the `transfer` array of `postMessage` (or via `webContents.postMessage`), the sending side can no longer use it — ownership moves to the receiver. Keep one end and send the other; don't try to use both copies.
+</Callout>
+
+### Instance properties
+
+`MessagePortMain` has no documented instance properties — interact with it through the events and methods above.
+
+---
+
+## How the two sides connect
+
+The whole point of `MessageChannelMain` is to bridge the Main process and a renderer (or two renderers) with a direct line that doesn't route every message through `ipcMain`/`ipcRenderer`. The Main side uses `MessagePortMain`; the renderer side receives an ordinary DOM `MessagePort`.
+
+```js filename="renderer.js"
+const { ipcRenderer } = require('electron')
+
+ipcRenderer.on('port', (event) => {
+  // event.ports is the list of ports sent with this message
+  const port = event.ports[0]
+
+  // Assigning onmessage implicitly calls start() for you in the renderer
+  port.onmessage = (messageEvent) => {
+    document.title = messageEvent.data.some
+  }
+
+  // The renderer can reply straight back down the same wire
+  port.postMessage('hi from the renderer')
+})
+```
+
+<Callout type="info">
+On the **renderer** side the port is a standard web `MessagePort`, so you use `port.onmessage = ...` / `port.addEventListener('message', ...)` and `port.start()`. On the **Main** side it's a `MessagePortMain`, so you use `port.on('message', ...)` and `port.start()`. The API shapes are deliberately parallel.
+</Callout>
+
+---
+
+## In plain words
+
+`MessageChannelMain` is a tiny class with a big idea: **a private, direct pipe between two parts of your app**.
+
+Normally, a renderer talks to the Main process through the shared `ipcRenderer` ↔ `ipcMain` switchboard. That's fine, but every message goes through the same operator. Sometimes you want a dedicated line — for example, so two renderer windows can talk to each other directly, or so a busy worker window has its own channel that doesn't clutter the main IPC traffic.
+
+Here's the whole story in three beats:
+
+1. **Open the box.** `new MessageChannelMain()` hands you two connected ports, `port1` and `port2`. They're already linked — anything one sends, the other receives.
+2. **Hand out an end.** Send one port to where it needs to go with `webContents.postMessage('channel-name', null, [port2])`. The sender loses that port (it's *transferred*, not copied) and the receiver gains it.
+3. **Talk.** Use `port.postMessage(data)` to send and listen for the `message` event to receive. Call `port.start()` first on the Main side, and clean up on `close`.
+
+Remember three names and the rest is lookup: **`new MessageChannelMain()`** (get two ports), **`postMessage`** (send), and **`start()`** (begin receiving). That's a direct, point-to-point channel — no operator in the middle.
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+  <Cards.Card title="Process model" href="/en/docs/processes" arrow />
+</Cards>

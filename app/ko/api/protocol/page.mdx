@@ -1,0 +1,164 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { NetworkApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<NetworkApiIllustration />}
+  title="protocol"
+  subtitle="커스텀 URL 스킴을 등록하고 가로채요 — 나만의 app:// 세상을 Main 프로세스에서 직접 서빙해요."
+  badge="API · protocol"
+/>
+
+`protocol` 모듈은 **Main 프로세스** 에 살아요. `app://`, `media://`, 또는 직접 만든 `myapp://` 같은 새로운 URL 스킴을 Electron 에게 가르치고, 페이지가 그 주소를 요청했을 때 정확히 무엇을 돌려줄지 결정하게 해줘요.
+
+```js filename="main.js"
+const { app, protocol, net } = require('electron')
+const path = require('node:path')
+
+app.whenReady().then(() => {
+  // 페이지가 "app://..." 를 요청할 때마다 디스크의 파일을 서빙해요
+  protocol.handle('app', (request) => {
+    const url = new URL(request.url)
+    return net.fetch('file://' + path.join(__dirname, url.pathname))
+  })
+})
+```
+
+<EasyNote>
+`protocol` 은 **앱 전용 주소를 다루는 우체국** 이에요. 창 안의 브라우저는 기본적으로 `http://`, `https://`, `file://` 같은 몇 가지 주소만 알아요. `protocol` 로 `app://` 같은 새 지점을 열면, 그 주소로 오는 모든 봉투에 무엇을 담을지 정하는 우체국장이 바로 여러분이 돼요.
+</EasyNote>
+
+---
+
+## 이벤트(Events)
+
+`protocol` 모듈에는 **이벤트가 없어요.** 순수한 등록용 API 라서, 스킴을 한 번 알려 주면 그 뒤로는 Electron 이 일치하는 요청을 핸들러로 알아서 보내요. 구독할 이벤트가 없습니다.
+
+---
+
+## 메서드(Methods)
+
+`protocol` 은 **싱글톤 모듈** 이에요 — 클래스가 아니므로 `new protocol()` 같은 건 없어요. 메서드는 두 세대로 나뉩니다:
+
+- **모던 API** (`handle` / `unhandle` / `isProtocolHandled`): 표준 웹 `Request`/`Response` 객체 기반. 새 코드는 모두 이걸 쓰세요.
+- **레거시 API** (`registerFileProtocol`, `interceptStringProtocol` …): 하위 호환을 위해 남아 있어요. **전부 deprecated** — 아래 경고를 확인하세요.
+
+### 모던 API
+
+| 메서드 | 하는 일 |
+|---|---|
+| `protocol.handle(scheme, handler)` | `scheme` 으로 오는 모든 요청에 대해 `Response`(또는 `Promise<Response>`)를 돌려주는 핸들러 등록 |
+| `protocol.unhandle(scheme)` | `handle` 로 등록한 핸들러 제거 |
+| `protocol.isProtocolHandled(scheme)` | `scheme` 에 핸들러가 등록돼 있으면 `true` |
+
+```js filename="handle.js"
+const { protocol, net } = require('electron')
+
+// "media://albums/cover.jpg" 를 디스크의 실제 파일로 변환
+protocol.handle('media', (request) => {
+  const url = new URL(request.url)
+  const filePath = path.join(MEDIA_ROOT, url.host, url.pathname)
+  return net.fetch('file://' + filePath)
+})
+
+// Response 를 직접 만들 수도 있어요
+protocol.handle('about', () =>
+  new Response('<h1>안녕하세요</h1>', {
+    headers: { 'content-type': 'text/html' },
+  }),
+)
+```
+
+<EasyNote>
+핸들러는 그냥 함수예요. `Request` 가 들어오면 `Response` 를 내보내죠 — 웹 `fetch()` API 에서 이미 쓰던 바로 그 `Request`/`Response` 객체예요. 가장 쉽게 `Response` 를 만드는 방법은 `net.fetch()` 인데, `file://` 경로와 원격 URL 모두 읽을 수 있어요.
+</EasyNote>
+
+### 권한 스킴 (`ready` 이전 호출)
+
+| 메서드 | 하는 일 |
+|---|---|
+| `protocol.registerSchemesAsPrivileged(customSchemes)` | 스킴을 표준 / 보안 / Fetch·스트리밍 미디어·서비스 워커·CSP 우회 지원 등으로 지정 — **반드시 `ready` 이벤트 이전에 호출** |
+
+```js filename="privileged.js"
+// app 이 준비되기 전, 최상위 레벨에서 호출해야 해요
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'app',
+    privileges: {
+      standard: true,        // http 처럼 동작 (origin, 상대 URL)
+      secure: true,          // 보안 컨텍스트로 취급 (서비스 워커 등 허용)
+      supportFetchAPI: true, // 페이지에서 fetch('app://...') 가능
+      stream: true,          // 스트리밍 미디어 응답 허용
+    },
+  },
+])
+```
+
+<Callout type="warning">
+`registerSchemesAsPrivileged` 는 **`ready` 이벤트 이전** 에 실행될 때만 동작해요. `app.whenReady()` 안이 아니라 메인 스크립트 최상위에 두세요. `ready` 이후에 등록된 스킴은 조용히 권한을 못 받아요.
+</Callout>
+
+### 레거시 등록 & 가로채기 _(전부 Deprecated)_
+
+이 메서드들은 `handle` 보다 앞선 세대예요. 각각이 하나의 응답 형태(파일, 문자열, 버퍼 …)에 묶여 있는데, 모던 `handle` 은 이 모두를 한 번에 처리해요.
+
+| 메서드 | 하던 일 | 대체 |
+|---|---|---|
+| `protocol.registerFileProtocol(scheme, handler)` _(Deprecated)_ | 스킴에 디스크 파일로 응답 | `protocol.handle` |
+| `protocol.registerStringProtocol(scheme, handler)` _(Deprecated)_ | 문자열로 응답 | `protocol.handle` |
+| `protocol.registerBufferProtocol(scheme, handler)` _(Deprecated)_ | `Buffer` 로 응답 | `protocol.handle` |
+| `protocol.registerHttpProtocol(scheme, handler)` _(Deprecated)_ | HTTP 요청을 프록시해 응답 | `protocol.handle` |
+| `protocol.registerStreamProtocol(scheme, handler)` _(Deprecated)_ | 읽기 가능 스트림으로 응답 | `protocol.handle` |
+| `protocol.unregisterProtocol(scheme)` _(Deprecated)_ | 등록된 스킴 제거 | `protocol.unhandle` |
+| `protocol.isProtocolRegistered(scheme)` _(Deprecated)_ | 스킴이 등록돼 있는가? | `protocol.isProtocolHandled` |
+| `protocol.interceptFileProtocol(scheme, handler)` _(Deprecated)_ | 기존 스킴을 덮어써 파일로 응답 | `protocol.handle` |
+| `protocol.interceptStringProtocol(scheme, handler)` _(Deprecated)_ | 기존 스킴을 문자열로 덮어쓰기 | `protocol.handle` |
+| `protocol.interceptBufferProtocol(scheme, handler)` _(Deprecated)_ | 기존 스킴을 `Buffer` 로 덮어쓰기 | `protocol.handle` |
+| `protocol.interceptHttpProtocol(scheme, handler)` _(Deprecated)_ | 기존 스킴을 HTTP 로 덮어쓰기 | `protocol.handle` |
+| `protocol.interceptStreamProtocol(scheme, handler)` _(Deprecated)_ | 기존 스킴을 스트림으로 덮어쓰기 | `protocol.handle` |
+| `protocol.uninterceptProtocol(scheme)` _(Deprecated)_ | 인터셉터 제거 후 원래대로 복원 | `protocol.unhandle` |
+| `protocol.isProtocolIntercepted(scheme)` _(Deprecated)_ | 스킴이 가로채지고 있는가? | `protocol.isProtocolHandled` |
+
+<Callout type="warning">
+위의 모든 `register*Protocol` / `intercept*Protocol` 메서드는 **deprecated** 예요. Electron 25+ 에서 표준 웹 `Request`/`Response` 객체로 동작하는 단일 메서드 `protocol.handle(scheme, handler)` 로 대체됐어요. 새 코드는 `handle` 로 옮기세요 — 레거시 메서드들은 향후 메이저 릴리스에서 제거될 수 있어요.
+</Callout>
+
+```js filename="migrate.js"
+// 옛 방식 (deprecated) — 응답 타입마다 메서드가 따로
+protocol.registerFileProtocol('app', (request, callback) => {
+  const url = request.url.slice('app://'.length)
+  callback({ path: path.join(__dirname, url) })
+})
+
+// 새 방식 — 메서드 하나, 표준 Response 반환
+protocol.handle('app', (request) => {
+  const url = new URL(request.url)
+  return net.fetch('file://' + path.join(__dirname, url.pathname))
+})
+```
+
+---
+
+## 속성(Properties)
+
+`protocol` 모듈에는 **속성이 없어요.** 모든 동작은 위의 메서드로 이루어져요.
+
+---
+
+## 쉽게 풀어 설명
+
+Electron 창 안의 브라우저를 배송 시스템이라고 생각해 보세요. 기본적으로는 몇 가지 주소 타입만 배달할 줄 알아요: `http://`, `https://`, `file://`, `data:`. `protocol` 모듈은 **완전히 새로운 주소 타입을 만들고** 그 배달부가 되게 해줘요.
+
+배울 건 사실 딱 두 가지예요:
+
+1. **스킴을 일찍 알리기.** 스킴이 진짜 웹사이트처럼 동작해야 한다면 — 자기만의 origin, 상대 링크, 서비스 워커, 페이지에서의 `fetch()` — 메인 스크립트 최상단, `ready` 이전에 **`registerSchemesAsPrivileged`** 를 호출하세요. "우체국에 새 우편번호를 등록하는" 단계예요.
+2. **요청에 답하기.** **`protocol.handle('app', 핸들러)`** 를 호출하면, 핸들러가 `Request` 를 받아 `Response` 를 돌려줘요. 가장 간단한 핸들러는 그냥 `net.fetch('file://…')` 로 디스크의 파일을 서빙하는 거예요. "봉투마다 무엇을 담을지 정하는" 단계죠.
+
+가장 흔한 실제 용도는 패키징된 앱을 `file://` 대신 `app://` 로 로드하는 거예요. 그러면 제대로 된 웹 origin 이 생겨서 쿠키, 스토리지, 상대 URL 이 모두 정상 동작해요. 그리고 만약 `registerFileProtocol` 이나 `interceptStringProtocol` 로 가득한 옛 코드를 만난다면 — 아직 동작은 하지만 deprecated 예요. 그 모든 식구가 모던 메서드 하나 **`handle`** 로 합쳐졌어요.
+
+<Cards>
+  <Cards.Card title="app 모듈" href="/ko/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/ko/api/browser-window" arrow />
+  <Cards.Card title="보안" href="/ko/docs/best-practices/security" arrow />
+</Cards>

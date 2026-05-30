@@ -1,0 +1,208 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { NetworkApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<NetworkApiIllustration />}
+  title="autoUpdater"
+  subtitle="앱이 스스로 업데이트를 내려받아 설치하게 해요 — 업데이트 서버에서 조용히, 백그라운드로."
+  badge="API · autoUpdater"
+/>
+
+`autoUpdater` 모듈은 **Main 프로세스** 에 살고 `EventEmitter` 예요. macOS 의 **Squirrel.Mac**, Windows 의 **Squirrel.Windows / MSIX** 같은 네이티브 업데이트 프레임워크를 감싸서, 실행 중인 앱이 서버를 확인하고 새 빌드를 내려받은 뒤 다음 실행 때 자기 자신을 교체하도록 해줘요.
+
+```js filename="main.js"
+const { autoUpdater } = require('electron')
+
+autoUpdater.setFeedURL({ url: 'https://updates.example.com/latest' })
+
+autoUpdater.on('update-downloaded', () => {
+  autoUpdater.quitAndInstall() // 새 버전으로 재시작
+})
+
+autoUpdater.checkForUpdates()
+```
+
+<Callout type="info">
+`autoUpdater` 는 **macOS 와 Windows 에서만** 동작해요. Linux 용 기본 업데이터는 없어요 — 시스템 패키지 매니저(apt, dnf, Snap, Flatpak 등)로 배포하세요.
+</Callout>
+
+<EasyNote>
+`autoUpdater` 는 **앱의 자동 정비사** 예요. 당신이 계속 운전하는 동안, 더 새로운 모델이 있는지 조용히 확인하고 부품을 백그라운드로 미리 가져다 둔 다음, 다음에 주차(재시작)할 때 전부 갈아 끼워 줘요. 직접 정비소에 갈 필요가 없죠.
+</EasyNote>
+
+---
+
+## 이벤트(Events)
+
+`autoUpdater.on('이벤트명', 핸들러)` 로 듣습니다. 전체 흐름이 이벤트 기반이에요: 확인을 시작한 뒤, 각 단계가 끝날 때마다 반응하면 돼요. 모든 이벤트는 **macOS 와 Windows** 에서 발생해요.
+
+### 업데이트 흐름
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `checking-for-update` | 확인 시작 — 모듈이 피드 URL 에 접속하는 중 |
+| `update-available` | 더 새로운 버전 발견 — **다운로드가 자동으로 시작됨** |
+| `update-not-available` | 서버가 이미 최신이라고 응답함 |
+| `update-downloaded` | 업데이트 다운로드 완료, 설치 준비됨 |
+| `before-quit-for-update` | `quitAndInstall()` 호출 후, 창이 닫히기 직전 |
+| `error` | 확인·다운로드·설치 중 무언가 잘못됨 (`Error` 전달) |
+
+```js filename="update-flow.js"
+autoUpdater.on('checking-for-update', () => {
+  // "확인 중…" 표시를 띄우기 좋은 곳
+})
+
+autoUpdater.on('update-available', () => {
+  // 더 새로운 빌드가 있음 — 다운로드는 이미 시작됨
+})
+
+autoUpdater.on('update-not-available', () => {
+  // 할 일 없음, 이미 최신
+})
+
+autoUpdater.on('error', (error) => {
+  // 업데이트 실패가 앱을 죽이게 두지 마세요
+  notifyUser(`업데이트 실패: ${error.message}`)
+})
+```
+
+`update-downloaded` 이벤트는 새 릴리스의 상세 정보를 함께 전달해요:
+
+```js filename="update-downloaded.js"
+autoUpdater.on(
+  'update-downloaded',
+  (event, releaseNotes, releaseName, releaseDate, updateURL) => {
+    // Squirrel.Windows 에서는 releaseName 만 채워져요
+    showRestartPrompt({
+      notes: releaseNotes,
+      version: releaseName,
+      date: releaseDate,
+    })
+  }
+)
+```
+
+<EasyNote>
+여기엔 "다운로드 진행률" 이벤트가 없다는 점에 주목하세요. `autoUpdater` 는 한 번 던지면 알아서 처리하는 방식이에요: `update-available` 이 발생하면 다운로드는 스스로 진행되고, 우리는 `update-downloaded` 만 기다리면 돼요. 진행 바가 필요하다면 그건 `electron-updater` 같은 상위 라이브러리를 원한다는 신호예요.
+</EasyNote>
+
+<Callout type="warning">
+`update-downloaded` 의 인자들은 위치 기반이고, **Squirrel.Windows 는 `releaseName` 만 채워 줘요** — `releaseNotes`, `releaseDate`, `updateURL` 은 거기서 비어 있을 수 있어요. 모든 플랫폼에 값이 있다고 가정하지 마세요.
+</Callout>
+
+---
+
+## 메서드(Methods)
+
+이 모듈은 일부러 아주 작은 표면만 노출해요 — "어디서 업데이트하지?", "업데이트가 있나?", "지금 설치할까?" 에 곧장 대응하는 네 개의 메서드예요.
+
+### 피드 설정
+
+| 메서드 | 하는 일 |
+|---|---|
+| `autoUpdater.setFeedURL(options)` | 업데이트 서버를 지정하고 업데이터를 **초기화**. 확인 전에 반드시 호출 |
+| `autoUpdater.getFeedURL()` | 현재 설정된 피드 URL 을 `string` 으로 반환 |
+
+`setFeedURL(options)` 은 객체를 받아요:
+
+| 옵션 | 타입 | 플랫폼 | 의미 |
+|---|---|---|---|
+| `url` | `string` | 전체 | 업데이트 서버 URL (Windows 에서는 MSIX 직접 파일 링크) |
+| `headers` | `Record<string, string>` | macOS | 서버로 보낼 추가 HTTP 요청 헤더 |
+| `serverType` | `string` | macOS | `'json'` 또는 `'default'` — 서버가 쓰는 응답 형식 |
+| `allowAnyVersion` | `boolean` | Windows | 다운그레이드 포함 아무 버전 설치 허용 (MSIX 전용) |
+
+```js filename="set-feed-url.js"
+// 인증 헤더를 붙인 macOS 스타일 JSON 피드
+autoUpdater.setFeedURL({
+  url: 'https://updates.example.com/feed?platform=darwin',
+  serverType: 'json',
+  headers: { Authorization: `Bearer ${token}` },
+})
+
+const current = autoUpdater.getFeedURL() // 다시 읽어오기
+```
+
+### 확인 & 설치
+
+| 메서드 | 하는 일 |
+|---|---|
+| `autoUpdater.checkForUpdates()` | 업데이트가 있는지 서버에 질의. 가능한 업데이트는 **자동으로 다운로드** |
+| `autoUpdater.quitAndInstall()` | 모든 창을 닫고 앱을 종료한 뒤 다운로드된 업데이트를 설치하고 재시작 |
+
+```js filename="check-and-install.js"
+autoUpdater.setFeedURL({ url: feedUrl })
+
+// 오래 켜 두는 앱이 최신을 유지하도록 타이머로 재확인
+setInterval(() => {
+  autoUpdater.checkForUpdates()
+}, 60 * 60 * 1000) // 1시간마다
+
+autoUpdater.on('update-downloaded', () => {
+  // quitAndInstall 은 선택 사항 — 다음 일반 재시작 때도 자동 설치돼요
+  autoUpdater.quitAndInstall()
+})
+```
+
+<Callout type="warning">
+`checkForUpdates()` 는 먼저 `setFeedURL()` 호출이 필요하고, 다운로드 진행 중에 다시 호출하면 **중복 다운로드** 가 일어날 수 있어요. 플래그로 막고 짧은 간격에 반복 호출하지 마세요.
+</Callout>
+
+<Callout type="warning">
+사실 `quitAndInstall()` 은 보통 필요하지도 않아요 — 다운로드된 업데이트는 사용자가 다음에 앱을 재시작할 때 자동으로 적용돼요. **지금 당장** 강제로 적용하고 싶을 때만 호출하세요.
+</Callout>
+
+---
+
+## 속성(Properties)
+
+`autoUpdater` 는 **공개 속성이 없어요** — 모든 상호작용은 메서드와 이벤트로 이뤄집니다.
+
+---
+
+## 플랫폼 참고
+
+### macOS
+
+- **Squirrel.Mac** 프레임워크 위에서 동작해요.
+- 애플리케이션이 **코드 서명** 되어 있어야 해요. 안 그러면 자동 업데이트가 조용히 실패해요.
+- App Transport Security 가 적용돼요. HTTP(비-HTTPS) 피드를 쓰려면 `Info.plist` 에 `NSAllowsArbitraryLoads` 가 필요할 수 있어요.
+
+### Windows
+
+- 패키징 형식(**Squirrel.Windows** 또는 **MSIX**)을 자동으로 감지해요.
+- 첫 실행 때 설치 프로그램이 앱을 `--squirrel-firstrun` 플래그로 띄워요 — 그 구간에는 업데이트 확인을 피하세요(또는 약 10초 지연을 두세요). 설치가 자리를 잡도록요.
+- 작업표시줄 고정과 업데이트 감지가 제대로 되도록 [`app.setAppUserModelId()`](/ko/api/app) 를 호출하세요.
+- MSIX 에서는 `url` 을 직접 파일 링크로 가리키고 `allowAnyVersion` 으로 다운그레이드를 허용할 수 있어요.
+
+```js filename="windows-firstrun.js"
+// Windows: 설치 직후 바로 그 첫 실행은 건너뛰기
+const isFirstRun = process.argv.includes('--squirrel-firstrun')
+
+if (!isFirstRun) {
+  autoUpdater.setFeedURL({ url: feedUrl })
+  autoUpdater.checkForUpdates()
+}
+```
+
+---
+
+## 쉽게 풀어 설명
+
+`autoUpdater` 는 앱에게 단 하나의 질문에 답해줘요: **"나의 더 새로운 버전이 있나요? 그걸 설치해 줄 수 있나요?"**
+
+전부가 이벤트로 이뤄진 짧은 대화일 뿐이에요:
+
+1. **`setFeedURL()`** 로 서버를 한 번 가리켜요.
+2. **`checkForUpdates()`** 로 물어봐요. 그러면 `update-not-available`(최신이에요) 또는 `update-available`(그리고 조용히 다운로드 시작) 로 답해요.
+3. 다운로드가 끝나면 **`update-downloaded`** 를 받아요. 이 시점에 업데이트는 이미 준비돼 있어서, 다음 재시작 때 적용되거나 **`quitAndInstall()`** 을 호출하면 지금 바로 적용돼요.
+
+정말로 이게 메서드 네 개와 이벤트 여섯 개의 전부예요. 일부러 군더더기 없이 만들었죠: 진행 바도, 버전 비교도, Linux 지원도 없어요. 실무 앱 대부분은 이런 편의 기능을 더해 주는 상위 라이브러리(예: `electron-updater`)로 감싸지만, 그 밑에는 여전히 이 단순한 반복이 있어요. 세 이름만 기억하세요 — **`setFeedURL`**, **`checkForUpdates`**, **`update-downloaded`** — 그러면 이 모듈 전체를 이해한 거예요.
+
+<Cards>
+  <Cards.Card title="app 모듈" href="/ko/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/ko/api/browser-window" arrow />
+  <Cards.Card title="보안" href="/ko/docs/best-practices/security" arrow />
+</Cards>

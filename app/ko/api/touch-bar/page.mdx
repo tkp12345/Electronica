@@ -1,0 +1,274 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { MenuApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<MenuApiIllustration />}
+  title="TouchBar"
+  subtitle="Touch Bar 가 있는 맥에서 키보드 위에 뜨는 버튼·슬라이더·라벨 띠를 만들어요."
+  badge="API · TouchBar"
+/>
+
+`TouchBar` 는 **Main 프로세스** 에서 `new` 로 만드는 **클래스** 예요. 버튼·라벨·슬라이더 같은 작은 아이템 객체들로 레이아웃을 조립한 뒤, `win.setTouchBar(touchBar)` 로 창에 넘겨요. 그러면 macOS 가 키보드 위 실제 Touch Bar 에 그려 줍니다.
+
+```js filename="main.js"
+const { app, BrowserWindow, TouchBar } = require('electron')
+const { TouchBarButton, TouchBarLabel, TouchBarSpacer } = TouchBar
+
+app.whenReady().then(() => {
+  const win = new BrowserWindow({ width: 800, height: 600 })
+
+  const touchBar = new TouchBar({
+    items: [
+      new TouchBarLabel({ label: '안녕 Touch Bar' }),
+      new TouchBarSpacer({ size: 'large' }),
+      new TouchBarButton({ label: '눌러보세요', click: () => win.reload() }),
+    ],
+  })
+
+  win.setTouchBar(touchBar)
+})
+```
+
+<Callout type="warning">
+TouchBar 는 **macOS 전용** 이에요 — Windows·Linux 에서는 아무 동작도 하지 않아요. 최신 맥북은 실제 Touch Bar 하드웨어를 아예 없앴으니, 꼭 필요한 조작 수단이 아니라 "있으면 좋은" 보조 기능으로만 쓰세요. 애플의 원본 API 자체가 실험적이라 Electron 버전에 따라 바뀔 수 있어요.
+</Callout>
+
+<EasyNote>
+`TouchBar` 는 펑션키가 있던 자리에 놓인 **작은 두 번째 화면** 이라고 생각하면 돼요. 직접 그리는 게 아니라, 작은 위젯들의 한 줄을 "이렇게 배치해 줘" 라고 설명하면 macOS 가 가장 앞에 있는 창을 위해 그 줄을 그려 줘요.
+</EasyNote>
+
+---
+
+## 생성자(Constructor)
+
+| 생성자 | 하는 일 |
+|---|---|
+| `new TouchBar(options)` | 아이템 목록으로 Touch Bar 레이아웃 생성 |
+
+`options` 객체:
+
+| 옵션 | 타입 | 무엇인가 |
+|---|---|---|
+| `items` | `(TouchBarButton \| TouchBarColorPicker \| TouchBarGroup \| TouchBarLabel \| TouchBarPopover \| TouchBarScrubber \| TouchBarSegmentedControl \| TouchBarSlider \| TouchBarSpacer \| TouchBarOtherItemsProxy)[]` | 왼쪽에서 오른쪽으로 표시될 위젯들 |
+| `escapeItem` | `TouchBarItem \| null` | 시스템 "esc" 버튼을 대체 (`null` 이면 기본값 유지) |
+
+```js filename="escape-item.js"
+const { TouchBar } = require('electron')
+const { TouchBarButton } = TouchBar
+
+// "esc" 키 자리를 커스텀 취소 버튼으로 교체
+const touchBar = new TouchBar({
+  items: [/* ... */],
+  escapeItem: new TouchBarButton({
+    label: '취소',
+    backgroundColor: '#C0392B',
+    click: () => abortCurrentTask(),
+  }),
+})
+```
+
+---
+
+## 인스턴스 이벤트(Instance events)
+
+`TouchBar` 자체에는 **이벤트가 없어요**. 각 아이템이 생성자에 넘긴 콜백으로 상호작용을 처리합니다 — 예를 들어 버튼의 `click`, 슬라이더의 `change`, 스크러버의 `select`/`highlight` 처럼요. 아래 아이템 타입을 참고하세요.
+
+---
+
+## 인스턴스 메서드(Instance methods)
+
+`TouchBar` 에는 **인스턴스 메서드가 없어요**. 생성자에서 레이아웃을 한 번 만들고, `win.setTouchBar(touchBar)` 로 붙인 다음, 개별 아이템의 값을 바꾸면(예: `button.label = '저장 중…'`) 화면이 갱신돼요 — 이런 아이템 변경은 즉시 바에 반영됩니다.
+
+```js filename="live-update.js"
+const saveButton = new TouchBarButton({ label: '저장', click: save })
+win.setTouchBar(new TouchBar({ items: [saveButton] }))
+
+// 이후: 아이템 속성만 바꾸면 다시 붙일 필요 없이 바가 즉시 갱신돼요
+saveButton.label = '저장 중…'
+saveButton.enabled = false
+```
+
+---
+
+## 인스턴스 속성(Instance properties)
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `touchBar.escapeItem` | `TouchBarItem \| null` | "esc" 버튼을 대체하는 아이템 읽기/쓰기; `null` 이면 시스템 기본값 복원 |
+
+---
+
+## 아이템 타입(Item types)
+
+이게 바로 구성 요소들이에요. `TouchBar` 의 정적 속성으로 접근하고(예: `TouchBar.TouchBarButton`), 각각 `new` 로 생성합니다. 모두 **macOS 전용** 이에요.
+
+| 아이템 타입 | 무엇인가 |
+|---|---|
+| `TouchBar.TouchBarButton` | 누를 수 있는 버튼 (라벨/아이콘) |
+| `TouchBar.TouchBarColorPicker` | 색상 선택기를 여는 스와치 |
+| `TouchBar.TouchBarGroup` | 다른 `TouchBar` 의 아이템들을 중첩하는 컨테이너 |
+| `TouchBar.TouchBarLabel` | (색 지정 가능한) 정적 텍스트 |
+| `TouchBar.TouchBarPopover` | 눌러서 중첩 아이템으로 펼쳐지는 버튼 |
+| `TouchBar.TouchBarScrubber` | 선택 가능한 아이템들의 스크롤 가능한 띠 |
+| `TouchBar.TouchBarSegmentedControl` | 연결된 세그먼트 한 줄 (탭 전환기 같은) |
+| `TouchBar.TouchBarSlider` | 값 범위를 가진 드래그 가능한 슬라이더 |
+| `TouchBar.TouchBarSpacer` | 아이템 사이의 고정/유연 빈 공간 |
+| `TouchBar.TouchBarOtherItemsProxy` | macOS 가 자체 시스템 아이템을 끼워 넣는 자리 표시자 |
+
+### TouchBarButton
+
+| 옵션 / 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `label` | `string` | 버튼 텍스트 |
+| `accessibilityLabel` | `string` | VoiceOver 가 읽어 주는 짧은 설명 |
+| `backgroundColor` | `string` | 16진수 배경색, 예: `#ABCDEF` |
+| `icon` | `NativeImage \| string` | 버튼 아이콘 |
+| `iconPosition` | `'left' \| 'right' \| 'overlay'` | 아이콘 위치 (기본 `overlay`) |
+| `click` | `Function` | 버튼을 누르면 호출 |
+| `enabled` | `boolean` | 버튼이 반응하는지 (기본 `true`) |
+
+위 항목들은 (`click` 제외) 실시간으로 쓸 수 있는 속성이기도 해요.
+
+```js filename="button.js"
+const playButton = new TouchBarButton({
+  label: '▶ 재생',
+  backgroundColor: '#27AE60',
+  click: () => togglePlayback(),
+})
+```
+
+### TouchBarLabel
+
+| 옵션 / 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `label` | `string` | 표시할 텍스트 |
+| `accessibilityLabel` | `string` | 스크린 리더가 읽어 주는 설명 |
+| `textColor` | `string` | 16진수 글자색, 예: `#ABCDEF` |
+
+### TouchBarSlider
+
+| 옵션 / 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `label` | `string` | 라벨 텍스트 |
+| `value` | `Integer` | 현재 값 |
+| `minValue` | `Integer` | 최솟값 |
+| `maxValue` | `Integer` | 최댓값 |
+| `change` | `Function` | 사용자가 드래그할 때 새 값과 함께 호출 (생성자 전용) |
+
+```js filename="slider.js"
+const volume = new TouchBarSlider({
+  label: '볼륨',
+  value: 50,
+  minValue: 0,
+  maxValue: 100,
+  change: (newValue) => setVolume(newValue),
+})
+```
+
+### TouchBarColorPicker
+
+| 옵션 / 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `availableColors` | `string[]` | 사용자가 고를 수 있는 16진수 색상들 |
+| `selectedColor` | `string` | 처음 선택된 16진수 색상 |
+| `change` | `Function` | 선택한 색상과 함께 호출 (생성자 전용) |
+
+### TouchBarScrubber
+
+| 옵션 / 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `items` | `ScrubberItem[]` | 스크롤되는 아이템들 (`label`/`icon`) |
+| `select` | `Function` | 아이템 선택 시 `selectedIndex` 와 함께 호출 (생성자 전용) |
+| `highlight` | `Function` | 아무 탭에서나 `highlightedIndex` 와 함께 호출 (생성자 전용) |
+| `selectedStyle` | `'background' \| 'outline' \| 'none'` | 선택된 아이템 스타일 (기본 `none`) |
+| `overlayStyle` | `'background' \| 'outline' \| 'none'` | 선택된 아이템의 오버레이 스타일 (기본 `none`) |
+| `showArrowButtons` | `boolean` | 좌/우 화살표 표시 (기본 `false`) |
+| `mode` | `'fixed' \| 'free'` | 스크롤 모드 (기본 `free`) |
+| `continuous` | `boolean` | 연속 스크롤 (기본 `true`) |
+
+### TouchBarSegmentedControl
+
+| 옵션 / 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `segmentStyle` | `string` | `automatic`, `rounded`, `textured-rounded`, `round-rect`, `textured-square`, `capsule`, `small-square`, `separated` |
+| `mode` | `'single' \| 'multiple' \| 'buttons'` | 선택 동작 (기본 `single`) |
+| `segments` | `SegmentedControlSegment[]` | 세그먼트들 (`label`/`icon`, `enabled`) |
+| `selectedIndex` | `Integer` | 현재 선택된 세그먼트 |
+| `change` | `Function` | `selectedIndex` 와 `isSelected` 와 함께 호출 (생성자 전용) |
+
+<Callout type="warning">
+`TouchBarSegmentedControl` 에서 `segments` 배열 참조를 바꾸면 바가 갱신되지만, 기존 세그먼트 객체 _안의_ 속성만 바꾸면 갱신되지 **않아요**. 화면에 반영하려면 새 배열을 통째로 할당하세요.
+</Callout>
+
+### TouchBarPopover
+
+| 옵션 / 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `label` | `string` | 버튼 텍스트 |
+| `icon` | `NativeImage` | 버튼 아이콘 |
+| `items` | `TouchBar` | 펼쳤을 때 보이는 중첩 레이아웃 |
+| `showCloseButton` | `boolean` | 팝오버 안에 닫기 버튼 표시 (기본 `true`) |
+
+### TouchBarGroup
+
+| 옵션 | 타입 | 무엇인가 |
+|---|---|---|
+| `items` | `TouchBar` | 함께 묶이는 중첩 아이템들 |
+
+### TouchBarSpacer
+
+| 옵션 / 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `size` | `'small' \| 'large' \| 'flexible'` | `small`/`large` 는 고정 간격, `flexible` 은 남는 공간을 모두 차지 (기본 `small`) |
+
+### TouchBarOtherItemsProxy
+
+옵션 없음. `items` 에 넣으면 macOS 가 자체 표준 컨트롤을 배치할 자리를 예약해요.
+
+```js filename="combined.js"
+const { TouchBar } = require('electron')
+const {
+  TouchBarLabel,
+  TouchBarSlider,
+  TouchBarSpacer,
+  TouchBarSegmentedControl,
+} = TouchBar
+
+const tabs = new TouchBarSegmentedControl({
+  segmentStyle: 'rounded',
+  segments: [{ label: '편집' }, { label: '미리보기' }],
+  selectedIndex: 0,
+  change: (selectedIndex) => switchPane(selectedIndex),
+})
+
+const touchBar = new TouchBar({
+  items: [
+    new TouchBarLabel({ label: '에디터' }),
+    new TouchBarSpacer({ size: 'flexible' }),
+    tabs,
+    new TouchBarSlider({ label: '확대', value: 100, minValue: 50, maxValue: 200, change: setZoom }),
+  ],
+})
+
+win.setTouchBar(touchBar)
+```
+
+---
+
+## 쉽게 풀어 설명
+
+Touch Bar 는 일부 맥북에서 키보드 위, 펑션키가 있던 자리에 놓인 그 **얇은 터치 띠** 예요. `TouchBar` 를 쓰면 밋밋한 F 키 대신 앱이 직접 만든 컨트롤 — 재생 버튼, 볼륨 슬라이더, 색상 선택기 같은 것들 — 을 거기에 올릴 수 있어요.
+
+마음속 그림은 간단해요: 지금 **위젯 한 줄을 짓고 있는 것** 이에요. `TouchBar.*` 에서 조각을 골라(여기 버튼 하나, 저기 라벨 하나, 사이를 벌릴 스페이서 하나) `new TouchBar({ items: [...] })` 에 담고, 그 결과를 `win.setTouchBar(...)` 로 창에 넘기면 끝이에요. 그리는 일은 macOS 가 합니다.
+
+바 자체에는 이벤트도 메서드도 없어요 — 위젯마다 자기 콜백을 들고 있죠(버튼의 `click`, 슬라이더의 `change`). 그리고 나중에 뭔가를 바꾸고 싶을 땐 바를 다시 만들 필요 없이, 아이템 속성만 바꾸면(`button.label = '저장 중…'`) 그 자리에서 갱신돼요.
+
+기억할 주의점 두 가지: **macOS 전용** 이라는 것, 그리고 애플이 이 하드웨어를 점점 없애고 있다는 것. 그러니 멋진 덤 기능으로만 쓰고, 중요한 일을 할 수 있는 유일한 통로로는 절대 두지 마세요.
+
+<Cards>
+  <Cards.Card title="BrowserWindow (setTouchBar)" href="/ko/api/browser-window" arrow />
+  <Cards.Card title="app 모듈" href="/ko/api/app" arrow />
+  <Cards.Card title="프로세스 모델" href="/ko/docs/processes" arrow />
+</Cards>

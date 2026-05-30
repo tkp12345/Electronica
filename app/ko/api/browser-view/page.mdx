@@ -1,0 +1,151 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { WindowApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<WindowApiIllustration />}
+  title="BrowserView"
+  subtitle="기존 창 안에 독립적으로 위치를 잡는 두 번째 웹 페이지를 끼워 넣어요 — 자체 페이지를 가진 작은 사각형처럼요."
+  badge="API · BrowserView"
+/>
+
+`BrowserView` 는 **Main 프로세스** 에서 `new` 로 만드는 **클래스** 예요. 각 인스턴스는 자체 `WebContents` 를 가진 사각형 영역으로, `BrowserWindow` 위에 올려서 그 창을 기준으로 위치와 크기를 잡아요.
+
+```js filename="main.js"
+const { app, BrowserWindow, BrowserView } = require('electron')
+
+app.whenReady().then(() => {
+  const win = new BrowserWindow({ width: 800, height: 600 })
+
+  const view = new BrowserView()
+  win.setBrowserView(view)
+  view.setBounds({ x: 0, y: 0, width: 300, height: 600 })
+  view.webContents.loadURL('https://example.com')
+})
+```
+
+<Callout type="warning">
+**`BrowserView` 는 더 이상 사용되지 않아요(deprecated)** (Electron v29 부터). [`WebContentsView`](/ko/api/web-contents) 와 `BaseWindow` 조합으로 대체되었고, "영역 안에 웹 페이지를 끼워 넣는" 같은 기능을 더 깔끔하고 유연한 API 로 제공해요. **새 코드에서는 `WebContentsView` 를 쓰세요** — `BrowserView` 는 유지보수 중인 옛 앱에만 남겨 두세요.
+</Callout>
+
+<EasyNote>
+`BrowserWindow` 는 웹 페이지를 **하나** 담아요. `BrowserView` 는 그 창의 한 사각형 영역에 **추가** 페이지를 끼워 넣게 해줘요 — 브라우저의 툴바가 페이지 영역 위에 올라간 모습을 떠올려 보세요. 툴바와 페이지가 서로 독립된 두 개의 웹 콘텐츠인 셈이죠. 창이 액자라면, `BrowserView` 는 그 일부 위에 테이프로 붙이는 작은 그림이에요.
+</EasyNote>
+
+---
+
+## 생성자(Constructor)
+
+| 생성자 | 하는 일 |
+|---|---|
+| `new BrowserView([options])` | 뷰를 생성. `options.webPreferences` 로 뷰의 `WebContents` 를 설정 (창의 `webPreferences` 와 동일한 설정) |
+
+```js filename="construct.js"
+// 끼워 넣는 페이지를 안전한 기본값으로 잠가요
+const view = new BrowserView({
+  webPreferences: {
+    preload: path.join(__dirname, 'preload.js'),
+    contextIsolation: true, // 권장
+    nodeIntegration: false, // 권장
+  },
+})
+```
+
+`webPreferences` 객체는 `WebContents` 설정 전체를 받아요 — `preload`, `sandbox`, `contextIsolation`, `nodeIntegration`, `session`, `partition`, `webSecurity`, `zoomFactor`, `backgroundThrottling`, `offscreen`, `spellcheck` 등, `new BrowserWindow(...)` 에 넘기는 `webPreferences` 와 똑같아요.
+
+<Callout type="warning">
+`BrowserView` 는 그 자체로는 어떤 창의 자식이 **아니에요**. 화면에 나타나려면 `win.setBrowserView(view)`(또는 `win.addBrowserView(view)`)로 먼저 붙여야 하고, 자동으로 파괴되지도 **않아요** — 다 쓰면 직접 정리하는 걸 잊지 마세요.
+</Callout>
+
+---
+
+## 정적 메서드(Static methods)
+
+`BrowserView` 에는 **정적 메서드가 없어요.** (`new BrowserView()` 로 인스턴스를 만들고, `win.setBrowserView` / `win.addBrowserView` 같은 `BrowserWindow` 메서드로 창에 붙입니다.)
+
+---
+
+## 인스턴스 이벤트(Instance events)
+
+`BrowserView` 자체는 **이벤트를 발생시키지 않아요.** 대신 안에 있는 페이지에서 들으세요 — `view.webContents` 는 평범한 [`WebContents`](/ko/api/web-contents) 라서, `view.webContents.on('did-finish-load', ...)`, `'did-fail-load'`, `'dom-ready'` 등 `WebContents` 이벤트 전체를 그대로 쓰면 돼요.
+
+```js filename="events.js"
+// view.on(...) 이벤트는 없어요 — 안의 페이지에서 들으세요
+view.webContents.on('did-finish-load', () => {
+  // 끼워 넣은 페이지의 로딩이 끝남
+})
+
+view.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+  // 로딩 실패 처리
+})
+```
+
+---
+
+## 인스턴스 메서드(Instance methods)
+
+### 레이아웃 & 크기
+
+| 메서드 | 하는 일 |
+|---|---|
+| `view.setBounds(bounds)` | 뷰를 **창 기준** `Rectangle`(`{ x, y, width, height }`)로 이동·크기 조절 |
+| `view.getBounds()` | 뷰의 현재 bounds 를 `Rectangle` 로 가져오기 |
+| `view.setAutoResize(options)` | 창 크기에 따라 뷰를 자동 리사이즈 (`{ width, height, horizontal, vertical }` 불리언) |
+| `view.setBackgroundColor(color)` | 배경색 설정 — 16진수, RGB(A), HSL(A), 또는 이름 있는 CSS 색상 |
+
+```js filename="layout.js"
+// 위쪽 40px 높이의 툴바를 뺀 나머지를 뷰로 채워요
+view.setBounds({ x: 0, y: 40, width: 800, height: 560 })
+
+// 너비는 고정하고 높이만 창에 따라 늘어나게
+view.setAutoResize({ width: false, height: true })
+
+// 페이지 뒤 영역을 칠해요 (페이지가 렌더되기 전에 보임)
+view.setBackgroundColor('#ffffff')
+```
+
+<Callout type="warning">
+`setBounds` 좌표는 화면이 아니라 **부모 창의 콘텐츠 영역 기준** 이에요. 또한 뷰는 창의 자체 페이지 **위에** 그려져요 — 겹치는 영역에서는 아래쪽 `BrowserWindow` 페이지가 뷰에 가려져 안 보여요.
+</Callout>
+
+<EasyNote>
+`setAutoResize` 는 `resize` 리스너를 직접 안 달아도 되게 해주는 메서드예요. 어떤 변을 늘릴지(`horizontal`/`vertical`), 어떤 크기를 창에 맞출지(`width`/`height`)만 알려주면, 창 크기가 바뀔 때 Electron 이 뷰를 알아서 맞춰줘요 — 수동 계산이 필요 없어요.
+</EasyNote>
+
+---
+
+## 인스턴스 속성(Instance properties)
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `view.webContents` | `WebContents` (읽기전용) | 이 뷰 안에 렌더되는 웹 페이지 — URL 로드, JavaScript 실행, 이벤트 청취를 모두 여기서 |
+
+```js filename="webcontents.js"
+// *페이지* 에 관한 모든 것은 view.webContents 에 있어요
+view.webContents.loadURL('https://example.com')
+view.webContents.openDevTools()
+view.webContents.on('did-finish-load', () => {
+  // 끼워 넣은 페이지 준비 완료
+})
+```
+
+<EasyNote>
+`view.webContents` 는 `BrowserView` 가 노출하는 유일한 속성이고, 가장 중요한 속성이에요. 뷰는 창 위의 사각형일 뿐이고, 실제 페이지(URL, 스크립트, 이벤트)는 모두 이 `WebContents` 에 있어요 — `BrowserWindow` 가 `win.webContents` 로 노출하는 그 객체와 똑같아요.
+</EasyNote>
+
+---
+
+## 쉽게 풀어 설명
+
+`BrowserView` 는 한 가지 질문에 답해요. _"창 하나 안에 독립적인 두 번째 웹 페이지를 어떻게 넣지?"_ `BrowserWindow` 는 페이지를 늘 **하나** 만 보여줘요. 고정 툴바에 페이지 하나, 본문에 또 다른 페이지 — 둘 다 진짜 웹 페이지 — 가 필요할 때 `BrowserView` 를 꺼냈죠. `setBounds` 로 위치를 잡고, `win.setBrowserView(view)` 로 창에 붙이고, `view.webContents.loadURL(...)` 로 채우는 사각형이에요.
+
+배울 것도 많지 않아요. 생성자 하나, 레이아웃 메서드 네 개(`setBounds`, `getBounds`, `setAutoResize`, `setBackgroundColor`), 그리고 `webContents` 속성 하나. 이벤트도, 정적 메서드도 없어요.
+
+하지만 핵심은 이거예요. **`BrowserView` 는 더 이상 권장되지 않아요(deprecated).** 최신 Electron 은 이를 **`WebContentsView`**(끼워 넣는 페이지)와 **`BaseWindow`**(여러 뷰를 담는 창)로 대체했어요 — 같은 아이디어, 더 친절한 API, 그리고 프레임워크가 나아가는 방향이죠. 그러니 옛 코드를 읽으려면 `BrowserView` 를 이해하되, 새로 만들 때는 `WebContentsView` 를 쓰세요.
+
+<Cards>
+  <Cards.Card title="WebContents" href="/ko/api/web-contents" arrow />
+  <Cards.Card title="BrowserWindow" href="/ko/api/browser-window" arrow />
+  <Cards.Card title="app 모듈" href="/ko/api/app" arrow />
+</Cards>

@@ -1,0 +1,127 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { GenericApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<GenericApiIllustration />}
+  title="webUtils"
+  subtitle="드래그앤드롭이나 <input type=file>에서 받은 웹 File 객체를 실제 파일 경로로 바꿔요."
+  badge="API · webUtils"
+/>
+
+`webUtils` 모듈은 **Renderer 프로세스** 에 살아요. 웹 세계(`File`, `Blob`)와 네이티브 세계를 이어 주는 작은 유틸리티 계층으로, 그중에서도 가장 중요한 건 사용자가 끌어다 놓거나 고른 `File` 뒤에 숨은 실제 디스크 경로를 찾아 주는 일이에요.
+
+```js filename="renderer.js"
+const { webUtils } = require('electron')
+
+document.addEventListener('drop', (event) => {
+  event.preventDefault()
+  for (const file of event.dataTransfer.files) {
+    const path = webUtils.getPathForFile(file) // 예: /Users/me/photo.png
+    sendToMain(path)
+  }
+})
+```
+
+<EasyNote>
+브라우저의 `File` 객체는 일부러 **익명** 으로 만들어져 있어요 — 프라이버시를 위해, 웹은 그 파일이 디스크 어디에 있는지 페이지에 알려 주지 않아요. 하지만 네이티브 앱인 Electron 은 알 수 있죠. `webUtils` 는 그 익명의 `File` 을 `/Users/me/photo.png` 같은 실제 경로로 되돌려 주는 작은 번역기예요.
+</EasyNote>
+
+---
+
+## 메서드(Methods)
+
+`webUtils` 에는 메서드가 딱 하나뿐이에요. 이 하나가 모듈 전부랍니다.
+
+| 메서드 | 하는 일 |
+|---|---|
+| `webUtils.getPathForFile(file)` | `File` 객체가 가리키는 파일 시스템 경로를 돌려줘요. `File` 이 아닌 값을 넘기면 예외를 던지고, JS 로 만든(디스크 파일이 아닌) 메모리상의 `File` 을 넘기면 빈 문자열 `''` 을 돌려줘요. |
+
+**시그니처**
+
+```js filename="signature.js"
+// file:    웹 File 객체 (drop 이벤트, <input type="file"> 등에서 옴)
+// 반환값:  string — 디스크상의 절대 경로, 백킹 파일이 없으면 ''
+const path = webUtils.getPathForFile(file)
+```
+
+`<input type="file">` 를 쓰는 전체 예시:
+
+```js filename="picker.js"
+const { webUtils } = require('electron')
+
+const input = document.querySelector('#file-input')
+
+input.addEventListener('change', () => {
+  for (const file of input.files) {
+    const path = webUtils.getPathForFile(file)
+    if (path) {
+      // 디스크에 실제로 있는 파일 — 경로를 main 프로세스로 넘겨 읽게 해요
+      window.electronAPI.processFile(path)
+    } else {
+      // 디스크 백킹이 없는, JS 로 만든 File — 대신 바이트를 직접 읽어요
+      file.arrayBuffer().then(handleInMemory)
+    }
+  }
+})
+```
+
+<Callout type="warning">
+**`getPathForFile` 은 옛날의 `File.path` 속성을 대체해요.** 예전 Electron 코드는 `file.path` 를 바로 읽었지만, 그 확장은 제거됐어요. 이제는 항상 `webUtils.getPathForFile(file)` 을 거쳐야 해요.
+</Callout>
+
+<Callout type="warning">
+`contextIsolation` 이 켜져 있으면(안전한 기본값) `getPathForFile` 을 **preload 스크립트** 안에서 호출하고 결과를 `contextBridge` 로 노출하세요 — 렌더러의 격리된 세계에서는 `require('electron')` 에 접근할 수 없어요.
+</Callout>
+
+```js filename="preload.js"
+const { contextBridge, webUtils } = require('electron')
+
+// 작고 명시적인 표면만 노출 — webUtils 객체 전체를 넘기지 마세요
+contextBridge.exposeInMainWorld('electronAPI', {
+  getPathForFile: (file) => webUtils.getPathForFile(file)
+})
+```
+
+```js filename="renderer-isolated.js"
+// 컨텍스트 격리가 켜진 페이지 안에서:
+const path = window.electronAPI.getPathForFile(droppedFile)
+```
+
+<EasyNote>
+옷 보관소를 떠올려 보세요. 브라우저는 페이지에 번호표(`File` 객체)만 건네고 어떤 코트인지는 말해 주지 않아요. `getPathForFile` 은 그 번호표를 읽고 코트가 정확히 어느 고리에 걸려 있는지 — 즉 실제 경로를 — 알려 주는 직원이에요.
+</EasyNote>
+
+---
+
+## 이벤트(Events)
+
+`webUtils` 에는 **이벤트가 없어요**. 순수한 동기 유틸리티 모듈이라, 하나뿐인 메서드를 호출하면 곧바로 값을 돌려받습니다.
+
+---
+
+## 속성(Properties)
+
+`webUtils` 에는 **속성이 없어요**. 공개 표면 전체가 위에서 설명한 단 하나의 `getPathForFile` 메서드예요.
+
+---
+
+## 쉽게 풀어 설명
+
+웹 플랫폼은 일부러 파일 경로를 비밀로 해요. 사용자가 사진을 평범한 웹 페이지에 끌어다 놓으면, 페이지는 그 파일의 _내용_ 은 읽을 수 있지만 그 파일이 _어디에_ 있는지는 절대 알 수 없어요. 브라우저 프라이버시 측면에서는 좋은 일이죠.
+
+하지만 Electron 앱은 네이티브 앱이라 알 수 있어요. `webUtils` 는 딱 한 가지 일을 위해 존재해요: 사용자가 끌어다 놓거나 고른 `File` 을 받아서, 그 **실제 디스크 경로** 를 알려 주는 것. 그게 전부예요 — 메서드 하나, `getPathForFile(file)`.
+
+두 가지만 기억하면 이 모듈은 끝이에요:
+
+1. **빈 문자열은 "파일 없음" 이라는 뜻이에요.** `File` 이 디스크가 아니라 JavaScript 로 만들어진(`new File([...], 'x.txt')`) 거라면 돌려줄 경로가 없으니 `''` 을 받아요. 이때는 "대신 바이트를 읽어라" 로 처리하면 돼요.
+2. **컨텍스트 격리에 따라 호출 위치가 달라져요.** 안전한 기본값이 켜져 있으면 `getPathForFile` 을 preload 에서 실행하고 경로를 `contextBridge` 로 내보내세요 — 페이지 자체는 `require('electron')` 에 닿을 수 없어요.
+
+예전 Electron 에서 `file.path` 를 읽던 분이라면, 이게 바로 그 현대적이고 명시적인 대체재랍니다.
+
+<Cards>
+  <Cards.Card title="app 모듈" href="/ko/api/app" arrow />
+  <Cards.Card title="contextBridge & preload" href="/ko/docs/tutorial/preload" arrow />
+  <Cards.Card title="보안" href="/ko/docs/best-practices/security" arrow />
+</Cards>

@@ -1,0 +1,176 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { SystemApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<SystemApiIllustration />}
+  title="crashReporter"
+  subtitle="모든 프로세스의 네이티브 크래시 리포트를 수집하고, 원하면 서버로 업로드해 분석해요."
+  badge="API · crashReporter"
+/>
+
+`crashReporter` 모듈은 **네이티브 크래시 리포트** 를 제출할 수 있게 해줘요 — 일반적인 `try/catch` 로는 절대 잡을 수 없는, Chromium/Node 의 저수준 크래시 말이에요. 가능한 한 일찍 한 번 시작해 두면, 그 뒤로 앱이 만드는 모든 프로세스가 감시돼요.
+
+```js filename="main.js"
+const { crashReporter } = require('electron')
+
+// 크래시 수집을 시작해요 — 창을 만들기 전에 호출하세요
+crashReporter.start({
+  submitURL: 'https://submit.example.com/post',
+  uploadToServer: true,
+})
+```
+
+<EasyNote>
+`crashReporter` 는 앱의 **블랙박스(비행기록장치)** 예요. JavaScript 가 실행될 틈조차 없을 만큼 심하게 죽어 버린 상황에서도, 이 모듈은 이미 무슨 일이 있었는지 기록해 두었다가 나중에 읽어 볼 수 있게 집으로 보내 줘요.
+</EasyNote>
+
+---
+
+## 이벤트(Events)
+
+`crashReporter` 모듈은 **이벤트를 발생시키지 않아요**. 조용히 백그라운드에서 동작해요 — `start()` 로 한 번 설정해 두면, 그다음엔 아래 메서드들로 리포트를 읽기만 하면 돼요.
+
+---
+
+## 메서드(Methods)
+
+`crashReporter` 모듈은 **클래스가 아니에요** — `new crashReporter()` 같은 건 없어요. 정적 메서드를 가진 싱글턴 객체예요. _(Main)_ 표시는 **Main 프로세스** 에서만 쓸 수 있다는 뜻이에요.
+
+### 리포터 시작
+
+| 메서드 | 하는 일 |
+|---|---|
+| `crashReporter.start(options)` | 크래시 수집을 초기화해요. 다른 `crashReporter` API 보다, 그리고 창을 만들기보다 **가장 먼저** 호출하세요. |
+
+```js filename="start.js"
+const { crashReporter } = require('electron')
+
+crashReporter.start({
+  submitURL: 'https://submit.example.com/post',
+  productName: 'MyApp',
+  uploadToServer: true,   // false 로 두면 업로드 없이 로컬에만 수집
+  compress: true,         // 페이로드를 gzip 압축 (서버가 지원해야 함)
+  globalExtra: {          // 모든 프로세스의 리포트에 붙음
+    _companyName: 'Acme',
+  },
+})
+```
+
+`options` 객체가 받는 필드:
+
+| 필드 | 타입 | 의미 |
+|---|---|---|
+| `submitURL` | `string` | 크래시 리포트를 POST 할 URL (로컬 수집만 할 게 아니라면 필수) |
+| `productName` | `string` | 리포트에 표시될 제품 이름 — 기본값은 `app.name` |
+| `companyName` | `string` _(Deprecated)_ | 회사 이름 — `globalExtra` 의 `_companyName` 으로 넣는 걸 권장 |
+| `uploadToServer` | `boolean` | 리포트를 `submitURL` 로 전송할지 여부 (기본 `true`) |
+| `ignoreSystemCrashHandler` | `boolean` | OS 의 크래시 핸들러로 전달하지 않음 (기본 `false`) |
+| `rateLimit` | `boolean` _(macOS/Windows)_ | 시간당 업로드 개수 제한 (기본 `false`) |
+| `compress` | `boolean` | 업로드를 gzip 압축 (기본 `true`) |
+| `extra` | `Record<string, string>` _(Main)_ | **Main 프로세스** 리포트에만 붙는 추가 키/값 데이터 |
+| `globalExtra` | `Record<string, string>` | **모든** 프로세스 리포트에 붙는 추가 데이터 (`start` 시 한 번만 설정) |
+
+<Callout type="warning">
+`crashReporter.start()` 는 main 프로세스에서 **가능한 한 일찍** 호출하세요 — 렌더러/자식 프로세스의 크래시도 받고 싶다면 거기서도 호출해야 해요. `start()` 가 실행되기 전에 일어난 크래시는 수집되지 않아요. `globalExtra` 는 여기서만 설정할 수 있고, 나중에는 바꿀 수 없어요.
+</Callout>
+
+### 크래시 리포트 읽기 _(Main)_
+
+| 메서드 | 하는 일 |
+|---|---|
+| `crashReporter.getLastCrashReport()` | 가장 최근에 업로드된 리포트의 날짜와 ID, 없으면 `null` |
+| `crashReporter.getUploadedReports()` | 업로드된 모든 리포트의 배열 (각 항목에 `date`, `id`) |
+
+```js filename="reports.js"
+const last = crashReporter.getLastCrashReport()
+if (last) {
+  // { date: Date, id: string }
+  notifyTeam(`마지막 크래시 업로드: ${last.id} (${last.date})`)
+}
+
+for (const report of crashReporter.getUploadedReports()) {
+  saveToLog(report.id, report.date)
+}
+```
+
+### 업로드 제어 _(Main)_
+
+| 메서드 | 하는 일 |
+|---|---|
+| `crashReporter.getUploadToServer()` | 현재 리포트가 서버로 업로드되고 있으면 `true` |
+| `crashReporter.setUploadToServer(uploadToServer)` | 런타임에 서버 업로드를 켜고/끄기 (수집 자체는 계속됨) |
+
+```js filename="consent.js"
+// 앱을 재시작하지 않고도 사용자의 개인정보 선택을 존중해요
+function onConsentChanged(userOptedIn) {
+  crashReporter.setUploadToServer(userOptedIn)
+}
+```
+
+<Callout type="warning">
+`getUploadToServer()` / `setUploadToServer()` 는 **Main 프로세스 전용** 이며, 일부 플랫폼에서는 `start()` 때 `uploadToServer` 를 꺼 둔 경우 예외를 던질 수 있어요. 업로드 토글은 사용자의 "크래시 데이터를 보낼까요?" 선택을 존중하는 가장 예의 바른 방법이에요 — 로컬 수집은 계속하되, 전송만 멈추는 거죠.
+</Callout>
+
+### 추가 파라미터(Extra parameters)
+
+다음 크래시와 함께 따라갈 추가 키/값 메타데이터(앱 버전, 기능 플래그, 사용자 등급 등)를 붙여요. **모든** 프로세스에서 사용할 수 있어요.
+
+| 메서드 | 하는 일 |
+|---|---|
+| `crashReporter.addExtraParameter(key, value)` | 이후 크래시에 함께 보낼 추가 파라미터 추가/교체 |
+| `crashReporter.removeExtraParameter(key)` | 앞서 추가한 추가 파라미터 제거 |
+| `crashReporter.getParameters()` | 현재 추가 파라미터 집합을 `Record<string, string>` 로 반환 |
+
+```js filename="extra-params.js"
+// 이후의 모든 크래시에 유용한 맥락을 태그로 붙여요
+crashReporter.addExtraParameter('appVersion', app.getVersion())
+crashReporter.addExtraParameter('experiment', 'new-renderer')
+
+// 실험이 끝나면 태그 제거
+crashReporter.removeExtraParameter('experiment')
+
+const params = crashReporter.getParameters() // { appVersion: '1.2.3', ... }
+```
+
+<Callout type="warning">
+Crashpad 는 파라미터 크기를 제한해요: 키는 최대 **39바이트**, 값은 최대 **20320바이트** 이고, 값에는 줄바꿈 문자를 넣을 수 없어요. 한도를 넘는 항목은 조용히 버려지니, 짧게 유지하세요.
+</Callout>
+
+### 자식 프로세스에서
+
+Node.js 자식 프로세스에서는 `require('electron')` 을 하지 않아요 — 대신 전역 `process.crashReporter` 를 쓰는데, 일부 메서드만 노출돼요:
+
+| 메서드 | 하는 일 |
+|---|---|
+| `process.crashReporter.start(options)` | 자식 프로세스 안에서 리포터 시작 |
+| `process.crashReporter.getParameters()` | 현재 추가 파라미터 읽기 |
+| `process.crashReporter.addExtraParameter(key, value)` | 추가 파라미터 추가 |
+| `process.crashReporter.removeExtraParameter(key)` | 추가 파라미터 제거 |
+
+---
+
+## 속성(Properties)
+
+`crashReporter` 모듈은 **속성을 노출하지 않아요** — 모든 상태는 위의 메서드를 통해 읽고 써요.
+
+---
+
+## 쉽게 풀어 설명
+
+`crashReporter` 는 비행기의 **블랙박스(비행기록장치)** 라고 생각하면 돼요. 평소 비행 중엔 손댈 일이 없고, 쓸 일이 없길 바라죠 — 하지만 비행기가 추락하면, 끝까지 살아남아 무엇이 잘못됐는지 정확히 알려 주는 유일한 물건이에요.
+
+세 가지만 알면 거의 다예요:
+
+1. **일찍 시작하기.** main 프로세스 맨 위에서 `crashReporter.start({ submitURL })` 을 호출하세요. 그 이후에 일어나는 모든 크래시 — JavaScript 가 실행조차 못 하는 심한 네이티브 크래시까지 — 가 수집되고, (허용한다면) 서버로 보내져요.
+2. **맥락 붙이기.** 원시 크래시 덤프는 _어디서_ 죽었는지 알려 주지만, `addExtraParameter('appVersion', '1.2.3')` 은 _어떤 빌드, 어떤 사용자 등급, 어떤 실험_ 이었는지 알려 줘요. 나중에 필터링하고 싶은 것들을 태그로 남겨 두세요.
+3. **동의 존중하기.** 크래시 데이터는 개인 정보예요. `setUploadToServer(false)` 로 로컬 기록은 계속하되 전송은 멈췄다가, 사용자가 동의하면 `setUploadToServer(true)` 로 다시 켜세요 — 재시작이 필요 없어요.
+
+이름 두 개만 기억하면 나머지는 찾아보면 돼요: **`start()`**(기록 장치를 켠다)와 **`addExtraParameter()`**(기록에 라벨을 붙인다). "읽기" 메서드들 — `getLastCrashReport()`, `getUploadedReports()` — 은 사용자나 팀에게 무엇이 전송됐는지 보여 주고 싶을 때를 위한 거예요.
+
+<Cards>
+  <Cards.Card title="app 모듈" href="/ko/api/app" arrow />
+  <Cards.Card title="프로세스 모델" href="/ko/docs/processes" arrow />
+  <Cards.Card title="보안" href="/ko/docs/best-practices/security" arrow />
+</Cards>

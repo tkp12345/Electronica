@@ -1,0 +1,146 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { SystemApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<SystemApiIllustration />}
+  title="screen"
+  subtitle="Find out about the user's monitors — how many, how big, where they sit, and where the mouse is right now."
+  badge="API · screen"
+/>
+
+The `screen` module lives in the **Main process**. It's an `EventEmitter` (not a class — you never call `new`) that reports the size, layout, and scale of every connected display, plus the live cursor position.
+
+```js filename="main.js"
+const { app, screen } = require('electron')
+
+app.whenReady().then(() => {
+  const primary = screen.getPrimaryDisplay()
+  const { width, height } = primary.workAreaSize
+  // create a window sized to the usable area of the main monitor
+})
+```
+
+<Callout type="warning">
+`screen` cannot be used until the `app` module's `ready` event has fired. Reading it earlier (at the top level of your script) returns nothing useful and may throw.
+</Callout>
+
+<EasyNote>
+A `Display` is just a plain object describing one monitor: its `id`, `bounds` (full rectangle), `workArea` (the part not covered by the taskbar/menu bar), `scaleFactor` (1 on a normal screen, 2 on a Retina/HiDPI screen), and `rotation`. Every method here either hands you one of these, a list of them, or a `{ x, y }` point.
+</EasyNote>
+
+---
+
+## Events
+
+Listen with `screen.on('event-name', handler)`. These all fire when the user's monitor setup changes.
+
+| Event | Fires when |
+|---|---|
+| `display-added` | A new display was connected — handler gets `(event, newDisplay)` |
+| `display-removed` | A display was disconnected — handler gets `(event, oldDisplay)` |
+| `display-metrics-changed` | A display's metrics changed — handler gets `(event, display, changedMetrics)` where `changedMetrics` is a string array of `'bounds'`, `'workArea'`, `'scaleFactor'`, `'rotation'` |
+
+```js filename="watch-displays.js"
+app.whenReady().then(() => {
+  screen.on('display-added', (event, newDisplay) => {
+    // a monitor was plugged in — maybe move a window onto it
+  })
+
+  screen.on('display-removed', (event, oldDisplay) => {
+    // a monitor was unplugged — rescue any windows that lived there
+    rescueWindowsFrom(oldDisplay)
+  })
+
+  screen.on('display-metrics-changed', (event, display, changedMetrics) => {
+    if (changedMetrics.includes('scaleFactor')) {
+      // the user changed their DPI / scaling — relayout if you cache pixel sizes
+    }
+  })
+})
+```
+
+<EasyNote>
+Think of these three events as the monitor's "plug in / unplug / rearrange" notifications. If your app remembers window positions, `display-removed` is your cue to pull a window back onto a screen that still exists — otherwise it can end up stranded off-screen.
+</EasyNote>
+
+---
+
+## Methods
+
+### Displays
+
+| Method | What it does |
+|---|---|
+| `screen.getPrimaryDisplay()` | The primary `Display` (the one with the menu bar / main taskbar) |
+| `screen.getAllDisplays()` | A `Display[]` of every currently connected monitor |
+| `screen.getDisplayNearestPoint(point)` | The `Display` closest to a given `{ x, y }` point |
+| `screen.getDisplayMatching(rect)` | The `Display` whose bounds most overlap a given `Rectangle` |
+
+```js filename="window-on-cursor.js"
+// Open a window on whichever monitor the mouse is currently on
+const cursor = screen.getCursorScreenPoint()
+const display = screen.getDisplayNearestPoint(cursor)
+const { x, y, width, height } = display.workArea
+
+const win = new BrowserWindow({
+  x: x + (width - 800) / 2,
+  y: y + (height - 600) / 2,
+  width: 800,
+  height: 600,
+})
+```
+
+### Cursor
+
+| Method | What it does |
+|---|---|
+| `screen.getCursorScreenPoint()` | The current absolute mouse position as a DIP `{ x, y }` point _(not Wayland)_ |
+
+### Coordinate conversion _(Windows/Linux)_
+
+These translate between **physical** pixels (what the hardware uses) and **DIP** (density-independent pixels, what your layout uses). On macOS the two already line up, so these aren't needed there.
+
+| Method | Platform | What it does |
+|---|---|---|
+| `screen.screenToDipPoint(point)` | Windows, Linux | Physical screen point → DIP point _(not Wayland)_ |
+| `screen.dipToScreenPoint(point)` | Windows, Linux | DIP point → physical screen point _(not Wayland)_ |
+| `screen.screenToDipRect(window, rect)` | Windows | Physical `Rectangle` → DIP `Rectangle` (`window` may be `null`) |
+| `screen.dipToScreenRect(window, rect)` | Windows | DIP `Rectangle` → physical `Rectangle` (`window` may be `null`) |
+
+```js filename="dip-conversion.js"
+// Windows/Linux: turn a raw OS pixel coordinate into the DIP space
+// your renderer and BrowserWindow APIs expect
+const dip = screen.screenToDipPoint({ x: 2400, y: 100 })
+```
+
+<Callout type="warning">
+`getCursorScreenPoint`, `screenToDipPoint`, and `dipToScreenPoint` are **not supported on Wayland** (Linux). Guard platform-specific calls and don't assume the conversion methods exist on macOS — there they're simply absent because physical and DIP coordinates are identical.
+</Callout>
+
+---
+
+## Properties
+
+The `screen` module has **no properties** — everything is exposed through the methods and events above. (Each `Display` object returned by those methods carries its own fields: `id`, `bounds`, `workArea`, `size`, `workAreaSize`, `scaleFactor`, `rotation`, `internal`, `touchSupport`, and more.)
+
+---
+
+## In plain words
+
+The `screen` module is your app's **map of the user's desk**. Some people have one laptop screen; others have three monitors in a row, one rotated sideways, at different resolutions. `screen` tells you exactly that layout so your windows land in sensible places.
+
+Three things cover almost everything you'll do:
+
+1. **"Where can I put a window?"** → `getPrimaryDisplay()` for the main monitor, or `getAllDisplays()` to see them all. Use a display's `workArea` (not `bounds`) so you don't tuck a window under the taskbar.
+2. **"Where is the mouse?"** → `getCursorScreenPoint()`, often paired with `getDisplayNearestPoint()` to open a window on whatever screen the user is actually looking at.
+3. **"Did the setup change?"** → the `display-added` / `display-removed` / `display-metrics-changed` events. If you remember window positions, these are your signal to re-check that those positions still exist.
+
+One rule above all: wait for `app` to be **`ready`** before touching `screen`. Get that right, remember `workArea` vs `bounds`, and the rest is lookup.
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+  <Cards.Card title="desktopCapturer" href="/en/api/desktop-capturer" arrow />
+</Cards>

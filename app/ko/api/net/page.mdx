@@ -1,0 +1,244 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { NetworkApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<NetworkApiIllustration />}
+  title="net"
+  subtitle="Chromium 자체 네트워크 스택으로 Main 프로세스에서 HTTP/HTTPS 요청을 보내요 — 프록시·인증서·쿠키를 알아서 처리해 줘요."
+  badge="API · net"
+/>
+
+`net` 모듈은 **Main 프로세스** 에 살아요. Node 의 `http`/`https` 대신 Chromium 의 네이티브 네트워크 라이브러리로 HTTP(S) 요청을 보내기 때문에, 시스템 프록시, 앱에 설정된 인증서, 인증, `Session` 별 쿠키를 자동으로 따라요.
+
+```js filename="main.js"
+const { app, net } = require('electron')
+
+app.whenReady().then(async () => {
+  const response = await net.fetch('https://api.example.com/users')
+  const users = await response.json()
+})
+```
+
+<EasyNote>
+Node 에도 `http` 모듈이 있는데 왜 `net` 을 쓸까요? `net` 은 **Chromium** 의 네트워크 스택을 그대로 빌려 쓰기 때문이에요 — 앱의 브라우저 부분이 쓰는 바로 그것이죠. 그래서 사용자의 회사 프록시, 우리가 신뢰하는 인증서, `Session` 에 저장된 쿠키를 이미 알고 있어요. Node 의 `http` 는 이것들을 전혀 몰라요.
+</EasyNote>
+
+<Callout type="info">
+`net.fetch` 와 `net.request` 는 `app` 의 `ready` 이벤트 **이후** 에만 동작해요. `app.whenReady()` 안에서 호출하세요.
+</Callout>
+
+---
+
+## 메서드(Methods)
+
+`net` 모듈 자체는 작아요 — 메서드 네 개뿐이에요.
+
+### 요청 보내기
+
+| 메서드 | 하는 일 |
+|---|---|
+| `net.fetch(input[, init])` | 현대적인 Promise 기반 요청 — 웹의 `fetch()` 와 동일한 API 로 `Promise<Response>` 를 반환해요. URL 문자열이나 `Request` 를 넘겨요. |
+| `net.request(options)` | 더 저수준의 스트리밍 요청 — 이벤트로 다루는 `ClientRequest` 를 반환해요. URL 문자열이나 `ClientRequestConstructorOptions` 객체를 넘겨요. |
+
+```js filename="fetch.js"
+// 쉬운 길: net.fetch 는 브라우저 fetch() 와 똑같이 동작해요
+const res = await net.fetch('https://api.example.com/data', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ hello: 'world' }),
+})
+
+if (!res.ok) throw new Error(`HTTP ${res.status}`)
+const data = await res.json()
+```
+
+`init` 객체는 표준 `fetch` 가 받는 모든 것에 더해, Electron 전용 플래그 하나를 받아요:
+
+| 옵션 | 하는 일 |
+|---|---|
+| `bypassCustomProtocolHandlers` | `true` 면 이 요청에 등록된 커스텀 프로토콜 핸들러를 건너뛰어요 |
+
+<EasyNote>
+먼저 `net.fetch` 를 떠올리세요 — 현대적이고 손에 익은 선택이며, 90% 의 경우에 쓰게 돼요. 업로드를 청크 단위로 스트리밍하거나 리다이렉트에 수동으로 반응하는 등 세밀한 제어가 필요할 때만 `net.request` 로 내려가세요.
+</EasyNote>
+
+### 연결 상태
+
+| 메서드 | 하는 일 |
+|---|---|
+| `net.isOnline()` | _어떤_ 네트워크 연결이라도 있으면 `true`. 특정 호스트에 닿는다는 보장은 **아니에요** — 연결이 존재한다는 것만 알려줘요. |
+
+```js filename="online.js"
+if (!net.isOnline()) {
+  // 요청을 건너뛰고 나중을 위해 큐에 넣어요
+  queueForRetry(payload)
+}
+```
+
+<Callout type="warning">
+`isOnline()` 은 네트워크 인터페이스가 살아 있다는 것만 알려줘요 — 인터넷(이나 우리 API)이 실제로 동작한다는 뜻은 아니에요. 업링크 없는 기내 Wi-Fi 에 연결된 노트북도 `true` 를 보고해요. 값싼 힌트로만 여기고, 요청 실패는 항상 따로 처리하세요.
+</Callout>
+
+### DNS
+
+| 메서드 | 하는 일 |
+|---|---|
+| `net.resolveHost(host[, options])` | Chromium 의 리졸버로 호스트명을 IP 주소로 해석해, `Promise<ResolvedHost>` 를 반환해요. |
+
+선택적인 `options` 객체로 해석 방식을 제어해요:
+
+| 옵션 | 하는 일 |
+|---|---|
+| `queryType` | `'A'`(IPv4) 또는 `'AAAA'`(IPv6) — 한 주소 계열로 제한 |
+| `source` | 리졸버 소스: `'any'`, `'system'`, `'dns'`, `'mdns'`, `'localOnly'` |
+| `cacheUsage` | `'allowed'`, `'staleAllowed'`, `'disallowed'` |
+| `secureDnsPolicy` | `'allow'` 또는 `'disable'` (DNS-over-HTTPS) |
+
+```js filename="resolve.js"
+const { endpoints } = await net.resolveHost('example.com', {
+  queryType: 'A',
+})
+// endpoints: [{ family: 'ipv4', address: '93.184.216.34' }, ...]
+```
+
+---
+
+## 속성(Properties)
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `net.online` | `boolean` (읽기전용) | `isOnline()` 의 속성 형태 — 네트워크 연결이 있으면 `true` |
+
+```js filename="online-property.js"
+// 둘은 동일해요 — 읽기 편한 쪽을 쓰세요
+const a = net.online
+const b = net.isOnline()
+```
+
+---
+
+## `ClientRequest` 클래스
+
+`net.request(options)` 는 `ClientRequest` 를 반환해요 — 이벤트로 다루는 쓰기 가능한 스트림이에요. `net.fetch` 로는 충분히 저수준이 아닐 때 쓰세요: 업로드 스트리밍, 수동 리다이렉트 처리, 청크별 진행률 표시 등.
+
+```js filename="client-request.js"
+const request = net.request({
+  method: 'POST',
+  url: 'https://api.example.com/upload',
+})
+
+request.setHeader('Content-Type', 'application/json')
+
+request.on('response', (response) => {
+  // response 는 IncomingMessage (읽기 가능한 스트림)예요
+  let body = ''
+  response.on('data', (chunk) => { body += chunk })
+  response.on('end', () => handle(JSON.parse(body)))
+})
+
+request.on('error', (error) => reportError(error))
+
+request.write(JSON.stringify({ hello: 'world' }))
+request.end()
+```
+
+### 생성자 옵션
+
+`net.request` 는 URL 문자열, 또는 다음 필드를 가진 옵션 객체를 받아요:
+
+| 옵션 | 타입 | 하는 일 |
+|---|---|---|
+| `method` | `string` | HTTP 메서드 — 기본값 `GET` |
+| `url` | `string` | 절대 요청 URL (프로토콜 스킴 포함) |
+| `headers` | `Record<string, string \| string[]>` | 초기 요청 헤더 |
+| `session` | `Session` | 이 `Session` 으로 전송 (쿠키·캐시·프록시) |
+| `partition` | `string` | 이 파티션 이름의 `Session` 으로 전송 |
+| `credentials` | `string` | `'include'`, `'omit'`, `'same-origin'` |
+| `useSessionCookies` | `boolean` | 세션 쿠키를 요청과 함께 보내고/저장 |
+| `protocol` | `string` | `'http:'` 또는 `'https:'` |
+| `host` | `string` | 호스트(포트 포함), `url` 의 대안 |
+| `hostname` | `string` | 호스트명(포트 제외) |
+| `port` | `Integer` | 서버 포트 |
+| `path` | `string` | 요청 경로 + 쿼리 |
+| `origin` | `string` | 요청의 오리진 URL |
+| `redirect` | `string` | `'follow'`, `'error'`, `'manual'` |
+| `referrerPolicy` | `string` | 요청의 리퍼러 정책 |
+| `cache` | `string` | `'default'`, `'no-store'`, `'reload'`, `'no-cache'`, `'force-cache'`, `'only-if-cached'` |
+| `priority` | `string` | `'throttled'`, `'idle'`, `'lowest'`, `'low'`, `'medium'`, `'highest'` |
+| `priorityIncremental` | `boolean` | 요청 본문을 점진적으로 전달할지 |
+| `bypassCustomProtocolHandlers` | `boolean` | 이 요청의 커스텀 프로토콜 핸들러 건너뛰기 |
+
+### 인스턴스 이벤트(Instance events)
+
+`request.on('이벤트명', 핸들러)` 로 들어요.
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `response` | 응답 헤더가 도착함 — 핸들러가 본문을 읽을 `IncomingMessage` 를 받음 |
+| `login` | 서버가 인증을 요구함 — 전달된 `callback(아이디, 비밀번호)` 호출 |
+| `redirect` | 리다이렉트가 일어나려 함 — `(statusCode, method, redirectUrl, responseHeaders)` 전달 |
+| `finish` | 요청 본문의 마지막 청크가 쓰임 |
+| `abort` | 요청이 중단됨 (시작조차 안 했으면 발생 안 함) |
+| `error` | 요청이 만들어지거나 완료되지 못함 — `Error` 전달 |
+| `close` | 이 요청의 마지막 이벤트 — 이후로는 어떤 이벤트도 발생 안 함 |
+
+```js filename="redirect.js"
+const request = net.request({ url, redirect: 'manual' })
+
+request.on('redirect', (statusCode, method, redirectUrl) => {
+  if (isAllowed(redirectUrl)) {
+    request.followRedirect() // 각 리다이렉트를 직접 허용
+  } else {
+    request.abort()
+  }
+})
+
+request.on('login', (authInfo, callback) => {
+  callback('username', 'password') // 401/프록시 인증에 응답
+})
+```
+
+<Callout type="warning">
+`redirect: 'manual'` 일 때 리다이렉트는 자동으로 따라가지 **않아요**. `redirect` 이벤트를 듣는다면 계속 진행하려면 반드시 `request.followRedirect()` 를 호출해야 해요. 안 그러면 요청이 멈춰 버려요.
+</Callout>
+
+### 인스턴스 메서드(Instance methods)
+
+| 메서드 | 하는 일 |
+|---|---|
+| `request.setHeader(name, value)` | 헤더 설정 (첫 `write` 이전에만) |
+| `request.getHeader(name)` | 헤더 값 읽기 |
+| `request.removeHeader(name)` | 헤더 제거 (첫 `write` 이전에만) |
+| `request.write(chunk[, encoding][, callback])` | 요청 본문 청크 쓰기 |
+| `request.end([chunk][, encoding][, callback])` | 마지막 청크를 보내고 요청 완료 |
+| `request.abort()` | 요청 즉시 취소 |
+| `request.followRedirect()` | `redirect: 'manual'` 로 멈춘 리다이렉트 이어가기 |
+| `request.getUploadProgress()` | 업로드 진행 상태 `{ active, started, current, total }` |
+
+### 인스턴스 속성(Instance properties)
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `request.chunkedEncoding` | `boolean` | 청크 전송 인코딩 사용 — 첫 `write` 이전에 설정 |
+
+---
+
+## 쉽게 풀어 설명
+
+`net` 은 **창 없이 서버와 대화하는, 앱 전용의 작은 브라우저** 라고 생각하면 돼요. Main 프로세스에서 API 를 호출하거나 파일을 내려받거나 연결 상태를 확인해야 할 때, `net` 은 앱의 눈에 보이는 부분이 쓰는 바로 그 배관으로 일을 처리해요. 그래서 사용자의 회사 프록시, 우리가 신뢰하는 인증서, 로그인된 `Session` 의 쿠키가 추가 작업 없이 "그냥 동작" 해요.
+
+이 모듈은 결국 몇 가지 선택으로 좁혀져요:
+
+1. **그냥 뭔가 가져오고 싶다?** **`net.fetch(url)`** 을 쓰세요 — 이미 아는 웹 `fetch()` 그대로, Promise 를 반환해요. 거의 항상 정답이에요.
+2. **스트리밍 파이프가 필요하다?** **`net.request(options)`** 로 `ClientRequest` 를 받아 `write`/`end` 로 다루고 `response` 를 들으세요. 큰 업로드, 수동 리다이렉트, 진행률 바처럼 `fetch` 가 너무 고수준일 때만 꺼내요.
+3. **지금 온라인인가?** **`net.isOnline()`**(또는 `net.online`)으로 확인하되, 보장이 아닌 힌트로 여기고 실패는 따로 처리하세요.
+
+이름 두 개만 기억하면 끝이에요: **`net.fetch`**(쉬운 길)와 **`net.request`**(강력한 길). 나머지는 필요할 때 이 페이지에서 찾아보면 돼요.
+
+<Cards>
+  <Cards.Card title="app 모듈" href="/ko/api/app" arrow />
+  <Cards.Card title="session" href="/ko/api/session" arrow />
+  <Cards.Card title="보안" href="/ko/docs/best-practices/security" arrow />
+</Cards>

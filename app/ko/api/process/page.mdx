@@ -1,0 +1,201 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { SystemApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<SystemApiIllustration />}
+  title="process"
+  subtitle="Node 의 process 객체를 확장한 객체예요 — 지금 실행 중인 프로세스에 대한 추가 정보와 도구를 줘요."
+  badge="API · process"
+/>
+
+`process` 는 Node.js 에서 익숙한 그 전역 객체예요. 다만 Electron 이 그 위에 **속성·메서드·이벤트 하나를 더 얹어** 줍니다. 모든 프로세스(main, renderer, utility)에서 쓸 수 있고, 지금 _어떤_ 종류의 프로세스에 있는지, 어떤 버전을 쓰는지, 메모리를 얼마나 쓰는지를 알려줘요.
+
+```js filename="anywhere.js"
+// require() 필요 없음 — `process` 는 모든 프로세스의 전역 객체예요
+console.info(`"${process.type}" 프로세스에서 실행 중`)
+console.info(`Electron ${process.versions.electron}, Chrome ${process.versions.chrome}`)
+```
+
+<EasyNote>
+`process` 는 내가 들어와 있는 프로그램의 **신분증이자 계기판** 이에요. 창을 그리거나 파일을 열지는 않아요. 대신 "나 지금 어디 있지?"(`process.type`), "이건 무슨 버전이지?"(`process.versions`), "메모리를 얼마나 쓰지?"(`getProcessMemoryInfo`) 같은 질문에 답해 줘요.
+</EasyNote>
+
+---
+
+## 이벤트(Events)
+
+`process.on('이벤트명', 핸들러)` 로 듣습니다. Electron 은 Node 의 process 객체에 이벤트를 딱 하나 추가해요.
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `loaded` | Electron 이 내부 초기화 스크립트를 다 읽고, 곧 웹 페이지나 메인 스크립트를 로드하려는 시점 |
+
+```js filename="loaded.js"
+// `loaded` 는 preload 스크립트에서 유용해요. Electron 초기화가 끝난 뒤
+// 웹 페이지로 새어 나가면 안 되는 Node 전역을 정리할 수 있어요.
+process.once('loaded', () => {
+  delete global.require
+  delete global.module
+})
+```
+
+<EasyNote>
+`loaded` 는 출발 신호예요. "Electron 자체 준비가 끝났다 — 이제 네 코드 차례다" 라는 뜻이죠. preload 스크립트라면 페이지가 실행되기 전에 보안을 잠그기에 딱 좋은 순간이에요.
+</EasyNote>
+
+---
+
+## 메서드(Methods)
+
+### 진단 & 크래시 테스트
+
+| 메서드 | 하는 일 |
+|---|---|
+| `process.crash()` | 현재 프로세스의 **메인 스레드** 를 강제로 크래시시킴 (크래시 리포팅 테스트용) |
+| `process.hang()` | **메인 스레드** 를 강제로 멈추게 함 (응답 없음 처리 테스트용) |
+
+```js filename="crash-test.js"
+// crashReporter / 'render-process-gone' 처리를 테스트할 때만 써요.
+// 운영 코드에서 이걸 호출하는 경로를 절대 배포하지 마세요.
+process.crash()
+```
+
+<Callout type="warning">
+`crash()` 와 `hang()` 은 의도적으로 현재 프로세스를 망가뜨려요. 복구 코드(크래시 리포팅, `unresponsive` 이벤트)를 테스트하는 용도로만 존재합니다. 일반 앱 흐름에서 호출하지 마세요.
+</Callout>
+
+### 시각 & 버전
+
+| 메서드 | 하는 일 |
+|---|---|
+| `process.getCreationTime()` | 프로세스 생성 시각(epoch 이후 밀리초), 없으면 `null` |
+| `process.getSystemVersion()` | 호스트 OS 버전 문자열 (예: `'10.15.7'`) |
+
+### 메모리 & CPU
+
+| 메서드 | 하는 일 |
+|---|---|
+| `process.getCPUUsage()` | `CPUUsage` 객체: `percentCPUUsage`, `idleWakeupsPerSecond` |
+| `process.getHeapStatistics()` | 이 프로세스의 V8 힙 통계 (모든 값 단위는 **킬로바이트**) |
+| `process.getBlinkMemoryInfo()` | Blink(렌더러 엔진)의 메모리 할당 정보, 킬로바이트 단위 |
+| `process.getProcessMemoryInfo()` | `Promise<ProcessMemoryInfo>` — 이 프로세스의 메모리 사용량, 킬로바이트 단위 |
+| `process.getSystemMemoryInfo()` | 시스템 전체 메모리 통계, 킬로바이트 단위 |
+| `process.takeHeapSnapshot(filePath)` | `filePath` 에 V8 힙 스냅샷을 기록; 성공하면 `true` 반환 |
+
+```js filename="memory.js"
+// 지금 들어와 있는 프로세스의 메모리 사용량 스냅샷
+const { residentSet, private: priv } = await process.getProcessMemoryInfo()
+console.info(`Resident set: ${residentSet} KB, private: ${priv} KB`)
+
+// 프로세스 시작 이후의 CPU 부하
+const { percentCPUUsage } = process.getCPUUsage()
+console.info(`CPU: ${percentCPUUsage.toFixed(1)}%`)
+```
+
+<Callout type="warning">
+여기 나오는 모든 메모리 수치의 단위는 바이트가 아니라 **킬로바이트** 예요 — 바이트로 보고하는 Node 의 `process.memoryUsage()` 와 다릅니다. 둘을 섞어 쓰지 마세요.
+</Callout>
+
+### 시스템 한도 _(macOS/Linux)_
+
+| 메서드 | 플랫폼 | 하는 일 |
+|---|---|---|
+| `process.setFdLimit(maxDescriptors)` | macOS/Linux | 열 수 있는 파일 디스크립터의 소프트 한도를 올림 (하드 한도까지) |
+
+---
+
+## 속성(Properties)
+
+### 나는 어떤 프로세스에 있나?
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `process.type` | `string` (읽기전용) | 프로세스 종류: `'browser'`(main), `'renderer'`, `'service-worker'`, `'worker'`, `'utility'` |
+| `process.isMainFrame` | `boolean` (읽기전용) | 이 렌더러 컨텍스트가 메인 프레임이면 `true` (하위 프레임/iframe 아님) |
+| `process.contextId` | `string` (읽기전용) | 현재 JavaScript 컨텍스트의 전역 고유 id |
+| `process.contextIsolated` | `boolean` (읽기전용) | 이 컨텍스트에 `contextIsolation` 이 켜져 있으면 `true` |
+| `process.sandboxed` | `boolean` (읽기전용) | 이 렌더러가 샌드박스 상태면 `true` |
+
+```js filename="which-process.js"
+// `process` 로 가장 흔히 쓰는 분기
+if (process.type === 'browser') {
+  // main 프로세스 전용 코드
+} else if (process.type === 'renderer') {
+  // renderer 전용 코드
+}
+```
+
+<EasyNote>
+`process.type` 은 가장 자주 쓰게 되는 속성이에요. 같은 preload 나 공용 모듈이 서로 다른 프로세스에서 돌 수 있는데, 지금 어디에 있는지를 `type` 으로 알아내요.
+</EasyNote>
+
+### 버전
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `process.versions.electron` | `string` (읽기전용) | Electron 버전 |
+| `process.versions.chrome` | `string` (읽기전용) | 번들된 Chromium 버전 |
+
+```js filename="versions.js"
+// 정보(About) 패널에 버전 표시
+const info = `Electron ${process.versions.electron} · Chromium ${process.versions.chrome} · Node ${process.versions.node}`
+```
+
+### 패키징 & 배포
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `process.defaultApp` | `boolean` (읽기전용) | 기본 Electron 바이너리의 인자로 실행됐으면 `true` (즉 `electron .`) |
+| `process.mas` | `boolean` (읽기전용) _(macOS)_ | Mac App Store 빌드면 `true` |
+| `process.windowsStore` | `boolean` (읽기전용) _(Windows)_ | Windows 스토어(MSIX/AppX) 패키지로 실행 중이면 `true` |
+| `process.resourcesPath` | `string` (읽기전용) | `resources` 디렉터리 경로 |
+
+### ASAR & deprecation 스위치
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `process.noAsar` | `boolean` | `true` 로 두면 Node 내장 모듈 안에서 ASAR 지원을 끔 |
+| `process.noDeprecation` | `boolean` | `true` 면 deprecation 경고를 끔 |
+| `process.throwDeprecation` | `boolean` | `true` 면 deprecation 경고를 경고 대신 예외로 던짐 |
+| `process.traceDeprecation` | `boolean` | `true` 면 각 deprecation 경고에 스택 트레이스를 함께 출력 |
+| `process.traceProcessWarnings` | `boolean` | `true` 면 각 process 경고에 스택 트레이스를 함께 출력 |
+
+### 유틸리티 프로세스 IPC
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `process.parentPort` | `ParentPort \| null` | 부모 프로세스와의 `MessagePort` 같은 채널 — `UtilityProcess` 안에서만 설정됨 |
+
+```js filename="utility-process.js"
+// UtilityProcess 안에서: main 프로세스로 다시 메시지 보내기
+process.parentPort.on('message', (event) => {
+  const [data] = event.data
+  process.parentPort.postMessage({ echoed: data })
+})
+```
+
+<EasyNote>
+`parentPort` 는 **유틸리티 프로세스**(`utilityProcess.fork` 로 띄운 것) 안에서만 존재해요. main 이나 renderer 에서는 `null` 이니, 쓰기 전에 `process.type === 'utility'` 인지 확인하세요.
+</EasyNote>
+
+---
+
+## 쉽게 풀어 설명
+
+Node 는 이미 모든 프로그램에 `process` 객체를 줘요. Electron 은 그 같은 객체에 **Electron 앱 안에서만 의미 있는 장치 몇 개를 더 끼워** 줍니다. 여기 있는 건 창을 만들거나 파일을 읽지 않아요 — `process` 는 순수하게 _자기 인식_ 에 관한 거예요.
+
+세 가지 질문으로 생각하면 쉬워요:
+
+1. **"나 어디 있지?"** — `process.type` 이 지금이 main 인지, renderer 인지, utility 프로세스인지 알려줘요. `isMainFrame`, `sandboxed`, `contextIsolated` 는 렌더러 상황을 더 자세히 알려주고요. 같은 공용 파일이 여러 프로세스에서 돌 때, 이 속성들로 자기가 어떤 모자를 쓰고 있는지 알아내요.
+2. **"나 뭘 돌리고 있지?"** — `process.versions.electron` / `.chrome`, 그리고 `defaultApp`, `mas`, `windowsStore` 가 "어떤 Electron, 어떤 Chromium, 어떻게 패키징됐나?" 에 답해 줘요.
+3. **"나 상태 괜찮나?"** — `getProcessMemoryInfo`, `getCPUUsage`, `getHeapStatistics`, `takeHeapSnapshot` 이 내장 성능 계기판이에요 (단위는 바이트가 아니라 킬로바이트, 기억하세요). 그리고 단 하나의 이벤트 `loaded` 는 Electron 자체 준비가 끝나는 순간 발생해요.
+
+세 이름만 외우면 나머지는 찾아보면 돼요: **`process.type`**(나 어디), **`process.versions`**(나 뭐), **`getProcessMemoryInfo()`**(나 상태).
+
+<Cards>
+  <Cards.Card title="app 모듈" href="/ko/api/app" arrow />
+  <Cards.Card title="프로세스 모델" href="/ko/docs/processes" arrow />
+  <Cards.Card title="보안" href="/ko/docs/best-practices/security" arrow />
+</Cards>

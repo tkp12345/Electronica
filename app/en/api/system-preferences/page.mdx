@@ -1,0 +1,218 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { SystemApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<SystemApiIllustration />}
+  title="systemPreferences"
+  subtitle="Read the operating system's own settings — accent color, dark mode, camera/mic permissions, Touch ID — and react when they change."
+  badge="API · systemPreferences"
+/>
+
+The `systemPreferences` module lives in the **Main process**. It's your window into the _user's_ OS settings: the accent color they picked, whether they're in dark mode, whether your app is allowed to use the camera, and more. Most of it is platform-specific.
+
+```js filename="main.js"
+const { systemPreferences } = require('electron')
+
+// Match the OS appearance
+const appearance = systemPreferences.getEffectiveAppearance() // 'dark' | 'light' | 'unknown'
+
+// Check before touching the camera (macOS / Windows)
+const camera = systemPreferences.getMediaAccessStatus('camera') // 'granted' | 'denied' | ...
+```
+
+<EasyNote>
+`systemPreferences` is like **asking the operating system about the user's taste** before you decorate. "What's your favorite color?" (accent color), "Lights on or off?" (dark mode), "May I use the camera?" (permissions). You read its answers and make your app feel native.
+</EasyNote>
+
+---
+
+## Events
+
+Listen with `systemPreferences.on('event-name', handler)`. Both events are platform-specific.
+
+| Event | Fires when |
+|---|---|
+| `accent-color-changed` _(Windows/Linux)_ | The system accent color changed — handler gets the new RGBA color string |
+| `color-changed` _(Windows)_ | Any system color setting changed |
+
+```js filename="watch-accent.js"
+// Windows/Linux: re-theme the UI when the user changes their accent color
+systemPreferences.on('accent-color-changed', (event, newColor) => {
+  // newColor is an RGBA hex string like 'aabbccdd'
+  applyAccentColor(`#${newColor}`)
+})
+```
+
+<Callout type="warning">
+These two events are **Windows/Linux only**. For dark-mode and high-contrast changes you almost always want the cross-platform [`nativeTheme`](/en/api/app) module and its `updated` event instead — it's the recommended, platform-agnostic way to react to appearance changes.
+</Callout>
+
+<EasyNote>
+Think of `accent-color-changed` as the OS tapping you on the shoulder: "Hey, the user just changed their favorite color — you might want to repaint." You don't poll for it; you just listen.
+</EasyNote>
+
+---
+
+## Methods
+
+### Appearance & color
+
+| Method | Platform | What it does |
+|---|---|---|
+| `systemPreferences.getEffectiveAppearance()` | macOS | Returns `'dark'`, `'light'`, or `'unknown'` |
+| `systemPreferences.getAccentColor()` | macOS/Windows | The user's accent color as an RGBA hex string |
+| `systemPreferences.getColor(color)` | macOS/Windows | A system UI color (e.g. `'window'`, `'highlight'`) as `#RRGGBBAA` |
+| `systemPreferences.getSystemColor(color)` | macOS | A standard system color: `blue`, `brown`, `gray`, `green`, `orange`, `pink`, `purple`, `red`, `yellow` |
+
+```js filename="theme.js"
+// Paint the UI to match the OS, on macOS or Windows
+const accent = systemPreferences.getAccentColor() // e.g. 'ff5733ff'
+const windowBg = systemPreferences.getColor('window') // '#RRGGBBAA'
+
+if (process.platform === 'darwin') {
+  const isDark = systemPreferences.getEffectiveAppearance() === 'dark'
+  setThemeClass(isDark ? 'dark' : 'light')
+}
+```
+
+### Media access (permissions)
+
+| Method | Platform | What it does |
+|---|---|---|
+| `systemPreferences.getMediaAccessStatus(mediaType)` | macOS/Windows | Status for `'microphone'`, `'camera'`, or `'screen'`: `'not-determined'`, `'granted'`, `'denied'`, `'restricted'`, `'unknown'` |
+| `systemPreferences.askForMediaAccess(mediaType)` | macOS | Prompts the user for `'microphone'` or `'camera'` — returns `Promise<boolean>` |
+
+```js filename="camera.js"
+// macOS: never open the camera without asking first
+async function ensureCamera() {
+  if (systemPreferences.getMediaAccessStatus('camera') !== 'granted') {
+    const granted = await systemPreferences.askForMediaAccess('camera')
+    if (!granted) throw new Error('Camera permission denied')
+  }
+}
+```
+
+<Callout type="warning">
+`askForMediaAccess` is **macOS only**, and the OS shows its prompt only **once** per media type. If the user said no, a second call resolves `false` immediately — you must send them to System Settings to change it. On Windows you can read the status but cannot trigger a prompt from here.
+</Callout>
+
+### Authentication (Touch ID & accessibility) _(macOS)_
+
+| Method | What it does |
+|---|---|
+| `systemPreferences.canPromptTouchID()` | `true` if this device can use Touch ID |
+| `systemPreferences.promptTouchID(reason)` | Prompt for Touch ID — returns `Promise<void>` (resolves on success, rejects on failure) |
+| `systemPreferences.isTrustedAccessibilityClient(prompt)` | Is this app a trusted Accessibility client? `prompt: true` shows the system dialog |
+
+```js filename="touch-id.js"
+// macOS: gate a sensitive action behind Touch ID
+if (systemPreferences.canPromptTouchID()) {
+  try {
+    await systemPreferences.promptTouchID('unlock your vault')
+    unlockVault()
+  } catch {
+    // user cancelled or authentication failed
+  }
+}
+```
+
+### User defaults (`NSUserDefaults`) _(macOS)_
+
+| Method | What it does |
+|---|---|
+| `systemPreferences.getUserDefault(key, type)` | Read a value from `NSUserDefaults`. `type`: `'string'`, `'boolean'`, `'integer'`, `'float'`, `'double'`, `'url'`, `'array'`, `'dictionary'` |
+| `systemPreferences.setUserDefault(key, type, value)` | Write a value into `NSUserDefaults` |
+| `systemPreferences.removeUserDefault(key)` | Remove a key from `NSUserDefaults` |
+| `systemPreferences.registerDefaults(defaults)` | Register a dictionary of default values |
+
+```js filename="defaults.js"
+// macOS: read a system preference, e.g. the user's locale identifier
+const locale = systemPreferences.getUserDefault('AppleLocale', 'string')
+
+// Read whether menus collapse automatically (a boolean default)
+const collapses = systemPreferences.getUserDefault('AppleMenuBarVisibleInFullscreen', 'boolean')
+```
+
+### System notifications (`NSNotificationCenter` / `NSWorkspace`) _(macOS)_
+
+| Method | What it does |
+|---|---|
+| `systemPreferences.postNotification(event, userInfo[, deliverImmediately])` | Post a native notification via `NSDistributedNotificationCenter` |
+| `systemPreferences.postLocalNotification(event, userInfo)` | Post a local notification via `NSNotificationCenter` |
+| `systemPreferences.postWorkspaceNotification(event, userInfo)` | Post a workspace notification via `NSWorkspace` |
+| `systemPreferences.subscribeNotification(event, callback)` | Subscribe to distributed notifications — returns a subscriber `id` |
+| `systemPreferences.subscribeLocalNotification(event, callback)` | Subscribe to local notifications — returns a subscriber `id` |
+| `systemPreferences.subscribeWorkspaceNotification(event, callback)` | Subscribe to workspace notifications — returns a subscriber `id` |
+| `systemPreferences.unsubscribeNotification(id)` | Remove a distributed-notification subscriber |
+| `systemPreferences.unsubscribeLocalNotification(id)` | Remove a local-notification subscriber |
+| `systemPreferences.unsubscribeWorkspaceNotification(id)` | Remove a workspace-notification subscriber |
+
+```js filename="workspace-notify.js"
+// macOS: react when the screen locks or the user switches Spaces
+const id = systemPreferences.subscribeWorkspaceNotification(
+  'NSWorkspaceScreensDidSleepNotification',
+  () => pauseSensitiveWork()
+)
+
+// Later, when you no longer care:
+systemPreferences.unsubscribeWorkspaceNotification(id)
+```
+
+<Callout type="warning">
+Every `subscribe*` call returns an `id` — hold onto it and pass it to the matching `unsubscribe*` when you're done, or you'll leak observers. Notification names are raw Cocoa string constants like `'AppleInterfaceThemeChangedNotification'`.
+</Callout>
+
+### System hints & motion
+
+| Method | Platform | What it does |
+|---|---|---|
+| `systemPreferences.getAnimationSettings()` | all | Returns `{ shouldRenderRichAnimation, scrollAnimationsEnabledBySystem, prefersReducedMotion }` |
+| `systemPreferences.isSwipeTrackingFromScrollEventsEnabled()` | macOS | `true` if "Swipe between pages" is enabled in trackpad settings |
+
+```js filename="motion.js"
+// Respect the user's "Reduce motion" accessibility setting
+const { prefersReducedMotion } = systemPreferences.getAnimationSettings()
+if (prefersReducedMotion) disableFancyTransitions()
+```
+
+---
+
+## Properties
+
+| Property | Type | Platform | What it is |
+|---|---|---|---|
+| `systemPreferences.effectiveAppearance` | `string` (readonly) | macOS | `'dark'`, `'light'`, or `'unknown'` — same value as `getEffectiveAppearance()` |
+| `systemPreferences.accessibilityDisplayShouldReduceTransparency` | `boolean` (readonly) | macOS | `true` if the user enabled "Reduce transparency" |
+
+<Callout type="warning">
+`accessibilityDisplayShouldReduceTransparency` is **deprecated**. Use [`nativeTheme.prefersReducedTransparency`](/en/api/app) instead — it's cross-platform and actively maintained.
+</Callout>
+
+```js filename="appearance-prop.js"
+// The property form is handy for one-off reads
+if (systemPreferences.effectiveAppearance === 'dark') {
+  loadDarkStylesheet()
+}
+```
+
+---
+
+## In plain words
+
+`systemPreferences` is how your app **politely asks the operating system about the person using it**. You never set these things — the user owns them in System Settings. You just read them and adapt.
+
+Three jobs cover almost everything:
+
+1. **Look like a local.** "What's the accent color?" → `getAccentColor()`. "Dark or light?" → `getEffectiveAppearance()`. "Did they turn off animations?" → `getAnimationSettings()`. Reading these makes a cross-platform app feel like it was born on that OS.
+2. **Ask permission.** "May I use the camera?" → check `getMediaAccessStatus('camera')`, then `askForMediaAccess('camera')` on macOS. Never grab the mic or camera without checking first — the OS will block you and the user will distrust you.
+3. **Tap into native security & events.** Touch ID (`promptTouchID`), macOS workspace notifications (`subscribeWorkspaceNotification`), and the Windows `accent-color-changed` event let you hook into things a plain web page could never reach.
+
+One honest caveat: this module is **deeply platform-specific** — most methods are macOS-only, a couple are Windows-only. Always guard with `process.platform`, and for plain dark-mode/appearance work prefer `nativeTheme`, which works everywhere. Remember three names and the rest is lookup: **`getEffectiveAppearance()`** (theme), **`getMediaAccessStatus()`** (permissions), and **`getAccentColor()`** (color).
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+</Cards>

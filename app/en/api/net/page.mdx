@@ -1,0 +1,244 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { NetworkApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<NetworkApiIllustration />}
+  title="net"
+  subtitle="Make HTTP/HTTPS requests from the Main process using Chromium's own network stack — proxies, certificates, and cookies all handled for you."
+  badge="API · net"
+/>
+
+The `net` module lives in the **Main process**. It lets you issue HTTP(S) requests through Chromium's native networking library instead of Node's `http`/`https`, so it automatically respects the system proxy, your app's configured certificates, authentication, and per-`Session` cookies.
+
+```js filename="main.js"
+const { app, net } = require('electron')
+
+app.whenReady().then(async () => {
+  const response = await net.fetch('https://api.example.com/users')
+  const users = await response.json()
+})
+```
+
+<EasyNote>
+Node has its own `http` module, so why use `net`? Because `net` borrows **Chromium's** network stack — the exact same one the browser part of your app uses. That means it already knows about the user's corporate proxy, the certificates you trust, and the cookies stored in a `Session`. Node's `http` knows none of that.
+</EasyNote>
+
+<Callout type="info">
+`net.fetch` and `net.request` only work **after** the `app` `ready` event. Call them inside `app.whenReady()`.
+</Callout>
+
+---
+
+## Methods
+
+The `net` module itself is small — just four methods.
+
+### Making requests
+
+| Method | What it does |
+|---|---|
+| `net.fetch(input[, init])` | Modern, Promise-based request — the same API as the web `fetch()`, returning a `Promise<Response>`. Pass a URL string or a `Request`. |
+| `net.request(options)` | Lower-level streaming request — returns a `ClientRequest` you drive with events. Pass a URL string or a `ClientRequestConstructorOptions` object. |
+
+```js filename="fetch.js"
+// The easy path: net.fetch works just like browser fetch()
+const res = await net.fetch('https://api.example.com/data', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ hello: 'world' }),
+})
+
+if (!res.ok) throw new Error(`HTTP ${res.status}`)
+const data = await res.json()
+```
+
+The `init` object accepts everything the standard `fetch` does, plus one Electron-only flag:
+
+| Option | What it does |
+|---|---|
+| `bypassCustomProtocolHandlers` | When `true`, skips any custom protocol handlers you registered for this request |
+
+<EasyNote>
+Reach for `net.fetch` first — it is the modern, ergonomic choice and what you'll use 90% of the time. Drop down to `net.request` only when you need fine-grained control, like streaming an upload chunk by chunk or reacting to redirects manually.
+</EasyNote>
+
+### Connectivity
+
+| Method | What it does |
+|---|---|
+| `net.isOnline()` | Returns `true` if there is _any_ network connection. It does **not** guarantee a given host is reachable — only that a connection exists. |
+
+```js filename="online.js"
+if (!net.isOnline()) {
+  // Skip the request and queue it for later instead
+  queueForRetry(payload)
+}
+```
+
+<Callout type="warning">
+`isOnline()` only tells you a network interface is up — not that the internet (or your API) actually works. A laptop on airplane Wi-Fi with no uplink still reports `true`. Treat it as a cheap hint, not a guarantee, and always handle request failures.
+</Callout>
+
+### DNS
+
+| Method | What it does |
+|---|---|
+| `net.resolveHost(host[, options])` | Resolves a hostname to IP addresses via Chromium's resolver, returning a `Promise<ResolvedHost>`. |
+
+The optional `options` object controls how resolution happens:
+
+| Option | What it does |
+|---|---|
+| `queryType` | `'A'` (IPv4) or `'AAAA'` (IPv6) — restrict to one address family |
+| `source` | Resolver source: `'any'`, `'system'`, `'dns'`, `'mdns'`, or `'localOnly'` |
+| `cacheUsage` | `'allowed'`, `'staleAllowed'`, or `'disallowed'` |
+| `secureDnsPolicy` | `'allow'` or `'disable'` (DNS-over-HTTPS) |
+
+```js filename="resolve.js"
+const { endpoints } = await net.resolveHost('example.com', {
+  queryType: 'A',
+})
+// endpoints: [{ family: 'ipv4', address: '93.184.216.34' }, ...]
+```
+
+---
+
+## Properties
+
+| Property | Type | What it is |
+|---|---|---|
+| `net.online` | `boolean` (readonly) | A property form of `isOnline()` — `true` if a network connection exists |
+
+```js filename="online-property.js"
+// These two are equivalent; use whichever reads better
+const a = net.online
+const b = net.isOnline()
+```
+
+---
+
+## The `ClientRequest` class
+
+`net.request(options)` returns a `ClientRequest` — a writable stream you drive with events. Use it when `net.fetch` isn't low-level enough: streaming uploads, manual redirect handling, or per-chunk progress.
+
+```js filename="client-request.js"
+const request = net.request({
+  method: 'POST',
+  url: 'https://api.example.com/upload',
+})
+
+request.setHeader('Content-Type', 'application/json')
+
+request.on('response', (response) => {
+  // response is an IncomingMessage (a readable stream)
+  let body = ''
+  response.on('data', (chunk) => { body += chunk })
+  response.on('end', () => handle(JSON.parse(body)))
+})
+
+request.on('error', (error) => reportError(error))
+
+request.write(JSON.stringify({ hello: 'world' }))
+request.end()
+```
+
+### Constructor options
+
+`net.request` accepts a URL string, or an options object with these fields:
+
+| Option | Type | What it does |
+|---|---|---|
+| `method` | `string` | HTTP method — defaults to `GET` |
+| `url` | `string` | Absolute request URL (with protocol scheme) |
+| `headers` | `Record<string, string \| string[]>` | Initial request headers |
+| `session` | `Session` | Send through this `Session` (cookies, cache, proxy) |
+| `partition` | `string` | Send through the `Session` for this partition name |
+| `credentials` | `string` | `'include'`, `'omit'`, or `'same-origin'` |
+| `useSessionCookies` | `boolean` | Send/store the session's cookies with the request |
+| `protocol` | `string` | `'http:'` or `'https:'` |
+| `host` | `string` | Host (with port), an alternative to `url` |
+| `hostname` | `string` | Hostname (no port) |
+| `port` | `Integer` | Server port |
+| `path` | `string` | Request path + query |
+| `origin` | `string` | Origin URL of the request |
+| `redirect` | `string` | `'follow'`, `'error'`, or `'manual'` |
+| `referrerPolicy` | `string` | The request's referrer policy |
+| `cache` | `string` | `'default'`, `'no-store'`, `'reload'`, `'no-cache'`, `'force-cache'`, or `'only-if-cached'` |
+| `priority` | `string` | `'throttled'`, `'idle'`, `'lowest'`, `'low'`, `'medium'`, or `'highest'` |
+| `priorityIncremental` | `boolean` | Whether the request body should be delivered incrementally |
+| `bypassCustomProtocolHandlers` | `boolean` | Skip custom protocol handlers for this request |
+
+### Instance events
+
+Listen with `request.on('event-name', handler)`.
+
+| Event | Fires when |
+|---|---|
+| `response` | Response headers arrived — handler gets an `IncomingMessage` to read the body from |
+| `login` | The server requested authentication — call the provided `callback(username, password)` |
+| `redirect` | A redirect is about to happen — gets `(statusCode, method, redirectUrl, responseHeaders)` |
+| `finish` | The last chunk of the request body has been written |
+| `abort` | The request was aborted (won't fire if it never started) |
+| `error` | The request failed to make or complete — gets the `Error` |
+| `close` | The last event for this request — no more events will fire afterward |
+
+```js filename="redirect.js"
+const request = net.request({ url, redirect: 'manual' })
+
+request.on('redirect', (statusCode, method, redirectUrl) => {
+  if (isAllowed(redirectUrl)) {
+    request.followRedirect() // opt in to each redirect yourself
+  } else {
+    request.abort()
+  }
+})
+
+request.on('login', (authInfo, callback) => {
+  callback('username', 'password') // respond to a 401/proxy challenge
+})
+```
+
+<Callout type="warning">
+With `redirect: 'manual'`, redirects are **not** followed automatically. If you listen for the `redirect` event you must call `request.followRedirect()` to continue, or the request will hang.
+</Callout>
+
+### Instance methods
+
+| Method | What it does |
+|---|---|
+| `request.setHeader(name, value)` | Set a header (only before the first `write`) |
+| `request.getHeader(name)` | Read a header value |
+| `request.removeHeader(name)` | Remove a header (only before the first `write`) |
+| `request.write(chunk[, encoding][, callback])` | Write a chunk of the request body |
+| `request.end([chunk][, encoding][, callback])` | Send the final chunk and complete the request |
+| `request.abort()` | Cancel the request immediately |
+| `request.followRedirect()` | Continue a redirect that was paused by `redirect: 'manual'` |
+| `request.getUploadProgress()` | `{ active, started, current, total }` for upload progress |
+
+### Instance properties
+
+| Property | Type | What it is |
+|---|---|---|
+| `request.chunkedEncoding` | `boolean` | Use chunked transfer encoding — set before the first `write` |
+
+---
+
+## In plain words
+
+Think of `net` as **your app's own little browser for talking to servers** — minus the window. When your Main process needs to call an API, download a file, or check connectivity, `net` does it through the exact same plumbing the visible part of your app uses. So the user's office proxy, the certificates you trust, and the cookies in a logged-in `Session` all "just work," with no extra wiring.
+
+The whole module comes down to a few choices:
+
+1. **Just fetch something?** Use **`net.fetch(url)`** — it's the web `fetch()` you already know, returning a Promise. This is the right answer almost every time.
+2. **Need a streaming pipe?** Use **`net.request(options)`** to get a `ClientRequest`, then drive it with `write`/`end` and listen for `response`. Reach for this only when `fetch` is too high-level — big uploads, manual redirects, progress bars.
+3. **Are we even online?** Check **`net.isOnline()`** (or `net.online`) — but treat it as a hint, not a promise, and still handle failures.
+
+Remember two names and you have it: **`net.fetch`** (the easy way) and **`net.request`** (the powerful way). Everything else on this page is detail you look up when you need it.
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="session" href="/en/api/session" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+</Cards>

@@ -1,0 +1,176 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { SystemApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<SystemApiIllustration />}
+  title="crashReporter"
+  subtitle="Collect native crash reports from every process and (optionally) upload them to a server for analysis."
+  badge="API · crashReporter"
+/>
+
+The `crashReporter` module lets you submit **native crash reports** — the low-level Chromium/Node crashes that a normal `try/catch` can never see. You start it once, as early as possible, and from then on every process your app spawns is watched.
+
+```js filename="main.js"
+const { crashReporter } = require('electron')
+
+// Start collecting crashes — do this before creating any windows
+crashReporter.start({
+  submitURL: 'https://submit.example.com/post',
+  uploadToServer: true,
+})
+```
+
+<EasyNote>
+`crashReporter` is the **black box flight recorder** of your app. When something crashes hard enough that your JavaScript never even gets a chance to run, this module has already captured what happened and can ship it home for you to read later.
+</EasyNote>
+
+---
+
+## Events
+
+The `crashReporter` module emits **no events**. It works quietly in the background — you configure it once with `start()` and then read reports through the methods below.
+
+---
+
+## Methods
+
+The `crashReporter` module is **not a class** — there is no `new crashReporter()`. It's a singleton object with static methods. Items marked _(Main)_ are only available in the **Main process**.
+
+### Starting the reporter
+
+| Method | What it does |
+|---|---|
+| `crashReporter.start(options)` | Initialize crash collection. **Call this first**, before any other `crashReporter` API and before creating windows. |
+
+```js filename="start.js"
+const { crashReporter } = require('electron')
+
+crashReporter.start({
+  submitURL: 'https://submit.example.com/post',
+  productName: 'MyApp',
+  uploadToServer: true,   // set false to collect locally without uploading
+  compress: true,         // gzip the payload (server must support it)
+  globalExtra: {          // attached to every process's report
+    _companyName: 'Acme',
+  },
+})
+```
+
+The `options` object accepts:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `submitURL` | `string` | URL that crash reports are POSTed to (required unless you only collect locally) |
+| `productName` | `string` | Product name shown in reports — defaults to `app.name` |
+| `companyName` | `string` _(Deprecated)_ | Company name — prefer putting this in `globalExtra` as `_companyName` |
+| `uploadToServer` | `boolean` | Whether reports are sent to `submitURL` (default `true`) |
+| `ignoreSystemCrashHandler` | `boolean` | Don't forward the crash to the OS crash handler (default `false`) |
+| `rateLimit` | `boolean` _(macOS/Windows)_ | Limit how many reports upload per hour (default `false`) |
+| `compress` | `boolean` | gzip-compress the upload (default `true`) |
+| `extra` | `Record<string, string>` _(Main)_ | Extra key/value data attached to **main-process** reports only |
+| `globalExtra` | `Record<string, string>` | Extra data attached to reports from **all** processes (set once at `start`) |
+
+<Callout type="warning">
+Call `crashReporter.start()` as **early as possible** in your main process — and again in the renderer/child processes if you want their crashes too. Crashes that happen before `start()` runs are not captured. `globalExtra` can only be set here; it cannot be changed later.
+</Callout>
+
+### Reading crash reports _(Main)_
+
+| Method | What it does |
+|---|---|
+| `crashReporter.getLastCrashReport()` | The date and ID of the most recently uploaded report, or `null` if none |
+| `crashReporter.getUploadedReports()` | An array of all uploaded reports, each with `date` and `id` |
+
+```js filename="reports.js"
+const last = crashReporter.getLastCrashReport()
+if (last) {
+  // { date: Date, id: string }
+  notifyTeam(`Last crash uploaded: ${last.id} at ${last.date}`)
+}
+
+for (const report of crashReporter.getUploadedReports()) {
+  saveToLog(report.id, report.date)
+}
+```
+
+### Controlling uploads _(Main)_
+
+| Method | What it does |
+|---|---|
+| `crashReporter.getUploadToServer()` | `true` if reports are currently being uploaded to the server |
+| `crashReporter.setUploadToServer(uploadToServer)` | Turn server uploads on/off at runtime (collection still happens) |
+
+```js filename="consent.js"
+// Respect a user's privacy choice without restarting the app
+function onConsentChanged(userOptedIn) {
+  crashReporter.setUploadToServer(userOptedIn)
+}
+```
+
+<Callout type="warning">
+`getUploadToServer()` / `setUploadToServer()` are **main-process only** and throw if `uploadToServer` was disabled at `start()` on some platforms. Toggling uploads is the polite way to honour a user's "send crash data?" preference — keep collecting locally, just don't send.
+</Callout>
+
+### Extra parameters
+
+These attach extra key/value metadata (app version, feature flags, user tier…) that travels with the next crash. Available in **every** process.
+
+| Method | What it does |
+|---|---|
+| `crashReporter.addExtraParameter(key, value)` | Add/replace an extra parameter sent with future crashes |
+| `crashReporter.removeExtraParameter(key)` | Remove a previously added extra parameter |
+| `crashReporter.getParameters()` | The current set of extra parameters as a `Record<string, string>` |
+
+```js filename="extra-params.js"
+// Tag every future crash with useful context
+crashReporter.addExtraParameter('appVersion', app.getVersion())
+crashReporter.addExtraParameter('experiment', 'new-renderer')
+
+// Stop tagging once an experiment ends
+crashReporter.removeExtraParameter('experiment')
+
+const params = crashReporter.getParameters() // { appVersion: '1.2.3', ... }
+```
+
+<Callout type="warning">
+Crashpad limits parameter sizes: keys up to **39 bytes**, values up to **20320 bytes**, and a value cannot contain new-line characters. Oversized entries are silently dropped, so keep them short.
+</Callout>
+
+### In child processes
+
+In a Node.js child process you don't `require('electron')` — instead use the global `process.crashReporter`, which exposes a subset:
+
+| Method | What it does |
+|---|---|
+| `process.crashReporter.start(options)` | Start the reporter inside the child process |
+| `process.crashReporter.getParameters()` | Read the current extra parameters |
+| `process.crashReporter.addExtraParameter(key, value)` | Add an extra parameter |
+| `process.crashReporter.removeExtraParameter(key)` | Remove an extra parameter |
+
+---
+
+## Properties
+
+The `crashReporter` module exposes **no properties** — all state is read and written through the methods above.
+
+---
+
+## In plain words
+
+Think of `crashReporter` as the **black box recorder** on an airplane. You never touch it during a normal flight, and you hope you never need it — but if the plane goes down, it's the one thing that survived and can tell you exactly what went wrong.
+
+Three ideas cover almost everything:
+
+1. **Start early.** Call `crashReporter.start({ submitURL })` at the very top of your main process. Anything that crashes after that point — even a hard native crash where your JavaScript never runs — gets captured and (if you allow it) shipped to your server.
+2. **Add context.** A raw crash dump tells you _where_, but `addExtraParameter('appVersion', '1.2.3')` tells you _which build, which user tier, which experiment_. Tag the things you'll want to filter by later.
+3. **Respect consent.** Crash data is personal. Use `setUploadToServer(false)` to keep recording locally but stop sending until the user opts in, and flip it back on with `setUploadToServer(true)` — no restart needed.
+
+Remember two names and the rest is lookup: **`start()`** (turn the recorder on) and **`addExtraParameter()`** (label what you record). The "read" methods — `getLastCrashReport()`, `getUploadedReports()` — are there for when you want to show the user, or your team, what's been sent.
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="Process model" href="/en/docs/processes" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+</Cards>

@@ -1,0 +1,135 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { SystemApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<SystemApiIllustration />}
+  title="nativeTheme"
+  subtitle="운영체제의 다크 모드, 고대비, 접근성 색상 설정을 읽고 — 직접 덮어쓸 수도 있어요."
+  badge="API · nativeTheme"
+/>
+
+`nativeTheme` 모듈은 **Main 프로세스** 에 살아요. `new` 없이 바로 쓰는 단 하나의 객체로, OS 가 다크 모드인지, 고대비나 투명도 줄이기가 켜져 있는지 알려 주고, 앱 전체를 라이트나 다크로 강제할 수도 있어요.
+
+```js filename="main.js"
+const { nativeTheme } = require('electron')
+
+// 지금 운영체제가 다크 테마를 쓰고 있나요?
+const dark = nativeTheme.shouldUseDarkColors
+
+// OS 설정을 무시하고 앱 전체를 다크 모드로 강제
+nativeTheme.themeSource = 'dark'
+```
+
+<EasyNote>
+`nativeTheme` 은 앱 외형을 위한 **양방향 전등 스위치** 예요. OS 가 어느 쪽으로 켰는지(다크/라이트) _읽을_ 수도 있고, `themeSource` 로 _직접 켤_ 수도 있어요 — 다시 `'system'` 으로 돌려놓기 전까지는 시스템 설정을 덮어써요.
+</EasyNote>
+
+---
+
+## 이벤트(Events)
+
+`nativeTheme.on('이벤트명', 핸들러)` 로 듣습니다. `nativeTheme` 은 이벤트가 하나뿐이에요.
+
+| 이벤트 | 발생 시점 |
+|---|---|
+| `updated` | 시스템 테마가 바뀜 — 즉 `shouldUseDarkColors`, `shouldUseHighContrastColors`, `shouldUseInvertedColorScheme` 중 하나라도 값이 바뀌었을 때 |
+
+```js filename="watch-theme.js"
+const { nativeTheme } = require('electron')
+
+nativeTheme.on('updated', () => {
+  // OS 가 다크 모드(또는 고대비 등)를 토글함 — 반응하기
+  const isDark = nativeTheme.shouldUseDarkColors
+  mainWindow.webContents.send('theme-changed', isDark)
+})
+```
+
+<EasyNote>
+`updated` 이벤트는 사용자가 시스템 외형을 바꿀 때마다 울리는 초인종 같아요 — 예를 들어 macOS 가 해질 무렵 자동으로 다크로 전환할 때요. 한 번만 등록해 두고, 울릴 때마다 속성을 다시 읽으면 돼요. 폴링은 필요 없어요.
+</EasyNote>
+
+---
+
+## 메서드(Methods)
+
+`nativeTheme` 은 **메서드가 없어요**. 모든 동작은 속성을 읽거나, 단 하나의 쓰기 가능한 속성인 `themeSource` 에 값을 할당해서 이뤄져요.
+
+<Callout type="warning">
+사용자의 선택을 가볍게 덮어쓰지 마세요. `themeSource` 를 `'light'` 나 `'dark'` 로 설정하면 _앱 전체_ 에서 OS 설정을 무시해요. 테마 토글을 제공한다면, 항상 `themeSource = 'system'` 으로 되돌리는 "시스템" 옵션을 함께 두어 사용자가 OS 에 제어권을 돌려줄 수 있게 하세요.
+</Callout>
+
+---
+
+## 속성(Properties)
+
+_(macOS)_ / _(Windows)_ 표시는 해당 플랫폼에서만 의미 있는 값을 가져요. `themeSource` 를 제외한 모든 속성은 **읽기 전용** 이에요.
+
+### 테마 덮어쓰기 (유일한 쓰기 가능 속성)
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `nativeTheme.themeSource` | `string` | 활성 테마 읽기/쓰기: `'system'`, `'light'`, `'dark'`. `'light'`/`'dark'` 로 설정하면 OS 를 덮어쓰고, `'system'` 은 덮어쓰기를 해제 |
+
+```js filename="theme-source.js"
+// 설정 UI 에서 사용자가 고르게 하기
+ipcMain.handle('set-theme', (_event, choice) => {
+  // choice 는 'system' | 'light' | 'dark'
+  nativeTheme.themeSource = choice
+  return nativeTheme.shouldUseDarkColors
+})
+```
+
+<Callout type="info">
+`themeSource` 를 설정하면 렌더러 안의 `prefers-color-scheme` CSS 미디어 쿼리도 함께 따라가요. 그래서 웹 스타일이 자동으로 갱신돼요. Main 프로세스에서 한 번만 설정하면 CSS 가 알아서 따라옵니다.
+</Callout>
+
+### 읽기 전용 테마 상태
+
+| 속성 | 타입 | 플랫폼 | 무엇을 알려주나 |
+|---|---|---|---|
+| `nativeTheme.shouldUseDarkColors` | `boolean` (읽기전용) | 전체 | 앱이 다크 색상을 써야 하면 `true` (`themeSource` 를 반영함) |
+| `nativeTheme.shouldUseHighContrastColors` | `boolean` (읽기전용) | macOS/Windows | OS 고대비 모드가 켜져 있으면 `true` |
+| `nativeTheme.shouldUseInvertedColorScheme` | `boolean` (읽기전용) | macOS/Windows | 반전 색상 구성(접근성)이 활성이면 `true` |
+| `nativeTheme.shouldUseDarkColorsForSystemIntegratedUI` | `boolean` (읽기전용) | macOS/Windows | 시스템 통합 UI(메뉴·타이틀바 등)가 다크 색상을 써야 하면 `true` |
+
+### 읽기 전용 접근성 상태
+
+| 속성 | 타입 | 플랫폼 | 무엇을 알려주나 |
+|---|---|---|---|
+| `nativeTheme.inForcedColorsMode` | `boolean` (읽기전용) | Windows | OS 가 강제 색상 모드(Windows 고대비)일 때 `true` |
+| `nativeTheme.prefersReducedTransparency` | `boolean` (읽기전용) | 전체 | 사용자가 OS 에서 투명도 줄이기를 선호하면 `true` |
+| `nativeTheme.shouldDifferentiateWithoutColor` | `boolean` (읽기전용) | macOS | 사용자가 색에 의존하지 않고 UI 를 구분하도록 OS 에 요청했으면 `true` |
+
+```js filename="respect-a11y.js"
+// 다크/라이트뿐 아니라 접근성 설정에도 맞추기
+if (nativeTheme.shouldUseHighContrastColors) {
+  applyHighContrastPalette()
+}
+
+if (nativeTheme.prefersReducedTransparency) {
+  disableBlurAndGlassEffects()
+}
+```
+
+<EasyNote>
+`shouldUseDarkColors` 는 90% 의 경우 가장 먼저 찾게 되는 속성이에요 — `themeSource` 덮어쓰기를 이미 반영하고 있어서, "OS 가 다크라고 함" 과 "내가 다크로 강제함" 을 직접 합칠 필요가 없어요. 접근성 속성들은 앱을 더 배려 있게 만들어 주는 마무리예요.
+</EasyNote>
+
+---
+
+## 쉽게 풀어 설명
+
+`nativeTheme` 을 **앱 외형의 온도 조절기** 라고 생각해 보세요. OS 는 바깥 날씨예요(밤에는 어둡고, 낮에는 밝고, 때로는 접근성을 위한 "고대비"). 그리고 `nativeTheme` 은 벽에 달린 작은 패널로 두 가지 일을 해요:
+
+1. **방 안을 읽어요.** `shouldUseDarkColors` 가 지금 다크로 칠할지 라이트로 칠할지 알려 줘요. `shouldUseHighContrastColors`, `prefersReducedTransparency` 같은 친구들은 접근성 요구를 알려 주죠. 시작할 때 한 번 읽고, `updated` 이벤트가 울릴 때마다 다시 읽으면 돼요.
+2. **직접 넘겨받을 수도 있어요.** `themeSource` 에 `'light'` 나 `'dark'` 를 넣으면 앱이 바깥 날씨를 무시해요 — 설정의 "다크 모드" 토글에 딱이에요. 다시 OS 를 따르고 싶으면 `'system'` 으로 되돌리면 돼요.
+
+결국 이 모듈은 세 이름으로 정리돼요: **`shouldUseDarkColors`**(지금 어떻게 보여야 하지?), **`themeSource`**(내가 덮어쓸게), 그리고 **`updated`** 이벤트(바뀌면 알려 줘). 이 셋만 연결하면 앱이 사용자의 시스템 외형을 완벽하게 존중하게 돼요.
+
+<Cards>
+  <Cards.Card title="app 모듈" href="/ko/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/ko/api/browser-window" arrow />
+  <Cards.Card title="보안" href="/ko/docs/best-practices/security" arrow />
+</Cards>

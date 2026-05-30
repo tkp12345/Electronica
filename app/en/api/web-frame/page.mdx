@@ -1,0 +1,188 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { WindowApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<WindowApiIllustration />}
+  title="webFrame"
+  subtitle="Customize the rendering of the current web page from inside the renderer — zoom, CSS injection, spell-check, and frame navigation."
+  badge="API · webFrame"
+/>
+
+`webFrame` lives in the **Renderer process** (and in preload scripts). It's a single ready-made object — you don't create it with `new` — that lets the page tune _how it's rendered_: the zoom level, injected stylesheets, the spell checker, and the tree of child frames around it.
+
+```js filename="preload.js"
+const { webFrame } = require('electron')
+
+// Bump the whole page to 120%
+webFrame.setZoomFactor(1.2)
+```
+
+<EasyNote>
+`webFrame` is the **lens you look at the page through**. It doesn't change _what_ the page says — that's the DOM — it changes how that page is _shown_ to you: how zoomed-in it is, what extra styles are layered on top, and how spelling is checked as you type.
+</EasyNote>
+
+<Callout type="info">
+`webFrame` only affects the frame it runs in. With `contextIsolation` on (the default), call it from a **preload script** and expose what the page needs through `contextBridge`. The main-process equivalent for the whole window is `win.webContents` (e.g. `setZoomFactor`, `insertCSS`).
+</Callout>
+
+---
+
+## Events
+
+`webFrame` has **no events**. It's a plain object of methods and read-only properties — there is nothing to subscribe to with `.on(...)`. (For page lifecycle events like load/navigation, listen on `webContents` in the main process instead.)
+
+---
+
+## Methods
+
+### Zoom
+
+| Method | What it does |
+|---|---|
+| `webFrame.setZoomFactor(factor)` | Set the zoom as a factor — `1.0` is 100%, `1.5` is 150% (must be ≥ `0.0`) |
+| `webFrame.getZoomFactor()` | Read the current zoom factor |
+| `webFrame.setZoomLevel(level)` | Set the zoom as a level — `0` is default; each `±1` is roughly a 20% change |
+| `webFrame.getZoomLevel()` | Read the current zoom level |
+| `webFrame.setVisualZoomLevelLimits(minimumLevel, maximumLevel)` | Set the min/max pinch-to-zoom range (visual/pinch zoom is off by default) |
+
+```js filename="zoom.js"
+// "Zoom factor" and "zoom level" are two views of the same dial:
+webFrame.setZoomFactor(1.5)  // 150%
+webFrame.setZoomLevel(2)     // ~140% — each step is ~20%
+
+// Let the user pinch-zoom the page between 1x and 3x
+webFrame.setVisualZoomLevelLimits(1, 3)
+```
+
+<Callout type="warning">
+Zoom factor is **per-frame and not persisted** — it resets on navigation. If you want a window-wide zoom that survives reloads, set it on the main-process `win.webContents.setZoomFactor(...)` instead, and reapply it after each load.
+</Callout>
+
+### CSS & text injection
+
+| Method | What it does |
+|---|---|
+| `webFrame.insertCSS(css[, options])` | Inject a stylesheet into the current page; returns a `key` string used to remove it later (`options.cssOrigin`: `'user'` or `'author'`) |
+| `webFrame.removeInsertedCSS(key)` | Remove a stylesheet that was added with `insertCSS`, by its `key` |
+| `webFrame.insertText(text)` | Insert plain text into the currently focused editable element |
+
+```js filename="inject-css.js"
+// Add a style, then later remove exactly that one by its key
+const key = webFrame.insertCSS('body { background: #111; color: #eee; }')
+
+// later...
+webFrame.removeInsertedCSS(key)
+```
+
+### Executing JavaScript
+
+| Method | What it does |
+|---|---|
+| `webFrame.executeJavaScript(code[, userGesture, callback])` | Evaluate `code` in the page and return a `Promise` of the result (`userGesture` simulates a user action) |
+| `webFrame.executeJavaScriptInIsolatedWorld(worldId, scripts[, userGesture, callback])` | Run scripts in a separate, isolated JS "world" — returns a `Promise` |
+| `webFrame.setIsolatedWorldInfo(worldId, info)` | Configure an isolated world's `securityOrigin`, `csp`, and `name` |
+
+```js filename="execute.js"
+// Run code in the page and await the result
+const title = await webFrame.executeJavaScript('document.title')
+
+// Isolated worlds keep injected code from clashing with the page's own scripts
+webFrame.setIsolatedWorldInfo(1, {
+  name: 'my-extension',
+  securityOrigin: 'https://example.com/',
+})
+```
+
+<Callout type="warning">
+`executeJavaScript` runs in the page's main world, where it can be reached by untrusted page code. For anything sensitive, prefer an **isolated world** (`executeJavaScriptInIsolatedWorld`) and never `eval` untrusted strings.
+</Callout>
+
+### Spell checking
+
+| Method | What it does |
+|---|---|
+| `webFrame.setSpellCheckProvider(language, provider)` | Register a custom spell checker — `provider.spellCheck(words, callback)` returns the misspelled words |
+| `webFrame.isWordMisspelled(word)` | `true` if the word is misspelled per the built-in dictionary |
+| `webFrame.getWordSuggestions(word)` | Array of suggested corrections for a misspelled word |
+
+```js filename="spellcheck.js"
+webFrame.setSpellCheckProvider('en-US', {
+  spellCheck(words, callback) {
+    // return only the words that are misspelled
+    callback(words.filter((w) => webFrame.isWordMisspelled(w)))
+  },
+})
+```
+
+### Frame navigation (the frame tree)
+
+| Method | What it does |
+|---|---|
+| `webFrame.getFrameForSelector(selector)` | The `webFrame` for an `<iframe>`/`<frame>` matching a CSS selector, or `null` |
+| `webFrame.findFrameByName(name)` | A child `webFrame` by its `name` attribute, or `null` |
+| `webFrame.findFrameByToken(frameToken)` | A `webFrame` by its unique `frameToken`, or `null` |
+| `webFrame.findFrameByRoutingId(routingId)` _(Deprecated)_ | A `webFrame` by routing id, or `null` |
+
+<Callout type="warning">
+`webFrame.findFrameByRoutingId` and the `routingId` property are **deprecated**. Use `findFrameByToken` with the `frameToken` property instead — tokens are stable and unique across processes.
+</Callout>
+
+### Resources & memory
+
+| Method | What it does |
+|---|---|
+| `webFrame.getResourceUsage()` | An object of memory usage stats (`images`, `scripts`, `cssStyleSheets`, `xslStyleSheets`, `fonts`, `other`) |
+| `webFrame.clearCache()` | Free memory that's no longer needed (e.g. images from a previous navigation) |
+
+```js filename="memory.js"
+const usage = webFrame.getResourceUsage()
+// usage.images.size, usage.scripts.liveSize, ...
+
+webFrame.clearCache() // drop cached resources to reclaim memory
+```
+
+---
+
+## Properties
+
+All properties are **read-only**. They let you walk the frame tree (each `<iframe>` is its own frame).
+
+| Property | Type | What it is |
+|---|---|---|
+| `webFrame.top` | `WebFrame \| null` (readonly) | The top-most frame in the hierarchy |
+| `webFrame.opener` | `WebFrame \| null` (readonly) | The frame that opened this one |
+| `webFrame.parent` | `WebFrame \| null` (readonly) | The parent frame (`null` if this is the top) |
+| `webFrame.firstChild` | `WebFrame \| null` (readonly) | The first child frame |
+| `webFrame.nextSibling` | `WebFrame \| null` (readonly) | The next sibling frame |
+| `webFrame.frameToken` | `string` (readonly) | A unique, stable token identifying this frame |
+| `webFrame.routingId` | `Integer` (readonly) _(Deprecated)_ | The frame's routing id — use `frameToken` instead |
+
+```js filename="walk-frames.js"
+// Apply a zoom to every child frame, not just the top one
+let frame = webFrame.firstChild
+while (frame) {
+  frame.setZoomFactor(1.2)
+  frame = frame.nextSibling
+}
+```
+
+---
+
+## In plain words
+
+Think of a web page as a photo, and `webFrame` as **the way you view that photo** — not the photo itself.
+
+- **How big is it?** That's zoom: `setZoomFactor(1.5)` makes everything 150%, `setVisualZoomLevelLimits(1, 3)` decides how far a pinch can stretch it.
+- **What's layered on top?** That's CSS: `insertCSS(...)` paints extra styles over the page, and the `key` it hands back lets you peel exactly that layer off later.
+- **Are the words spelled right?** That's the spell checker: plug in your own with `setSpellCheckProvider`, or ask the built-in one with `isWordMisspelled`.
+- **What other frames are around me?** A page can contain `<iframe>`s, and each is its own little frame. `top`, `parent`, `firstChild`, `nextSibling` let you walk that family tree and tune each one.
+
+One rule to remember: with context isolation on (the default and recommended), reach for `webFrame` from your **preload script**, and hand the page only the small, safe functions it actually needs via `contextBridge`. For a window-wide setting that should outlive reloads, set it on `win.webContents` in the main process instead.
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/en/api/browser-window" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+</Cards>

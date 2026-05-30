@@ -1,0 +1,118 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { NetworkApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<NetworkApiIllustration />}
+  title="netLog"
+  subtitle="Record every network event in a session to a file you can replay in Chrome's NetLog viewer."
+  badge="API · netLog"
+/>
+
+The `netLog` module lives in the **Main process**. It records the raw network activity of a `session` — DNS lookups, socket connections, requests, redirects, proxy resolution — into a JSON log file that you can open with the [netlog-viewer](https://netlog-viewer.appspot.com/) to debug tricky connectivity problems.
+
+```js filename="main.js"
+const { app, netLog } = require('electron')
+
+app.whenReady().then(async () => {
+  await netLog.startLogging('/path/to/net-log')
+  // ... network activity happens here ...
+  const path = await netLog.stopLogging()
+  // 'Net-logs written to', path
+})
+```
+
+<EasyNote>
+`netLog` is a **flight recorder** for your app's network. You press record, let your app make its requests, then stop — and you get a black-box file that shows exactly what happened on the wire, in order, when something went wrong.
+</EasyNote>
+
+---
+
+## Events
+
+The `netLog` module emits **no events**. You drive it entirely through its two methods and read its one property — there's nothing to subscribe to.
+
+---
+
+## Methods
+
+All `netLog` methods must be called **after** the `app` `ready` event has fired.
+
+### Logging control
+
+| Method | What it does |
+|---|---|
+| `netLog.startLogging(path[, options])` | Start recording network events to the file at `path` — returns a `Promise<void>` that resolves once recording has begun |
+| `netLog.stopLogging()` | Stop recording and flush the log to disk — returns a `Promise<void>` that resolves with no value once written |
+
+`startLogging` accepts an optional `options` object:
+
+| Option | Type | What it does |
+|---|---|---|
+| `captureMode` | `string` | How much data to capture: `'default'`, `'includeSensitive'` (cookies, auth headers), or `'everything'` (full request/response bodies) |
+| `maxFileSize` | `number` | Stop logging automatically once the file grows past this many bytes |
+
+```js filename="capture.js"
+const { netLog } = require('electron')
+
+// Capture everything, including request/response bodies, capped at 100 MB
+await netLog.startLogging('/tmp/net-log.json', {
+  captureMode: 'everything',
+  maxFileSize: 100 * 1024 * 1024,
+})
+
+// ... reproduce the network issue ...
+
+const writtenPath = await netLog.stopLogging()
+// the file at writtenPath can now be opened in the NetLog viewer
+```
+
+<Callout type="warning">
+`captureMode: 'includeSensitive'` and `'everything'` write **cookies, authentication headers, and even response bodies** into a plain JSON file. Never ship logs captured this way to a public bug tracker, and delete them once you're done debugging.
+</Callout>
+
+<Callout type="warning">
+If you never call `stopLogging()`, Electron will flush the log automatically when the app exits — but it's best to stop it yourself so you control exactly when the file is written and closed.
+</Callout>
+
+<EasyNote>
+Think of `captureMode` as how zoomed-in the recording is. `'default'` notes _that_ a request happened; `'everything'` records its full contents. The more you capture, the bigger — and more sensitive — the file gets.
+</EasyNote>
+
+---
+
+## Properties
+
+| Property | Type | What it is |
+|---|---|---|
+| `netLog.currentlyLogging` | `boolean` (readonly) | `true` while a recording is in progress, `false` otherwise |
+
+```js filename="guard.js"
+const { netLog } = require('electron')
+
+// Avoid starting a second recording on top of a running one
+if (!netLog.currentlyLogging) {
+  await netLog.startLogging('/tmp/net-log.json')
+}
+```
+
+---
+
+## In plain words
+
+`netLog` is the **dashcam for your app's internet connection**. When a request mysteriously fails, hangs, or hits the wrong proxy, you turn the recorder on, reproduce the problem, and turn it off. What you get back is a single file that captures every step the network took, in order.
+
+The whole module is three names:
+
+1. **`startLogging(path)`** — press record. Optionally pass `captureMode` to decide how much detail to keep, and `maxFileSize` so the file doesn't grow forever.
+2. **`stopLogging()`** — press stop. It flushes everything to disk and hands you back the file path.
+3. **`currentlyLogging`** — the little red "recording" light, so you don't start a second take over the first.
+
+Drop the resulting file into the online **NetLog viewer** and you can replay exactly what happened — which host was slow, where a redirect went, why a certificate was rejected. Just remember the warning: the richer capture modes record secrets, so treat those files like passwords.
+
+<Cards>
+  <Cards.Card title="app module" href="/en/api/app" arrow />
+  <Cards.Card title="Main process" href="/en/docs/processes/main" arrow />
+  <Cards.Card title="Security" href="/en/docs/best-practices/security" arrow />
+</Cards>

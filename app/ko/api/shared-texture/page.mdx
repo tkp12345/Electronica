@@ -1,0 +1,155 @@
+import { Callout, Cards } from 'nextra/components'
+import { PageHero } from '../../../components/PageHero'
+import { EasyNote } from '../../../components/EasyNote'
+import { WindowApiIllustration } from '../../../components/illustrations'
+
+<PageHero
+  illustration={<WindowApiIllustration />}
+  title="sharedTexture"
+  subtitle="플랫폼 GPU 텍스처를 VideoFrame 으로 가져와 Electron 프로세스 사이로 전달해요 — 픽셀 복사 없이, IPC 부담 없이."
+  badge="API · sharedTexture"
+/>
+
+`sharedTexture` 모듈은 플랫폼별 GPU 텍스처 핸들을 가져와 표준 웹 `VideoFrame` 으로 바꾸고, 그 프레임을 Electron 프로세스 사이로 보낼 수 있게 해줘요. 텍스처가 GPU 에 그대로 남아 있기 때문에, 원본 픽셀을 복사하는 대신 _핸들(참조)_ 만 옮깁니다.
+
+```js filename="main.js"
+const { sharedTexture } = require('electron')
+
+// 네이티브 소스에서 받은 텍스처를 가져온 뒤, 렌더러에게 건네줘요
+const imported = sharedTexture.importSharedTexture({ textureInfo })
+await sharedTexture.sendSharedTexture({ frame, importedSharedTexture: imported })
+```
+
+<Callout type="warning">
+`sharedTexture` 모듈 전체가 **실험적(Experimental)** 이며 Electron **v42.3.0** 에서 추가됐어요. API 가 바뀌거나 향후 버전에서 제거될 수 있으니, Electron 버전을 고정하고 프로덕션에서 의존하지 마세요.
+</Callout>
+
+<EasyNote>
+`VideoFrame` 을 GPU 창고에 놓인 무거운 픽셀 상자라고 생각해 보세요. 상자 전체를 한 방(프로세스)에서 다른 방으로 지게차로 옮기는 대신, `sharedTexture` 는 **보관 영수증** 만 건네요 — 상자는 움직이지 않아요. 받은 쪽은 영수증을 내고, 같은 상자를 제자리에서 그대로 읽습니다.
+</EasyNote>
+
+---
+
+## 이벤트(Events)
+
+`sharedTexture` 모듈은 어떤 이벤트도 발생시키지 않아요. "알림" 에 가장 가까운 건 `importSharedTexture` 에 넘기는 선택적 `allReferencesReleased` 콜백인데, 모든 프로세스가 가져온 텍스처의 참조를 해제하면 한 번 호출돼요.
+
+---
+
+## 메서드(Methods)
+
+`sharedTexture` 는 모듈 객체에 정적(static) 메서드만 제공해요. 각 메서드에는 실행해야 하는 프로세스가 표시돼 있어요.
+
+### 가져오기 & 보내기 _(Main 프로세스)_
+
+| 메서드 | 하는 일 |
+|---|---|
+| `sharedTexture.importSharedTexture(options)` _(Experimental)_ | 플랫폼 텍스처 핸들을 가져와 `SharedTextureImported` 객체를 반환 |
+| `sharedTexture.sendSharedTexture(options[, ...args])` _(Experimental)_ | 가져온 텍스처를 렌더러 프로세스로 전송; `Promise<void>` 반환 |
+
+`importSharedTexture(options)` 의 인자:
+
+- `options.textureInfo` (`SharedTextureImportTextureInfo`) — 가져올 플랫폼별 텍스처 정보.
+- `options.allReferencesReleased` (`Function`, 선택) — 가져온 텍스처에 대한 모든 프로세스 참조가 해제되면 호출됨.
+
+`sendSharedTexture(options, ...args)` 의 인자:
+
+- `options.frame` (`WebFrameMain`) — 대상 렌더러 프레임.
+- `options.importedSharedTexture` (`SharedTextureImported`) — Main 프로세스에서 가져온 텍스처.
+- `...args` — 렌더러의 수신 콜백으로 함께 전달되는 추가 인자.
+
+```js filename="send-texture.js"
+const { sharedTexture } = require('electron')
+
+// 1) 네이티브 텍스처 핸들을 가져올 수 있는 객체로 Electron 안으로 들임
+const imported = sharedTexture.importSharedTexture({
+  textureInfo,
+  allReferencesReleased: () => {
+    // 이제 하부 GPU 리소스를 안전하게 재활용할 수 있어요
+    releaseNativeTexture()
+  },
+})
+
+// 2) 추가 메타데이터를 꼬리 인자로 붙여 렌더러 프레임에 건넴
+await sharedTexture.sendSharedTexture(
+  { frame: win.webContents.mainFrame, importedSharedTexture: imported },
+  { source: 'camera', timestamp: Date.now() },
+)
+```
+
+<Callout type="warning">
+`sendSharedTexture` 에는 **1000ms 타임아웃** 이 걸려 있어요. 보내기 전에 렌더러가 (`setSharedTextureReceiver` 로) 수신자를 먼저 등록해 둬야 하며, 그렇지 않으면 반환된 Promise 가 거부(reject)돼요. 수신자를 먼저 설정한 뒤 보내세요.
+</Callout>
+
+### 받기 _(Renderer 프로세스)_
+
+| 메서드 | 하는 일 |
+|---|---|
+| `sharedTexture.setSharedTextureReceiver(callback)` _(Experimental)_ | Main 프로세스가 보낸 텍스처를 받을 콜백을 등록 |
+
+`setSharedTextureReceiver(callback)` — `callback` 은 인자 하나 `receivedSharedTextureData` 를 받으며, 그 형태는:
+
+- `receivedSharedTextureData.importedSharedTexture` (`SharedTextureImported`) — Main 프로세스에서 전달된 텍스처.
+- `...args` — `sendSharedTexture` 에 넘긴 추가 인자들.
+
+```js filename="renderer.js"
+const { sharedTexture } = require('electron')
+
+// Main 프로세스가 무언가 보내기 "전에" 수신자를 먼저 등록해요
+sharedTexture.setSharedTextureReceiver(async (data, meta) => {
+  const { importedSharedTexture } = data
+  // 가져온 텍스처를 표준 웹 VideoFrame 으로 바꿔 화면에 그려요
+  drawToCanvas(importedSharedTexture, meta)
+})
+```
+
+<EasyNote>
+순서가 중요해요. 렌더러가 먼저 "우편함"(`setSharedTextureReceiver`)을 내놓아야 Main 프로세스가 배달(`sendSharedTexture`)을 넣을 수 있어요. 우편함이 없으면 배달도 없고, 보내는 쪽은 1초 뒤에 포기해요.
+</EasyNote>
+
+---
+
+## 속성(Properties)
+
+| 속성 | 타입 | 무엇인가 |
+|---|---|---|
+| `sharedTexture.subtle` | `SharedTextureSubtle` (읽기전용) _(Experimental)_ | 위 고수준 메서드보다 더 세밀한 제어가 필요한 고급 사용자를 위한 저수준 텍스처 API |
+
+```js filename="subtle.js"
+const { sharedTexture } = require('electron')
+
+// 고급·세밀 제어는 `.subtle` 아래에 있어요
+const subtle = sharedTexture.subtle
+```
+
+---
+
+## 관련 객체
+
+위 메서드들 사이를 오가는 객체들이에요. Electron 문서는 이름으로만 참조하고 멤버는 최소한으로만 다뤄요:
+
+| 객체 | 등장 위치 |
+|---|---|
+| `SharedTextureImportTextureInfo` | `importSharedTexture` 에 넘기는 `textureInfo` — 플랫폼별 텍스처 정보 |
+| `SharedTextureImported` | `importSharedTexture` 가 반환하고, `sendSharedTexture` 에 넘기며, 렌더러 수신자에게 전달됨 |
+| `SharedTextureSubtle` | `sharedTexture.subtle` 속성의 타입 |
+
+---
+
+## 쉽게 풀어 설명
+
+`sharedTexture` 는 **이미 GPU 에 올라가 있는 그림** 을 Electron 프로세스 사이로 옮기되, IPC 로 복사하지 않고 그대로 옮기는 일에 관한 거예요.
+
+전체 흐름은 세 박자로 정리돼요:
+
+1. **가져오기**(Main): 네이티브 텍스처 핸들이 있어요 — 예를 들어 카메라 SDK 나 네이티브 렌더러가 만든 비디오 프레임 같은 거요. `importSharedTexture({ textureInfo })` 가 그 핸들을 Electron 이 이해하는 `SharedTextureImported` 객체로 감싸줘요.
+2. **보내기**(Main → Renderer): `sendSharedTexture({ frame, importedSharedTexture })` 가 특정 렌더러 프레임에 그 객체를 건네요. 추가 데이터는 꼬리 인자로 붙일 수 있어요. 1초만 기다리니, 렌더러가 미리 듣고 있어야 해요.
+3. **받기**(Renderer): `setSharedTextureReceiver(callback)` 가 렌더러의 우편함이에요. 텍스처가 도착하면 콜백이 `importedSharedTexture` 를 받아 표준 웹 `VideoFrame` 으로 바꿔서, 캔버스에 그리거나 WebGL 에 넣거나 원하는 대로 합성할 수 있어요.
+
+장점은 성능이에요. 픽셀이 GPU 를 떠나지 않으니, 4K 프레임을 "보내는" 비용이 아주 작은 프레임과 거의 같아요. 다만 아직 새롭고 **실험적** 이라는 점이 함정이에요 — 토대가 아니라 미리보기로 다뤄 주세요.
+
+<Cards>
+  <Cards.Card title="app 모듈" href="/ko/api/app" arrow />
+  <Cards.Card title="BrowserWindow" href="/ko/api/browser-window" arrow />
+  <Cards.Card title="프로세스 모델" href="/ko/docs/processes" arrow />
+</Cards>
